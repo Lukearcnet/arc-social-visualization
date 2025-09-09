@@ -1,0 +1,3858 @@
+
+    <!--
+================================================================================
+DYNAMIC DATA BEDROCK - Fully Dynamic Data Loading
+================================================================================
+
+This file is the new bedrock version with dynamic data loading:
+- AI chatbot interface with draggable chatbox
+- Minimize/expand functionality
+- Proper network zoom and layout
+- Dynamic data loading from comprehensive_data.json
+- All degree filtering and search features
+- Timeline slider functionality
+- LOCALHOST URL OPTIMIZATIONS for localhost:3003 format
+- Painstakingly optimized UI for localhost environment
+
+CREATED: January 2025 (Based on dynamic data clean v5)
+STATUS: ✅ DYNAMIC DATA BEDROCK - SACRED VERSION
+
+KEY FEATURES:
+- Draggable chatbox in both collapsed and expanded states
+- Minimize button to collapse expanded chatbox
+- Proper positioning in upper-right corner
+- Correct network zoom level and physics
+- Left control panel with proper 380px width
+- LOCALHOST-SPECIFIC UI FIXES AND OPTIMIZATIONS
+- All original functionality preserved
+
+CRITICAL: This version is optimized for localhost:3003 URLs
+DO NOT use file:// URLs with this version
+
+================================================================================
+-->
+
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ARC Social Network - AI Chatbot Bedrock Version</title>
+        
+        <!-- Vis.js Network -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        
+        <!-- Bootstrap -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+        
+        <style>
+            /* CSS Custom Properties - Scaled for 380px sidebar */
+            :root {
+                /* Scale factor: 380px / 300px = 1.267 */
+                --scale-factor: 1.267;
+                
+                /* Scaled spacing */
+                --space-1: calc(8px * var(--scale-factor));   /* 10.1px */
+                --space-2: calc(12px * var(--scale-factor));  /* 15.2px */
+                --space-3: calc(16px * var(--scale-factor));  /* 20.3px */
+                --space-4: calc(20px * var(--scale-factor));  /* 25.3px */
+                
+                /* Scaled text sizes */
+                --text-sm: calc(0.8rem * var(--scale-factor));
+                --text-md: calc(0.9rem * var(--scale-factor));
+                --text-lg: calc(1rem * var(--scale-factor));
+                --text-xl: calc(1.25rem * var(--scale-factor));
+                --text-2xl: calc(1.5rem * var(--scale-factor));
+                
+                /* Colors (same as 8th bedrock) */
+                --fg: #ffffff;
+                --fg-muted: #cccccc;
+                --bg-1: #000000;
+                --bg-2: #141414;
+                --bg-3: #1c1c1c;
+                --bg-4: #2a2a2a;
+                --stroke: rgba(255, 255, 255, 0.1);
+                --stroke-muted: rgba(255, 255, 255, 0.2);
+                
+                /* Scaled border radius */
+                --radius-1: calc(6px * var(--scale-factor));
+                --radius-2: calc(8px * var(--scale-factor));
+                --radius-3: calc(10px * var(--scale-factor));
+            }
+            
+            /* Modern CSS Reset and Base Styles */
+            * {
+                box-sizing: border-box;
+                -webkit-box-sizing: border-box;
+                -moz-box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                margin: 0;
+                padding: 0;
+                background: #000000;
+                min-height: 100vh;
+                color: #ffffff;
+                line-height: 1.6;
+            }
+            
+            /* Modern Container Layout */
+            .main-container {
+                display: flex;
+                display: -webkit-flex;
+                display: -moz-flex;
+                height: 100vh;
+                height: 100vh;
+                background: #000000;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            /* Sleek Sidebar Design */
+            .sidebar {
+                width: 380px;
+                background: rgba(20, 20, 20, 0.98);
+                -webkit-backdrop-filter: blur(20px);
+                backdrop-filter: blur(20px);
+                border-right: 1px solid rgba(64, 64, 64, 0.8);
+                overflow: auto;
+                z-index: 1000;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            }
+            
+            .graph-container {
+                flex: 1;
+                position: relative;
+                background: rgba(0, 0, 0, 0.8);
+                -webkit-backdrop-filter: blur(5px);
+                backdrop-filter: blur(5px);
+            }
+            
+            /* Floating Network Controls - Top Right */
+            .network-controls-floating {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .network-controls-floating .control-btn {
+                background: rgba(20, 20, 20, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: var(--fg);
+                padding: 8px 12px;
+                border-radius: var(--radius-1);
+                font-size: 0.8rem; /* Override scaled text to match 8th bedrock exactly */
+                cursor: pointer;
+                transition: all 0.2s ease;
+                backdrop-filter: blur(10px);
+                min-width: 100px;
+            }
+            
+            .network-controls-floating .control-btn:hover {
+                background: rgba(40, 40, 40, 0.9);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
+            #mynetwork {
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                border: none;
+            }
+            
+            /* Modern Header Design */
+            .header {
+                background: var(--bg-1);
+                color: var(--fg);
+                padding: var(--space-4);
+                text-align: center;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Very thin grey line */
+            }
+            
+            .header h1 {
+                margin: 0;
+                font-size: var(--text-2xl);
+                font-weight: 600;
+                letter-spacing: -0.025em;
+            }
+            
+            .header p {
+                margin: 8px 0 0 0;
+                opacity: 0.9;
+                font-size: var(--text-sm);
+            }
+            
+            /* Make the header stats text 50% bigger than normal */
+            #headerStats {
+                font-size: 1.5em !important;
+                font-weight: 500;
+                opacity: 0.9;
+            }
+            
+            /* Enhanced Search Section */
+            .search-section {
+                padding: var(--space-4);
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .search-input {
+                width: 100%;
+                padding: var(--space-1) var(--space-2);
+                border: 1px solid var(--stroke-muted);
+                border-radius: var(--radius-1);
+                font-size: var(--text-md);
+                font-weight: 500;
+                transition: all 0.2s ease;
+                background: rgba(255, 255, 255, 0.1);
+                color: #ffffff;
+            }
+            
+            .search-input:focus {
+                outline: none;
+                border-color: rgba(255, 255, 255, 0.4);
+                box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+                transform: translateY(-1px);
+            }
+            
+            .search-results {
+                margin-top: 12px;
+                max-height: 150px;
+                overflow-y: auto !important;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            /* Only show height when there are results */
+            .search-results:not(:empty) {
+                min-height: 40px;
+            }
+            
+            .search-results::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .search-results::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            
+            .search-results::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 3px;
+            }
+            
+            .search-result-item {
+                padding: var(--space-1) var(--space-2);
+                background: var(--stroke);
+                margin-bottom: var(--space-1);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                font-size: var(--text-md);
+                color: var(--fg);
+                transition: background 0.2s ease;
+            }
+            
+            .search-result-item:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+            
+            .search-result-item.selected {
+                background: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+            
+            /* Removed conflicting large font size rules - using CSS variables instead */
+            
+            
+            /* Fix user profile section text */
+            .user-profile h3 {
+                font-size: 1.2rem !important;
+                font-weight: 600 !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .user-profile p {
+                font-size: 0.9rem !important;
+                margin: 4px 0 !important;
+            }
+            
+            /* Fix stats cards text */
+            .profile-stats .stat-card .stat-number {
+                font-size: 1.5rem !important;
+                font-weight: 700 !important;
+            }
+            
+            .profile-stats .stat-card .stat-label {
+                font-size: 0.8rem !important;
+                font-weight: 500 !important;
+            }
+            
+            /* Match activity level text styling to stat labels */
+            .profile-header p,
+            #profileActivity {
+                font-size: 0.8rem !important;
+                font-weight: 500 !important;
+                color: var(--fg-muted) !important;
+            }
+            
+            /* Removed conflicting large font size rule for connections section */
+            
+            /* Removed conflicting connections-list rule that was preventing scrolling */
+            
+            /* Fix any remaining small text */
+            .sidebar * {
+                font-size: inherit !important;
+            }
+            
+            /* Force arc text to be large */
+            .header h3 {
+                font-size: 3rem !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+            }
+            
+            .sidebar input::placeholder {
+                font-size: 0.9rem !important;
+            }
+            
+            .sidebar small,
+            .sidebar .text-muted {
+                font-size: 8px !important;
+            }
+            
+            /* Fix timeline slider labels */
+            .animation-section > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
+            }
+            
+            /* Fix search section labels */
+            .search-section > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
+            }
+            
+            /* Fix date and user count display */
+            .timeline-info {
+                font-size: 10px !important;
+                font-weight: 500 !important;
+            }
+            
+            /* Fix any Bootstrap text classes */
+            .text-center,
+            .text-start,
+            .text-end {
+                font-size: inherit !important;
+            }
+            
+            /* Ensure all text in sidebar is readable */
+            .sidebar div,
+            .sidebar span {
+                font-size: 10px !important;
+            }
+            
+            /* Fix checkbox and radio button labels */
+            .form-check input[type="checkbox"] + label,
+            .form-check input[type="radio"] + label {
+                font-size: 11px !important;
+                font-weight: 500 !important;
+            }
+            
+            /* Timeline Slider Section */
+            .animation-section {
+                padding: var(--space-4);
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .timeline-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .timeline-slider-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .timeline-slider {
+                width: 100%;
+                height: 6px;
+                border-radius: 3px;
+                background: rgba(255, 255, 255, 0.1);
+                outline: none;
+                -webkit-appearance: none;
+                appearance: none;
+                cursor: pointer;
+            }
+            
+            .timeline-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: #ffffff;
+                cursor: pointer;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            }
+            
+            .timeline-slider::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: #ffffff;
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            }
+            
+            .timeline-labels {
+                display: flex;
+                justify-content: space-between;
+                font-size: 11px;
+                color: #cccccc;
+                font-weight: 500;
+            }
+            
+            .timeline-info {
+                display: flex;
+                justify-content: space-between;
+                margin-top: var(--space-1);
+                color: var(--fg);
+                font-size: var(--text-sm);
+            }
+            
+            /* Modern Controls Section */
+            .controls-section {
+                padding: var(--space-4);
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .control-group {
+                margin-bottom: var(--space-4);
+            }
+            
+            .control-group label {
+                display: block;
+                margin-bottom: var(--space-1);
+                font-weight: 500;
+                color: var(--fg);
+                font-size: var(--text-lg);
+                text-transform: none;
+                letter-spacing: 0.05em;
+            }
+            
+            /* Specific font size fixes for Timeline, Degrees, and Connection Details labels */
+            .label-timeline,
+            .label-degrees,
+            .label-connection-details {
+                font-size: calc(var(--text-md) * 0.73) !important;
+            }
+            
+            .degree-controls {
+                display: flex;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+            
+            .degree-filters {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .degree-checkbox {
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                font-size: var(--text-md);
+                color: var(--fg);
+                position: relative;
+                padding-left: 30px;
+            }
+            
+            .degree-checkbox input[type="checkbox"] {
+                position: absolute;
+                opacity: 0;
+                cursor: pointer;
+                height: 0;
+                width: 0;
+            }
+            
+            .checkmark {
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 16px;
+                width: 16px;
+                background-color: transparent;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            }
+            
+            .degree-checkbox:hover .checkmark {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+            
+            .degree-checkbox input:checked ~ .checkmark {
+                background-color: #ffffff;
+                border-color: #ffffff;
+            }
+            
+            .checkmark:after {
+                content: "";
+                position: absolute;
+                display: none;
+                left: 4px;
+                top: 1px;
+                width: 4px;
+                height: 8px;
+                border: solid #000000;
+                border-width: 0 2px 2px 0;
+                transform: rotate(45deg);
+            }
+            
+            .degree-checkbox input:checked ~ .checkmark:after {
+                display: block;
+            }
+            
+            /* Smooth transitions for network visualization */
+            .vis-network {
+                transition: opacity 0.3s ease;
+            }
+            
+            .vis-network canvas {
+                transition: all 0.2s ease;
+            }
+            
+            /* Smooth node transitions */
+            .vis-node {
+                transition: all 0.3s ease;
+            }
+            
+            /* Smooth edge transitions */
+            .vis-edge {
+                transition: all 0.3s ease;
+            }
+            
+            /* Removed duplicate vis-network text color rules - handled by JavaScript */
+            
+            /* Enhanced Button Design */
+            .btn {
+                padding: var(--space-1) var(--space-2);
+                border: 1px solid var(--stroke-muted);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                font-size: var(--text-md);
+                font-weight: 500;
+                transition: all 0.2s ease;
+                margin: 2px;
+                text-transform: none;
+                letter-spacing: 0.025em;
+                background: var(--stroke);
+                color: var(--fg);
+            }
+            
+            .btn-primary {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .btn-primary:hover {
+                background: var(--stroke-muted);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .btn-secondary:hover {
+                background: var(--stroke-muted);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
+            .btn-success {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .btn-success:hover {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.3);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+            }
+            
+            .btn-warning {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .btn-warning:hover {
+                background: var(--stroke-muted);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
+            /* Button row for side-by-side buttons */
+            .button-row {
+                display: flex;
+                gap: var(--space-1);
+                align-items: center;
+            }
+            
+            /* Modern Profile Section */
+            .profile-section {
+                padding: var(--space-4);
+                display: none;
+                background: transparent;
+                overflow-y: auto !important;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+            }
+            
+            .profile-header {
+                background: rgba(255, 255, 255, 0.05);
+                color: white;
+                padding: 12px;
+                border-radius: 6px;
+                margin-bottom: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .profile-name {
+                font-size: 1.95rem !important;
+                font-weight: 700;
+                margin-bottom: 10px;
+                letter-spacing: -0.025em;
+            }
+            
+            /* Override conflicting h4 rule for profile name */
+            #profileName {
+                font-size: 1.95rem !important;
+                font-weight: 700 !important;
+            }
+            
+            /* Removed unused .profile-username rule - class not used in HTML */
+            
+            .profile-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .stat-card {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 12px;
+                border-radius: 6px;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                transition: all 0.2s ease;
+            }
+            
+            .stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .stat-number {
+                font-size: 62px;
+                font-weight: 800;
+                color: #ffffff;
+                margin-bottom: 5px;
+            }
+            
+            .stat-label {
+                font-size: 31px;
+                color: rgba(255, 255, 255, 0.7);
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.05em;
+            }
+            
+            .connections-list {
+                max-height: 150px;
+                overflow-y: auto !important;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.05);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                /* Ensure text is readable */
+                font-size: 8px;
+            }
+            
+            .connections-list::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .connections-list::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            
+            .connections-list::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 3px;
+            }
+            
+            .connection-item {
+                padding: 16px 21px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: background-color 0.2s ease;
+                color: #ffffff;
+            }
+            
+            .connection-item:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            .connection-item:last-child {
+                border-bottom: none;
+            }
+            
+            
+
+            
+            /* Enhanced Loading Screen */
+            .loading-container {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(255, 255, 255, 0.98);
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                text-align: center;
+                -webkit-backdrop-filter: blur(20px);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .loading-spinner {
+                border: 4px solid #f1f5f9;
+                border-top: 4px solid #667eea;
+                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            /* Activity Color Coding */
+            .activity-high { color: #e53e3e; }
+            .activity-medium { color: #dd6b20; }
+            .activity-low { color: #3182ce; }
+            
+            /* Responsive Design */
+            @media (max-width: 768px) {
+                .main-container {
+                    flex-direction: column;
+                }
+                
+                .sidebar {
+                    width: 100%;
+                    height: auto;
+                    max-height: 50vh;
+                }
+                
+                .header h1 {
+                    font-size: 1.25rem;
+                }
+                
+                .profile-stats {
+                    grid-template-columns: 1fr;
+                }
+            }
+            
+            /* AI Chatbot Input Bar Styles - DORMANT */
+            .chat-input-bar {
+                display: none !important; /* Hide chatbox while keeping code intact */
+                position: fixed;
+                top: 26px;
+                right: 26px;
+                width: 315px;
+                height: 71px;
+                background: rgba(255, 255, 255, 0.072);
+                background: rgba(255, 255, 255, 0.072);
+                background: color(display-p3 1.000 1.000 1.000 / 0.072);
+                border: 1px solid rgba(255, 255, 255, 0.108);
+                overflow: hidden;
+                z-index: 1000;
+                box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.25);
+                border-radius: 16px;
+                display: flex;
+                flex-direction: column;
+                transition: width 0.3s ease, height 0.3s ease;
+                cursor: move;
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                resize: both;
+                -webkit-resize: both;
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+            }
+            
+            .chat-input-bar.expanded {
+                width: 395px;
+                height: 355px;
+                background: rgba(255, 255, 255, 0.072);
+                background: rgba(255, 255, 255, 0.072);
+                background: color(display-p3 1.000 1.000 1.000 / 0.072);
+                border: 1px solid rgba(255, 255, 255, 0.108);
+                min-height: 1170px;
+                max-height: 80vh;
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+            }
+            
+            /* Minimize button - positioned relative to chat box */
+            .minimize-button {
+                position: absolute;
+                top: 17px;
+                left: 17px;
+                width: 11px;
+                height: 11px;
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 7px;
+                cursor: pointer;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                transition: all 0.2s ease;
+                pointer-events: auto;
+                min-width: 11px;
+                min-height: 11px;
+            }
+            
+            .chat-input-bar.expanded .minimize-button {
+                display: flex;
+            }
+            
+            .minimize-button:hover {
+                background: rgba(255, 255, 255, 0.4);
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            }
+            
+            .minimize-button svg {
+                width: 5px;
+                height: 5px;
+                stroke: rgba(255, 255, 255, 0.9);
+                stroke-width: 2;
+                fill: none;
+            }
+            
+            /* Resize handles - temporarily disabled for debugging */
+            .resize-handle-top {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 5px;
+                cursor: ns-resize;
+                z-index: 1;
+                background: transparent;
+                transition: background-color 0.2s ease;
+                pointer-events: none;
+            }
+            
+            .resize-handle-bottom {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 5px;
+                cursor: ns-resize;
+                z-index: 1;
+                background: transparent;
+                transition: background-color 0.2s ease;
+                pointer-events: none;
+            }
+            
+            .resize-handle-left {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 3px;
+                height: 100%;
+                cursor: ew-resize;
+                z-index: 1;
+                background: transparent;
+                transition: background-color 0.2s ease;
+                pointer-events: none;
+            }
+            
+            .resize-handle-right {
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 3px;
+                height: 100%;
+                cursor: ew-resize;
+                z-index: 1;
+                background: transparent;
+                transition: background-color 0.2s ease;
+                pointer-events: none;
+            }
+            
+            /* Hover effects for resize handles */
+            .resize-handle-top:hover,
+            .resize-handle-bottom:hover,
+            .resize-handle-left:hover,
+            .resize-handle-right:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .input-container {
+                padding: 52px 21px;
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                background: rgba(255, 255, 255, 0.072);
+                background: color(display-p3 1.000 1.000 1.000 / 0.072);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.108);
+                flex: 0 0 auto;
+                position: relative;
+                z-index: 9998 !important;
+                pointer-events: auto !important;
+                min-height: 156px;
+            }
+            
+
+            
+            .chat-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                padding: 26px;
+                overflow: visible;
+                min-height: 390px;
+            }
+            
+            .chat-messages {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                margin-bottom: 26px;
+                padding-right: 13px;
+                min-height: 260px;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            }
+            
+            .chat-messages::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .chat-messages::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            
+            .chat-messages::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 3px;
+            }
+            
+            .chat-messages::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.5);
+            }
+            
+            .message {
+                margin-bottom: 21px;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .ai-message {
+                align-items: flex-start;
+            }
+            
+            .user-message {
+                align-items: flex-end;
+            }
+            
+            .message-content {
+                max-width: 95%;
+                padding: 5px 6px;
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.072);
+                background: rgba(255, 255, 255, 0.072);
+                background: color(display-p3 1.000 1.000 1.000 / 0.072);
+                border: 1px solid rgba(255, 255, 255, 0.108);
+                word-wrap: break-word;
+                white-space: pre-wrap;
+                line-height: 1.5;
+                overflow-wrap: break-word;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            }
+            
+            .ai-message .message-content {
+                background: rgba(255, 255, 255, 0.072);
+                background: rgba(255, 255, 255, 0.072);
+                background: color(display-p3 1.000 1.000 1.000 / 0.072);
+                border: 1px solid rgba(255, 255, 255, 0.108);
+            }
+            
+            .user-message .message-content {
+                background: rgba(59, 130, 246, 0.3);
+                border: 1px solid rgba(59, 130, 246, 0.4);
+            }
+            
+            .message-content p {
+                margin: 0;
+                color: #ffffff;
+                font-size: 42px;
+                line-height: 1.5;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            }
+            
+            /* Ensure all text in chat messages has consistent font */
+            .chat-messages *,
+            .message-content * {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+            }
+            
+
+            
+            .chat-input {
+                flex: 1;
+                padding: 47px 57px;
+                border: none;
+                border-radius: 10px;
+                background: transparent;
+                color: #ffffff;
+                font-size: 47px;
+                transition: all 0.2s ease;
+                outline: none;
+                text-align: center;
+                position: relative;
+                z-index: 9999 !important;
+                pointer-events: auto !important;
+                cursor: text !important;
+                user-select: text !important;
+            }
+            
+            .chat-input:focus {
+                background: rgba(255, 255, 255, 0.05);
+                box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+            }
+            
+            .chat-input::placeholder {
+                color: rgba(255, 255, 255, 0.5);
+                font-weight: 400;
+                text-align: center;
+            }
+            
+            /* Send Button Styles */
+            .send-button {
+                background: #000000;
+                border: none;
+                border-radius: 50%;
+                width: 27px;
+                height: 27px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+            
+            .send-button:hover {
+                background: #333333;
+            }
+            
+            .send-button:active {
+                background: #444444;
+            }
+            
+            .send-arrow {
+                width: 6px;
+                height: 6px;
+                stroke: #ffffff;
+                stroke-width: 2;
+            }
+            
+
+            
+            /* Responsive adjustments for chat input bar */
+            @media (max-width: 1200px) {
+                .chat-input-bar {
+                    width: 97px;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .chat-input-bar {
+                    width: 100%;
+                    height: auto;
+                    max-height: 40vh;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="main-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                                    <div class="header">
+                        <h3 style="font-family: 'Euclid', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 8em; margin: 0; padding: 0;">arc</h3>
+                        
+                    </div>
+                
+            <!-- Search Section (hidden in user-centric view) -->
+            <div class="search-section" style="display: none;">
+                <label for="searchInput">Search Users</label>
+                <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                <div id="searchResults" class="search-results" style="display: none;"></div>
+            </div>
+                
+                <!-- Profile Section -->
+                <div id="profileSection" class="profile-section">
+                    <div class="profile-header">
+                        <h4 id="profileName">User Profile</h4>
+                        <p id="profileActivity">Activity Level</p>
+                    </div>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileTaps">0</div>
+                            <div class="stat-label">Taps</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileConnections">0</div>
+                            <div class="stat-label">Connections</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline (moved into profile section) -->
+                    <div class="control-group">
+                        <label class="label-timeline">Timeline</label>
+                        <div class="timeline-controls">
+                            <div class="timeline-slider-container">
+                                <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
+                                <div class="timeline-labels">
+                                    <span>First Connection</span>
+                                    <span>All Connections</span>
+                                </div>
+                            </div>
+                            <div class="timeline-info">
+                                <span id="currentTime">All connections shown</span>
+                                <span id="connectionCount">246 total users</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group" id="degreeFilterSection" style="display: none;">
+                        <label class="label-degrees">Degrees</label>
+                        <div class="degree-filters">
+                            <label class="degree-checkbox">
+                                <input type="checkbox" id="degree1" checked>
+                                <span class="checkmark"></span>
+                                1st Degree
+                            </label>
+                            <label class="degree-checkbox">
+                                <input type="checkbox" id="degree2">
+                                <span class="checkmark"></span>
+                                2nd Degree
+                            </label>
+                            <label class="degree-checkbox">
+                                <input type="checkbox" id="degree3">
+                                <span class="checkmark"></span>
+                                3rd Degree
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="label-connection-details">Connection Details</label>
+                        <div id="connectionsList" class="connections-list">
+                            <div style="padding: 20px; text-align: center; color: #718096;">
+                                Select a user to see their connections
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controls Section removed - controls moved to floating controls -->
+            </div>
+            
+            <!-- Graph Container -->
+            <div class="graph-container">
+                <div id="mynetwork"></div>
+                
+                <!-- Floating Network Controls - Top Right -->
+                <div class="network-controls-floating">
+                    <button class="control-btn" onclick="stabilize()">Stabilize</button>
+                    <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
+                </div>
+            </div>
+            
+            <!-- AI Chatbot Input Bar -->
+            <div class="chat-input-bar" id="chatInputBar">
+                <div class="resize-handle-top"></div>
+                <div class="resize-handle-bottom"></div>
+                <div class="resize-handle-left"></div>
+                <div class="resize-handle-right"></div>
+                
+                <!-- Minimize button - positioned inside chat box -->
+                <button class="minimize-button" id="minimizeButton" title="Minimize">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                
+                <div class="input-container">
+                    <input type="text" id="chatInput" class="chat-input" placeholder="Ask me about your network" autocomplete="off" />
+                    <button id="sendButton" class="send-button" onclick="sendMessage()">
+                        <svg class="send-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="chat-container" id="chatContainer" style="display: none;">
+                    <div class="chat-messages" id="chatMessages">
+                                        <div class="message ai-message">
+                    <div class="message-content">
+                        <p>🤖 Hello! I'm your AI assistant powered by OpenAI. I can analyze your social network data and provide insights about:</p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>👥 User connections and activity patterns</li>
+                            <li>🏢 Professional networks and LinkedIn data</li>
+                            <li>📍 Geographic patterns and venue preferences</li>
+                            <li>📊 Network statistics and metrics</li>
+                            <li>🔍 Finding users with specific characteristics</li>
+                        </ul>
+                        <p>Try asking me questions like:</p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>"Who are the most connected people?"</li>
+                            <li>"Show me people who work in tech"</li>
+                            <li>"What are the most popular venues?"</li>
+                            <li>"Find users with high activity levels"</li>
+                        </ul>
+                    </div>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Screen -->
+        <div id="loadingContainer" class="loading-container">
+            <div class="loading-spinner"></div>
+            <h4>Loading Enhanced Network</h4>
+            <p id="loadingStats">Initializing users and connections...</p>
+        </div>
+        
+
+        
+        <script>
+            // Global variables
+            let network;
+            let nodes;
+            let edges;
+            let allNodes;
+            let allEdges;
+            let totalEdgesInDataset = 0; // Store total edges for consistent reference
+            let searchIndex = []; // Will be populated dynamically
+            
+            // Dynamic data loading functions
+            async function loadData() {
+                try {
+                    console.log('🔄 Loading dynamic data...');
+                    const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    
+                    // Create all data structures
+                    createSearchIndex(data);
+                    createTimelineData(data);
+                    createNetworkData(data);
+                    
+                    return data;
+                } catch (error) {
+                    console.error('❌ Error loading data:', error);
+                    throw error;
+                }
+            }
+            
+            function createSearchIndex(data) {
+                searchIndex = data.user_profiles.map(user => ({
+                    id: user.user_id,
+                    name: `${user.basic_info.first_name} ${user.basic_info.last_name}`,
+                    username: user.basic_info.username,
+                    taps: user.profile_stats.tap_count,
+                    connections: user.profile_stats.connections_count,
+                    activity_level: user.profile_stats.tap_count > 50 ? 'high' : user.profile_stats.tap_count > 20 ? 'medium' : 'low'
+                }));
+            }
+            
+            function createTimelineData(data) {
+                // Use tap_data for timeline events
+                timeSequence = data.tap_data || [];
+                
+                // Sort timeSequence by time to ensure chronological order
+                timeSequence.sort((a, b) => new Date(a.time) - new Date(b.time));
+                
+                // Create user first taps from tap_data - find earliest timestamp for each user
+                userFirstTaps = {};
+                if (data.tap_data) {
+                    data.tap_data.forEach(tap => {
+                        // Check user1
+                        if (!userFirstTaps[tap.user1_id] || tap.time < userFirstTaps[tap.user1_id]) {
+                            userFirstTaps[tap.user1_id] = tap.time;
+                        }
+                        // Check user2
+                        if (!userFirstTaps[tap.user2_id] || tap.time < userFirstTaps[tap.user2_id]) {
+                            userFirstTaps[tap.user2_id] = tap.time;
+                        }
+                    });
+                }
+            }
+            
+            function createDegreeConnections(tapData) {
+                const degreeConnections = {};
+                
+                // Create adjacency map from tap data
+                const adjacencyMap = {};
+                tapData.forEach(tap => {
+                    if (!adjacencyMap[tap.user1_id]) adjacencyMap[tap.user1_id] = new Set();
+                    if (!adjacencyMap[tap.user2_id]) adjacencyMap[tap.user2_id] = new Set();
+                    adjacencyMap[tap.user1_id].add(tap.user2_id);
+                    adjacencyMap[tap.user2_id].add(tap.user1_id);
+                });
+                
+                // Calculate degree connections for each user
+                Object.keys(adjacencyMap).forEach(userId => {
+                    const degree1 = Array.from(adjacencyMap[userId] || []);
+                    const degree2 = new Set();
+                    const degree3 = new Set();
+                    
+                    // Calculate degree 2 connections
+                    degree1.forEach(conn1 => {
+                        if (adjacencyMap[conn1]) {
+                            adjacencyMap[conn1].forEach(conn2 => {
+                                if (conn2 !== userId && !degree1.includes(conn2)) {
+                                    degree2.add(conn2);
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Calculate degree 3 connections
+                    degree2.forEach(conn2 => {
+                        if (adjacencyMap[conn2]) {
+                            adjacencyMap[conn2].forEach(conn3 => {
+                                if (conn3 !== userId && !degree1.includes(conn3) && !degree2.has(conn3)) {
+                                    degree3.add(conn3);
+                                }
+                            });
+                        }
+                    });
+                    
+                    degreeConnections[userId] = {
+                        degree_1_connections: degree1,
+                        degree_2_connections: Array.from(degree2),
+                        degree_3_connections: Array.from(degree3)
+                    };
+                });
+                
+                return degreeConnections;
+            }
+            
+            function createNetworkData(data) {
+                
+                // Create degree connections data for each user
+                const degreeConnections = createDegreeConnections(data.tap_data);
+                
+                // Create nodes from user_profiles
+                const nodeData = data.user_profiles.map(user => {
+                    const name = `${user.basic_info.first_name} ${user.basic_info.last_name}`;
+                    const taps = user.profile_stats.tap_count;
+                    const connections = user.profile_stats.connections_count;
+                    
+                    // Match bedrock's initial sizing formula (not timeline sizing)
+                    let size = 8; // Base size for 1-4 taps
+                    if (taps >= 5) size = 10;   // 5 taps
+                    if (taps >= 10) size = 12;  // 10-13 taps  
+                    if (taps >= 20) size = 15;  // 20+ taps (like Grace Brown with 91 taps)
+                    if (taps >= 50) size = 18;  // 50+ taps
+                    if (taps >= 100) size = 20; // 100+ taps
+                    
+                    return {
+                        id: user.user_id,
+                        label: name,
+                        title: `${name} - ${taps} taps, ${connections} connections`,
+                        size: size,
+                        color: getActivityColor(taps),
+                        mass: 1.0,
+                        physics: true,
+                        shape: "dot",
+                        font: { color: "#000000" },
+                        taps: taps,
+                        connections: connections,
+                        activity_level: taps > 50 ? 'high' : taps > 20 ? 'medium' : 'low',
+                        profile_data: degreeConnections[user.user_id] || {
+                            degree_1_connections: [],
+                            degree_2_connections: [],
+                            degree_3_connections: []
+                        }
+                    };
+                });
+                
+                // Create edges from tap_data
+                const edgeData = data.tap_data.map((tap, index) => ({
+                    id: index,
+                    from: tap.user1_id,
+                    to: tap.user2_id,
+                    color: "#ffffff",
+                    width: 1.5,
+                    title: "1 taps",
+                    tap_count: 1,
+                    physics: true,
+                    smooth: false
+                }));
+                
+                // Update the datasets
+                nodes = new vis.DataSet(nodeData);
+                edges = new vis.DataSet(edgeData);
+                
+                // Store references
+                allNodes = nodes.get({ returnType: "Object" });
+                allEdges = edges.get({ returnType: "Object" });
+                totalEdgesInDataset = edgeData.length;
+                
+            }
+            
+            function getActivityColor(taps) {
+                // Match bedrock's grey-to-white gradient based on tap count
+                if (taps >= 25) {
+                    return '#FFFFFF'; // White for very high activity
+                } else if (taps >= 20) {
+                    return '#F5F5F5'; // Very light grey for high activity
+                } else if (taps >= 15) {
+                    return '#E0E0E0'; // Light grey for medium-high activity
+                } else if (taps >= 10) {
+                    return '#C0C0C0'; // Silver for medium activity
+                } else if (taps >= 5) {
+                    return '#A9A9A9'; // Dark grey for low-medium activity
+                } else if (taps >= 1) {
+                    return '#808080'; // Grey for low activity
+                } else {
+                    return '#D3D3D3'; // Default light grey
+                }
+            }
+            
+            // Chat functionality variables
+            let chatHistory = [];
+            let isChatSidebarCollapsed = false;
+            let isDragging = false;
+            let dragOffset = { x: 0, y: 0 };
+            let isResizing = false;
+            let resizeDirection = '';
+            let startSize = { width: 0, height: 0 };
+            
+            let selectedNode = null;
+            let currentDegreeFilter = {1: true, 2: true, 3: true};
+            let savedDegreeFilterState = {1: true, 2: true, 3: true}; // Store degree filter state when timeline < 100%
+            
+            // Animation variables
+            let timeSequence = []; // Will be populated dynamically
+            let userFirstTaps = {}; // Will be populated dynamically
+            let animationInterval = null;
+            let currentAnimationIndex = 0;
+            let animationSpeed = 1000; // milliseconds between events
+            let isAnimating = false;
+            let visibleNodes = new Set();
+            let visibleEdges = new Set();
+            let animationMode = 'global'; // 'global' or 'user-centric'
+            let selectedUserForAnimation = null;
+            let timelineSlider = null;
+            let isSliderDragging = false;
+            
+            // Chat functionality functions
+            function startDrag(e) {
+                console.log('🔄 startDrag called, target:', e.target.tagName, e.target.className, e.target.id);
+                
+                // Don't drag if clicking on interactive elements, resize handles, or chat messages area
+                if (e.target.closest('.chat-input') ||
+                    e.target.closest('.send-button') ||
+                    e.target.closest('.minimize-button') ||
+                    e.target.closest('#minimizeButton') ||
+                    e.target.closest('button') ||
+                    e.target.closest('.chat-messages') ||
+                    e.target.closest('.chat-container') ||
+                    e.target.classList.contains('resize-handle-top') ||
+                    e.target.classList.contains('resize-handle-bottom') ||
+                    e.target.classList.contains('resize-handle-left') ||
+                    e.target.classList.contains('resize-handle-right')) {
+                    console.log('🚫 Drag prevented - interactive element or chat messages area detected');
+                    return;
+                }
+                
+                
+                isDragging = true;
+                const chatInputBar = document.getElementById('chatInputBar');
+                const rect = chatInputBar.getBoundingClientRect();
+                
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+                
+                chatInputBar.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                // Use requestAnimationFrame for smooth dragging
+                if (drag.rafId) {
+                    cancelAnimationFrame(drag.rafId);
+                }
+                
+                drag.rafId = requestAnimationFrame(() => {
+                    const chatInputBar = document.getElementById('chatInputBar');
+                    const x = e.clientX - dragOffset.x;
+                    const y = e.clientY - dragOffset.y;
+                    
+                    // Keep within viewport bounds
+                    const maxX = window.innerWidth - chatInputBar.offsetWidth;
+                    const maxY = window.innerHeight - chatInputBar.offsetHeight;
+                    
+                    const clampedX = Math.max(0, Math.min(x, maxX));
+                    const clampedY = Math.max(0, Math.min(y, maxY));
+                    
+                    chatInputBar.style.left = clampedX + 'px';
+                    chatInputBar.style.top = clampedY + 'px';
+                    chatInputBar.style.right = 'auto';
+                    chatInputBar.style.transform = 'none';
+                });
+            }
+            
+            function stopDrag() {
+                if (!isDragging) return;
+                
+                isDragging = false;
+                const chatInputBar = document.getElementById('chatInputBar');
+                chatInputBar.style.cursor = 'move';
+                
+                // Cancel any pending animation frame
+                if (drag.rafId) {
+                    cancelAnimationFrame(drag.rafId);
+                    drag.rafId = null;
+                }
+            }
+            
+            function startResize(e) {
+                const target = e.target;
+                isResizing = true;
+                
+                if (target.classList.contains('resize-handle-left') || target.classList.contains('resize-handle-right')) {
+                    resizeDirection = 'horizontal';
+                } else if (target.classList.contains('resize-handle-top') || target.classList.contains('resize-handle-bottom')) {
+                    resizeDirection = 'vertical';
+                }
+                
+                const chatInputBar = document.getElementById('chatInputBar');
+                startSize.width = chatInputBar.offsetWidth;
+                startSize.height = chatInputBar.offsetHeight;
+                
+                // Store which handle was clicked
+                chatInputBar.dataset.resizeHandle = target.className;
+                
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function resize(e) {
+                if (!isResizing) return;
+                
+                // Use requestAnimationFrame for smooth resizing
+                if (resize.rafId) {
+                    cancelAnimationFrame(resize.rafId);
+                }
+                
+                resize.rafId = requestAnimationFrame(() => {
+                    const chatInputBar = document.getElementById('chatInputBar');
+                    const rect = chatInputBar.getBoundingClientRect();
+                    const handle = chatInputBar.dataset.resizeHandle;
+                    
+                    if (resizeDirection === 'horizontal') {
+                        if (handle.includes('resize-handle-right')) {
+                            const newWidth = e.clientX - rect.left;
+                            if (newWidth > 61) { // Minimum width
+                                chatInputBar.style.width = newWidth + 'px';
+                            }
+                        } else if (handle.includes('resize-handle-left')) {
+                            const newWidth = rect.right - e.clientX;
+                            if (newWidth > 61) { // Minimum width
+                                chatInputBar.style.width = newWidth + 'px';
+                                chatInputBar.style.left = e.clientX + 'px';
+                            }
+                        }
+                    } else if (resizeDirection === 'vertical') {
+                        if (handle.includes('resize-handle-bottom')) {
+                            const newHeight = e.clientY - rect.top;
+                            if (newHeight > 100) { // Minimum height
+                                chatInputBar.style.height = newHeight + 'px';
+                            }
+                        } else if (handle.includes('resize-handle-top')) {
+                            const newHeight = rect.bottom - e.clientY;
+                            if (newHeight > 100) { // Minimum height
+                                chatInputBar.style.height = newHeight + 'px';
+                                chatInputBar.style.top = e.clientY + 'px';
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function stopResize() {
+                if (!isResizing) return;
+                
+                isResizing = false;
+                resizeDirection = '';
+                
+                // Cancel any pending animation frame
+                if (resize.rafId) {
+                    cancelAnimationFrame(resize.rafId);
+                    resize.rafId = null;
+                }
+            }
+            
+            function expandChatBar() {
+                const chatInputBar = document.getElementById('chatInputBar');
+                const chatContainer = document.getElementById('chatContainer');
+                const minimizeButton = document.getElementById('minimizeButton');
+                
+                chatInputBar.classList.add('expanded');
+                chatContainer.style.display = 'flex';
+                
+                // Show minimize button
+                if (minimizeButton) {
+                    minimizeButton.style.display = 'flex';
+                    
+                }
+            }
+            
+            function collapseChatBar() {
+                console.log('collapseChatBar function called!');
+                
+                const chatInputBar = document.getElementById('chatInputBar');
+                const chatContainer = document.getElementById('chatContainer');
+                const minimizeButton = document.getElementById('minimizeButton');
+                
+                console.log('chatInputBar found:', chatInputBar);
+                console.log('chatContainer found:', chatContainer);
+                
+                // Remove expanded class
+                chatInputBar.classList.remove('expanded');
+                
+                // Hide chat container
+                chatContainer.style.display = 'none';
+                
+                // Hide minimize button
+                if (minimizeButton) {
+                    minimizeButton.style.display = 'none';
+                }
+                
+                // Reset any custom height that might have been set
+                chatInputBar.style.height = '';
+                
+                // Clear the input field
+                const chatInput = document.getElementById('chatInput');
+                if (chatInput) {
+                    chatInput.value = '';
+                }
+                
+                console.log('Chat bar collapsed successfully');
+            }
+            
+            async function sendMessage() {
+                const chatInput = document.getElementById('chatInput');
+                const message = chatInput.value.trim();
+                
+                if (message && !isAILoading) {
+                    // Auto-expand the chat bar when sending a message
+                    expandChatBar();
+                    
+                    addMessage('user', message);
+                    chatInput.value = '';
+                    
+                    try {
+                        // Get AI response
+                        const response = await generateAIResponse(message);
+                        addMessage('ai', response);
+                        
+                        // Ensure the chat box expands to accommodate the response
+                        const chatInputBar = document.getElementById('chatInputBar');
+                        const chatContainer = document.getElementById('chatContainer');
+                        
+                        // Calculate if we need to expand further based on content
+                        const messagesHeight = chatContainer.scrollHeight;
+                        const currentHeight = chatInputBar.offsetHeight;
+                        
+                        if (messagesHeight > currentHeight - 100) {
+                            const newHeight = Math.min(messagesHeight + 100, window.innerHeight * 0.8);
+                            chatInputBar.style.height = newHeight + 'px';
+                        }
+                    } catch (error) {
+                        console.error('Error in sendMessage:', error);
+                        addMessage('ai', 'Sorry, I encountered an error while processing your request. Please try again.');
+                    }
+                }
+            }
+            
+            function addMessage(type, content) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}-message`;
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                
+                const messageText = document.createElement('p');
+                messageText.textContent = content;
+                
+                messageContent.appendChild(messageText);
+                messageDiv.appendChild(messageContent);
+                chatMessages.appendChild(messageDiv);
+                
+                // Smooth scroll to bottom
+                setTimeout(() => {
+                    chatMessages.scrollTo({
+                        top: chatMessages.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 100);
+                
+                // Store in chat history
+                chatHistory.push({ type, content, timestamp: new Date() });
+            }
+            
+            // AI API Integration - File:// URL Compatible
+            let isAILoading = false;
+            
+            async function generateAIResponse(message) {
+                try {
+                    // Show loading state
+                    isAILoading = true;
+                    updateLoadingState(true);
+                    
+                    // Prepare network context data
+                    const networkContext = prepareNetworkContext();
+                    
+                    // Try local enriched data responses first, fallback to OpenAI API
+                    console.log('Attempting local enriched data response...');
+                    console.log('Network context prepared:', networkContext);
+                    
+                    // Force local response for testing enriched data
+                    console.log('Using local enriched data response...');
+                    return generateLocalResponse(message, networkContext);
+                    
+                    // OpenAI API fallback (commented out for testing)
+                    /*
+                    try {
+                        const systemPrompt = createSystemPrompt(networkContext);
+                            
+                            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer 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'
+                                },
+                                body: JSON.stringify({
+                                    model: 'gpt-4o-mini',
+                                    messages: [
+                                        { role: 'system', content: systemPrompt },
+                                        { role: 'user', content: message }
+                                    ],
+                                    max_tokens: 1000,
+                                    temperature: 0.7
+                                })
+                            });
+                            
+                            console.log('OpenAI response status:', response.status);
+                            
+                            if (!response.ok) {
+                                const errorData = await response.json().catch(() => ({}));
+                                console.log('OpenAI API error:', response.status, errorData);
+                                throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                            }
+                            
+                            const data = await response.json();
+                            console.log('OpenAI API success!');
+                            return data.choices[0].message.content;
+                        } catch (apiError) {
+                            console.log('API error details:', apiError);
+                            throw apiError;
+                        }
+                        
+                    } catch (apiError) {
+                        console.log('API failed, using local analysis:', apiError.message);
+                        // Fall back to local intelligent analysis
+                        return generateLocalResponse(message, networkContext);
+                    }
+                    */
+                    
+                } catch (error) {
+                    console.error('AI Response Error:', error);
+                    return "I'm having trouble processing your request. Please try again or ask a different question.";
+                } finally {
+                    // Hide loading state
+                    isAILoading = false;
+                    updateLoadingState(false);
+                }
+            }
+            
+            function generateLocalResponse(message, networkContext) {
+                const lowerMessage = message.toLowerCase();
+                const users = networkContext.users || {};
+                const connections = networkContext.connections || {};
+                const networkStats = networkContext.network_stats || {};
+                const enrichedData = window.enrichedData;
+                
+                // Find specific users
+                if (lowerMessage.includes('grace brown') || lowerMessage.includes('grace')) {
+                    const graceUser = Object.values(users).find(user => 
+                        user.name.toLowerCase().includes('grace brown') || 
+                        user.name.toLowerCase().includes('grace')
+                    );
+                    if (graceUser) {
+                        const locationInfo = graceUser.location ? ` She is located in ${graceUser.location}.` : '';
+                        
+                        // Try to get enriched data for Grace
+                        let enrichedInfo = '';
+                        if (enrichedData && enrichedData.userProfiles) {
+                            const enrichedGrace = enrichedData.userProfiles.find(profile => 
+                                profile.basic_info?.first_name?.toLowerCase().includes('grace') ||
+                                profile.basic_info?.username === graceUser.username
+                            );
+                            if (enrichedGrace) {
+                                const home = enrichedGrace.home_location?.geographic_context;
+                                const bio = enrichedGrace.bio_analysis?.bio_summary;
+                                const linkedin = enrichedGrace.social_urls?.linkedin;
+                                
+                                if (home && home !== 'No home location specified') {
+                                    enrichedInfo += ` She lives in ${home}.`;
+                                }
+                                if (bio && bio !== 'No bio provided') {
+                                    enrichedInfo += ` ${bio}`;
+                                }
+                                if (linkedin) {
+                                    enrichedInfo += ` She has a LinkedIn profile: ${linkedin}`;
+                                }
+                            }
+                        }
+                        
+                        return `Grace Brown (@${graceUser.username}) is a user in the network with ${graceUser.taps} taps and ${graceUser.connections} connections. Her activity level is ${graceUser.activity_level}.${locationInfo}${enrichedInfo}`;
+                    }
+                }
+                
+                // Most connected users
+                if (lowerMessage.includes('most connected') || lowerMessage.includes('connected')) {
+                    const sortedUsers = Object.values(users).sort((a, b) => b.connections - a.connections);
+                    const topUsers = sortedUsers.slice(0, 3);
+                    return `The most connected users in the network are:\n${topUsers.map((user, i) => `${i+1}. ${user.name} (@${user.username}) - ${user.connections} connections, ${user.taps} taps`).join('\n')}`;
+                }
+                
+                // Most active users
+                if (lowerMessage.includes('most active') || lowerMessage.includes('active')) {
+                    const sortedUsers = Object.values(users).sort((a, b) => b.taps - a.taps);
+                    const topUsers = sortedUsers.slice(0, 3);
+                    return `The most active users in the network are:\n${topUsers.map((user, i) => `${i+1}. ${user.name} (@${user.username}) - ${user.taps} taps, ${user.connections} connections`).join('\n')}`;
+                }
+                
+                // Network statistics
+                if (lowerMessage.includes('network') || lowerMessage.includes('statistics') || lowerMessage.includes('stats')) {
+                    return `Network Statistics:\n• Total Users: ${networkStats.total_users}\n• Total Connections: ${networkStats.total_connections}\n• Most Active User: ${networkStats.most_active_user}\n• Most Connected User: ${networkStats.most_connected_user}`;
+                }
+                
+                // Tech users
+                if (lowerMessage.includes('tech') || lowerMessage.includes('technology')) {
+                    const techUsers = Object.values(users).filter(user => 
+                        user.linkedin_data?.job_title?.toLowerCase().includes('tech') ||
+                        user.linkedin_data?.job_title?.toLowerCase().includes('software') ||
+                        user.linkedin_data?.job_title?.toLowerCase().includes('engineer') ||
+                        user.linkedin_data?.company?.toLowerCase().includes('tech')
+                    );
+                    if (techUsers.length > 0) {
+                        return `Users working in tech:\n${techUsers.map(user => `• ${user.name} (@${user.username}) - ${user.linkedin_data.job_title} at ${user.linkedin_data.company}`).join('\n')}`;
+                    }
+                }
+                
+                // Location-based queries
+                if (lowerMessage.includes('nashville') || lowerMessage.includes('location') || lowerMessage.includes('where')) {
+                    const usersWithLocation = Object.values(users).filter(user => user.location);
+                    if (usersWithLocation.length > 0) {
+                        const locationCounts = {};
+                        usersWithLocation.forEach(user => {
+                            locationCounts[user.location] = (locationCounts[user.location] || 0) + 1;
+                        });
+                        
+                        const topLocations = Object.entries(locationCounts)
+                            .sort(([,a], [,b]) => b - a)
+                            .slice(0, 5)
+                            .map(([location, count]) => `${location}: ${count} users`);
+                        
+                        return `Network Geographic Distribution:\n${topLocations.map(loc => `• ${loc}`).join('\n')}`;
+                    }
+                }
+                
+                // Users in specific cities
+                if (lowerMessage.includes('users in') || lowerMessage.includes('people in')) {
+                    const cityMatch = lowerMessage.match(/(?:users?|people) in (\w+)/i);
+                    if (cityMatch) {
+                        const cityName = cityMatch[1].toLowerCase();
+                        const cityUsers = Object.values(users).filter(user => 
+                            user.location && user.location.toLowerCase().includes(cityName)
+                        );
+                        
+                        if (cityUsers.length > 0) {
+                            return `Users in ${cityMatch[1]}:\n${cityUsers.map(user => `• ${user.name} (@${user.username}) - ${user.taps} taps, ${user.connections} connections`).join('\n')}`;
+                        } else {
+                            return `I don't have data for users specifically in ${cityMatch[1]}. The main locations in the network are: Nashville, Dallas, San Francisco, Chicago, and various cities in Wyoming.`;
+                        }
+                    }
+                }
+                
+                // Venue queries using enriched data
+                if (lowerMessage.includes('venue') || lowerMessage.includes('restaurant') || lowerMessage.includes('favorite place') || lowerMessage.includes('where do people hang out')) {
+                    if (enrichedData && enrichedData.tap_data) {
+                        const venues = enrichedData.tap_data
+                            .map(tap => tap.venue_context?.venue_name)
+                            .filter(venue => venue && venue !== 'Unknown Location' && !venue.includes('Location ('))
+                            .slice(0, 20);
+                        
+                        const venueCounts = {};
+                        venues.forEach(venue => {
+                            venueCounts[venue] = (venueCounts[venue] || 0) + 1;
+                        });
+                        
+                        const topVenues = Object.entries(venueCounts)
+                            .sort(([,a], [,b]) => b - a)
+                            .slice(0, 5);
+                        
+                        if (topVenues.length > 0) {
+                            return `Top venues in the network:\n${topVenues.map(([venue, count]) => `• ${venue} (${count} visits)`).join('\n')}`;
+                        } else {
+                            return 'Most locations in the network are showing as coordinates rather than specific venue names.';
+                        }
+                    }
+                }
+                
+                // LinkedIn queries using enriched data
+                if (lowerMessage.includes('linkedin') || lowerMessage.includes('job') || lowerMessage.includes('work') || lowerMessage.includes('profession')) {
+                    if (enrichedData && enrichedData.user_profiles) {
+                        const usersWithLinkedIn = enrichedData.user_profiles.filter(user => 
+                            user.social_urls?.linkedin && user.social_urls.linkedin !== null
+                        );
+                        
+                        if (usersWithLinkedIn.length > 0) {
+                            const sampleUsers = usersWithLinkedIn.slice(0, 5);
+                            const userList = sampleUsers.map(user => {
+                                const name = user.basic_info?.first_name || 'Unknown';
+                                const username = user.basic_info?.username || '';
+                                const linkedin = user.social_urls.linkedin;
+                                return `• ${name} (@${username}) - ${linkedin}`;
+                            }).join('\n');
+                            
+                            return `Users with LinkedIn profiles:\n${userList}\n\nTotal: ${usersWithLinkedIn.length} users have LinkedIn profiles.`;
+                        } else {
+                            return 'No LinkedIn profiles found in the enriched data.';
+                        }
+                    }
+                }
+                
+                // Venue queries using enriched data
+                if (lowerMessage.includes('venue') || lowerMessage.includes('restaurant') || lowerMessage.includes('favorite place') || lowerMessage.includes('where do people hang out')) {
+                    if (enrichedData && enrichedData.tapData) {
+                        const venues = enrichedData.tapData
+                            .map(tap => tap.venue_context?.venue_name)
+                            .filter(venue => venue && !venue.startsWith('Location'))
+                            .filter(Boolean);
+                        
+                        if (venues.length > 0) {
+                            const venueCounts = {};
+                            venues.forEach(venue => {
+                                venueCounts[venue] = (venueCounts[venue] || 0) + 1;
+                            });
+                            
+                            const topVenues = Object.entries(venueCounts)
+                                .sort(([,a], [,b]) => b - a)
+                                .slice(0, 5)
+                                .map(([venue, count]) => `${venue} (${count} visits)`);
+                            
+                            return `Top venues in the network:\n${topVenues.map(venue => `• ${venue}`).join('\n')}`;
+                        } else {
+                            return 'I have venue data but most locations are showing as coordinates rather than venue names.';
+                        }
+                    }
+                }
+                
+                // LinkedIn queries using enriched data
+                if (lowerMessage.includes('linkedin') || lowerMessage.includes('work') || lowerMessage.includes('job') || lowerMessage.includes('profession')) {
+                    if (enrichedData && enrichedData.userProfiles) {
+                        const usersWithLinkedIn = enrichedData.userProfiles.filter(user => 
+                            user.social_urls?.linkedin
+                        );
+                        
+                        if (usersWithLinkedIn.length > 0) {
+                            const userList = usersWithLinkedIn
+                                .slice(0, 10)
+                                .map(user => `• ${user.basic_info?.first_name || 'Unknown'} ${user.basic_info?.last_name || ''} (@${user.basic_info?.username || 'unknown'})`)
+                                .join('\n');
+                            
+                            return `Users with LinkedIn profiles:\n${userList}\n\nTotal: ${usersWithLinkedIn.length} users have LinkedIn profiles.`;
+                        } else {
+                            return 'No LinkedIn profiles found in the enriched data.';
+                        }
+                    }
+                }
+                
+                // Vanderbilt queries using enriched data
+                if (lowerMessage.includes('vanderbilt')) {
+                    if (enrichedData && enrichedData.comprehensive && enrichedData.comprehensive.tap_data) {
+                        const vanderbiltUsers = enrichedData.comprehensive.tap_data
+                            .filter(tap => 
+                                tap.user1_bio?.includes('Vanderbilt') || 
+                                tap.user2_bio?.includes('Vanderbilt')
+                            )
+                            .map(tap => [tap.user1_name, tap.user2_name])
+                            .flat()
+                            .filter((name, index, arr) => arr.indexOf(name) === index)
+                            .filter(Boolean);
+                        
+                        if (vanderbiltUsers.length > 0) {
+                            return `Vanderbilt alumni/affiliates in the network:\n${vanderbiltUsers.map(name => `• ${name}`).join('\n')}`;
+                        } else {
+                            return 'No Vanderbilt alumni found in the enriched data.';
+                        }
+                    }
+                }
+                
+                // Default response
+                return `I can help you explore the network! Try asking about:\n• "Who are the most connected people?"\n• "Show me the most active users"\n• "Find users in tech"\n• "Network statistics"\n• "Show me users in Nashville" or other cities\n• "What are the most popular locations?"\n• "What are the top venues?"\n• "Who has LinkedIn profiles?"\n• "Who went to Vanderbilt?"\n• Or ask about a specific person like "Who is Grace Brown?"`;
+            }
+            
+            function createSystemPrompt(networkContext) {
+                // Extract key information from network context
+                const users = networkContext.users || {};
+                const connections = networkContext.connections || {};
+                const networkStats = networkContext.network_stats || {};
+                const geographicStats = networkContext.geographic_stats || {};
+                
+                const userCount = Object.keys(users).length;
+                const connectionCount = Object.keys(connections).length;
+                
+                // Create user summaries with location data (limit to first 20 for performance)
+                const userSummaries = [];
+                Object.entries(users).slice(0, 20).forEach(([userId, userData]) => {
+                    const name = userData.name || 'Unknown';
+                    const username = userData.username || '';
+                    const taps = userData.taps || 0;
+                    const connections = userData.connections || 0;
+                    const activity = userData.activity_level || 'unknown';
+                    const location = userData.location || 'Unknown location';
+                    
+                    // Add LinkedIn data if available
+                    let linkedinInfo = "";
+                    if (userData.linkedin_data) {
+                        const linkedin = userData.linkedin_data;
+                        if (linkedin.job_title || linkedin.company) {
+                            linkedinInfo = ` (LinkedIn: ${linkedin.job_title || ''} at ${linkedin.company || ''})`;
+                        }
+                    }
+                    
+                    userSummaries.push(`- ${name} (@${username}): ${taps} taps, ${connections} connections, ${activity} activity, Location: ${location}${linkedinInfo}`);
+                });
+                
+                // Create location summary
+                let locationSummary = "No location data available";
+                if (geographicStats.location_distribution) {
+                    const topLocations = Object.entries(geographicStats.location_distribution)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 5)
+                        .map(([location, count]) => `${location}: ${count} users`)
+                        .join(', ');
+                    locationSummary = `Top locations: ${topLocations}`;
+                }
+                
+                return `You are an AI assistant analyzing a social network visualization. You have access to detailed network data including geographic information and should provide insightful, helpful responses.
+
+NETWORK OVERVIEW:
+- Total Users: ${userCount}
+- Total Connections: ${connectionCount}
+- Most Active User: ${networkStats.most_active_user || 'Unknown'}
+- Most Connected User: ${networkStats.most_connected_user || 'Unknown'}
+- This is a social network where users "tap" each other to indicate connections
+
+GEOGRAPHIC DATA:
+- Total Locations: ${geographicStats.total_locations || 0}
+- Most Popular Location: ${geographicStats.most_popular_location || 'Unknown'}
+- Users with Location Data: ${geographicStats.users_with_location || 0}
+- ${locationSummary}
+
+USER DATA (with locations):
+${userSummaries.length > 0 ? userSummaries.join('\n') : 'No user data available'}
+
+CAPABILITIES:
+- Analyze network patterns and relationships
+- Find users with specific characteristics or locations
+- Identify most connected or active users
+- Analyze geographic patterns and venue preferences
+- Provide insights about professional networks
+- Answer questions about connection strength and frequency
+- Find users in specific cities or regions
+- Analyze location-based network patterns
+
+RESPONSE GUIDELINES:
+- Be conversational and helpful
+- Provide specific insights based on the data
+- Use the actual numbers and names from the network
+- Include location information when relevant
+- Suggest ways to explore the network further
+- Keep responses concise but informative
+- If asked about specific users, use their real names and data
+- If asked about locations, provide specific city/region information
+
+Remember: You're helping someone explore and understand their social network data. You have access to geographic information and can provide location-based insights. Be insightful and actionable in your responses.`;
+            }
+            
+
+            
+            // Function to load enriched data
+            async function loadEnrichedData() {
+                try {
+                    const [comprehensiveResponse, userProfilesResponse, tapDataResponse] = await Promise.all([
+                        fetch('./data/enriched/comprehensive_data.json'),
+                        fetch('./data/enriched/user_profiles.json'),
+                        fetch('./data/enriched/tap_data.json')
+                    ]);
+                    
+                    const comprehensive = await comprehensiveResponse.json();
+                    const userProfiles = await userProfilesResponse.json();
+                    const tapData = await tapDataResponse.json();
+                    
+                    window.enrichedData = {
+                        comprehensive,
+                        userProfiles,
+                        tapData
+                    };
+                    
+                } catch (error) {
+                    console.warn('⚠️ Could not load enriched data:', error);
+                    window.enrichedData = null;
+                }
+            }
+            
+            function prepareNetworkContext() {
+                // Extract and format network data for AI context
+                const context = {
+                    users: {},
+                    connections: {},
+                    venues: {},
+                    network_stats: {},
+                    enriched_data: enrichedData
+                };
+                
+                // Location data from user_location_data.csv
+                const locationData = {
+                    "005901c3-d70f-448b-af3a-89200f439a8b": { latitude: 43.61381100305985, longitude: -110.75725805361886, location: "Wilson, WY, USA", tap_count: 5 },
+                    "057ef55d-b331-4d29-ba28-ab0c2e0c1ad6": { latitude: 36.163860832585044, longitude: -86.85530122293824, location: "Nashville, TN, USA", tap_count: 1 },
+                    "08b5447f-b067-45de-baed-7ba8d5801d30": { latitude: 32.82029153373651, longitude: -96.80214528345363, location: "Highland Park, TX, USA", tap_count: 1 },
+                    "0a956088-273e-4c4d-a7cf-d7740e00e51b": { latitude: 33.003756422953764, longitude: -96.96777262839781, location: "Lewisville, TX, USA", tap_count: 1 },
+                    "0c975039-ab0b-429b-b666-a41f3f0f0d7e": { latitude: 36.17166166936852, longitude: -86.67063156363542, location: "Mount Juliet, TN, USA", tap_count: 2 },
+                    "0d24c2ee-656c-4da3-a69a-d7e36f7286ff": { latitude: 36.14410681603657, longitude: -86.81859068607262, location: "Nashville, TN, USA", tap_count: 1 },
+                    "0f3832b9-ea51-4382-903b-8297ed2d5d6d": { latitude: 36.123527744390444, longitude: -86.7898057011387, location: "Nashville, TN, USA", tap_count: 2 },
+                    "0f40737c-e6c3-4f7c-ad63-12b3c2dd150d": { latitude: 37.747494587719494, longitude: -122.41262371615215, location: "San Francisco, CA, USA", tap_count: 9 },
+                    "0f71f437-9883-4419-bbb4-13ec022f9b82": { latitude: 32.816193818359665, longitude: -96.78624206107935, location: "Dallas, TX, USA", tap_count: 1 },
+                    "1262b5b8-e50f-4820-b25f-4a6f76d60455": { latitude: 39.97410127627642, longitude: -87.35396339359143, location: "Chicago, IL, USA", tap_count: 3 },
+                    "1451ff42-aa87-4177-ad8f-2d370e97a022": { latitude: 37.87414957002211, longitude: -122.27278811564372, location: "Berkeley, CA, United States", tap_count: 1 },
+                    "173df5d0-8946-4f17-b5fe-15333c6e86a1": { latitude: 36.24387658016277, longitude: -91.30769324927165, location: "Nashville, TN, USA", tap_count: 31 },
+                    "19a6e4bd-90ab-4d4d-a6bb-99271e830a91": { latitude: 32.83596052570658, longitude: -96.80139825998853, location: "Highland Park, TX, USA", tap_count: 1 },
+                    "1f6c0f64-ee2a-4377-bd58-518c3ea6cbee": { latitude: 36.08315779117366, longitude: -86.7933102226139, location: "Oak Hill, TN, USA", tap_count: 1 },
+                    "202887d9-3791-4764-8091-738b04e50687": { latitude: 32.82208416277913, longitude: -96.78601901311306, location: "Dallas, TX, USA", tap_count: 2 },
+                    "22762e44-4c15-4a23-adb9-fbca2ef60aa4": { latitude: 37.75827546807477, longitude: -122.42736589869583, location: "San Francisco, CA, USA", tap_count: 1 },
+                    "24450c5e-01af-487d-b120-b094f4f69718": { latitude: 38.27605671242922, longitude: -105.5798738738367, location: "Sun Valley, ID, USA", tap_count: 2 },
+                    "26a3381d-a045-49fe-a366-e2be256a781c": { latitude: 43.42429153315908, longitude: -110.27229141369695, location: "Moran, WY, USA", tap_count: 16 },
+                    "2812c73f-9518-472a-948a-4ce7b93c122f": { latitude: 37.77337215682331, longitude: -122.3915779957805, location: "San Francisco, CA, USA", tap_count: 1 },
+                    "2a227da2-b09a-402f-81e8-1976633cf682": { latitude: 34.767329985643805, longitude: -92.73545927806182, location: "Nashville, TN, USA", tap_count: 102 },
+                    "2af69190-c453-490b-b967-2a8d1526fdad": { latitude: 32.81616518852288, longitude: -96.78613198548942, location: "Dallas, TX, USA", tap_count: 3 },
+                    "2bd4b6e6-dbbe-4569-ad2a-5b15ef62b8a8": { latitude: 32.85039207678701, longitude: -96.79547644530865, location: "University Park, TX, USA", tap_count: 1 },
+                    "2e14c255-2df1-4bdb-a2bd-ab9d3f953fa0": { latitude: 36.16694500533066, longitude: -86.79029539347732, location: "Nashville, TN, USA", tap_count: 4 },
+                    "32aa8e65-1230-4346-b2bd-193ce2af9a20": { latitude: 37.57806538505652, longitude: -122.34878080398613, location: "Burlingame, CA, USA", tap_count: 1 },
+                    "35cb1d40-5eef-4362-a8e8-b1dbff0f9420": { latitude: 40.424709157629316, longitude: -101.63028804342052, location: "Cody, WY, USA", tap_count: 11 },
+                    "370265f5-da4e-427e-8c53-bd814b7c24ad": { latitude: 32.80779049780091, longitude: -96.79666832526216, location: "Dallas, TX, USA", tap_count: 2 },
+                    "378e5cf5-6c0f-4757-b81b-ade8bc5ef31f": { latitude: 37.874142246967665, longitude: -122.27277356135669, location: "Berkeley, CA, United States", tap_count: 1 },
+                    "38e5fd2b-1350-47a0-9c68-fe66adca3f03": { latitude: 36.14176657386851, longitude: -86.83411574113249, location: "Nashville, TN, USA", tap_count: 1 },
+                    "3925f0c5-e878-456e-ac21-0a4b3ee4eaf1": { latitude: 36.163819237588925, longitude: -86.85523600039481, location: "Nashville, TN, USA", tap_count: 2 },
+                    "39dc61fd-2044-4d77-bb0f-3a8144a56591": { latitude: 36.031066139094904, longitude: -88.24211371145364, location: "Nashville, TN, USA", tap_count: 22 },
+                    "3a2cc7a9-d0c0-42e6-9d01-2cd3344d871d": { latitude: 37.76571944337667, longitude: -122.45002231448794, location: "San Francisco, CA, USA", tap_count: 2 },
+                    "3f4b4c26-4490-4067-b34e-2c30bced4eea": { latitude: 32.849130485197, longitude: -96.79152868448713, location: "University Park, TX, USA", tap_count: 2 },
+                    "489c0f48-df7e-46db-8069-16850fa05675": { latitude: 36.158322985967196, longitude: -86.77790212451657, location: "Nashville, TN, USA", tap_count: 6 },
+                    "48d0eb1c-068d-4354-a2c7-b03f8af94913": { latitude: 37.80033010300227, longitude: -122.43333807469133, location: "San Francisco, CA, USA", tap_count: 1 },
+                    "49ea4c7b-e11e-4c44-9439-997d5e1cde8c": { latitude: 32.779182197537054, longitude: -96.82842569203932, location: "Dallas, TX, USA", tap_count: 1 },
+                    "5090ad7b-ff8b-45f6-b491-057598ec0992": { latitude: 32.8504033374464, longitude: -96.79550201839976, location: "University Park, TX, USA", tap_count: 1 },
+                    "56cd8a6f-ad4a-4fdd-bff5-c91e55fba405": { latitude: 43.70560031498506, longitude: -114.3465039389628, location: "Sun Valley, ID, USA", tap_count: 1 },
+                    "637d8fe0-6d62-4b12-ac1a-8d27fe0fa997": { latitude: 35.930956079410294, longitude: -86.85863555416073, location: "Franklin, TN, USA", tap_count: 1 },
+                    "64615a44-e1f4-4416-bbd2-499725379a13": { latitude: 40.72224047976142, longitude: -73.98821817944142, location: "New York, NY, USA", tap_count: 1 },
+                    "65976b67-8e89-4d98-9f40-91e6c549a104": { latitude: 36.150544385219305, longitude: -86.80247236689353, location: "Nashville, TN, USA", tap_count: 2 },
+                    "65b43857-be79-48bc-be92-0bee2cf7b9c0": { latitude: 37.578020719975825, longitude: -122.34845002734029, location: "Burlingame, CA, USA", tap_count: 1 },
+                    "66693391-e0e0-4cff-92db-4ff52ecc6b0b": { latitude: 32.86010665155925, longitude: -96.76317217628444, location: "Dallas, TX, USA", tap_count: 1 },
+                    "6aad2435-39bc-4694-ab63-07400958de68": { latitude: 43.63699978572629, longitude: -110.73388743154847, location: "Moran, WY, USA", tap_count: 3 },
+                    "6df79895-d1e0-4d2f-985e-84e7349cd05d": { latitude: 36.154735312560355, longitude: -86.7950593264195, location: "Nashville, TN, USA", tap_count: 3 },
+                    "721e8155-462a-476a-908f-74dba9841055": { latitude: 30.340045365547418, longitude: -86.20539722201681, location: "Santa Rosa Beach, FL, USA", tap_count: 1 },
+                    "747eaab9-6dcc-476f-bacc-6a7be12236f1": { latitude: 34.03362477136547, longitude: -118.44841620681677, location: "Los Angeles, CA, USA", tap_count: 1 },
+                    "782bbea7-3cdf-4214-a14e-8a860c359b3c": { latitude: 32.8009722685141, longitude: -96.80772766641132, location: "Dallas, TX, USA", tap_count: 1 },
+                    "83f814ef-9820-4edd-ac9c-5e802a1587a7": { latitude: 32.84484784458248, longitude: -96.79215041790032, location: "University Park, TX, USA", tap_count: 4 },
+                    "856d5d58-3e7e-4d56-be60-1245f97cd9fd": { latitude: 37.80630567975904, longitude: -122.43214847968127, location: "San Francisco, CA, USA", tap_count: 2 },
+                    "85ed08f1-86d4-4329-a3a2-ea719805671f": { latitude: 30.917694035279858, longitude: -89.07931410559283, location: "Inlet Beach, FL, USA", tap_count: 7 },
+                    "86879f8b-1d52-4533-881b-e5712e786e66": { latitude: 36.1441456120628, longitude: -86.81869683271316, location: "Nashville, TN, USA", tap_count: 4 },
+                    "87db25c8-a8a4-475b-a8a8-3a369732641a": { latitude: 32.871132716205075, longitude: -96.85746877908537, location: "Dallas, TX, USA", tap_count: 3 },
+                    "8c083831-8bb7-4506-9c15-76f4f27ad234": { latitude: 43.611094941123575, longitude: -110.71589797456942, location: "Jackson, WY, USA", tap_count: 3 },
+                    "8dd7c60d-f694-4ded-9873-de5bf9f32735": { latitude: 36.619168067922466, longitude: -98.52263780332002, location: "College Grove, TN, USA", tap_count: 3 },
+                    "9138cd77-4a3f-4bfe-9633-4ec9febd0df0": { latitude: 38.2260876543964, longitude: -93.38106372175872, location: "Nashville, TN, USA", tap_count: 18 },
+                    "92fb1f76-c522-4985-98bb-c30351faa0c6": { latitude: 40.73936829432591, longitude: -74.0056049031946, location: "New York, NY, USA", tap_count: 1 },
+                    "938657e3-1c26-4b57-89f2-bf8b4b3695f6": { latitude: 33.101809297408536, longitude: -95.78970715634813, location: "Dallas, TX, USA", tap_count: 9 },
+                    "9d969458-d596-4d34-a677-8a9fc84f5bb9": { latitude: 41.884140028575786, longitude: -87.63754764149176, location: "Chicago, IL, USA", tap_count: 1 },
+                    "9e7a3f8a-ce87-413c-a549-ea1e7f575314": { latitude: 44.27711803849178, longitude: -109.51470266093051, location: "Cody, WY, USA", tap_count: 1 },
+                    "a3651bc8-8be5-4d00-9d29-0c6dc0adb042": { latitude: 34.03358806816425, longitude: -118.44840009496565, location: "Los Angeles, CA, USA", tap_count: 1 },
+                    "a6fbbb2e-8f43-4643-8bda-2eeed3160810": { latitude: 35.965747454039935, longitude: -86.81946109902735, location: "Brentwood, TN, USA", tap_count: 3 },
+                    "a815e693-e351-406f-a7e0-7ef73039dd4e": { latitude: 33.01237727942804, longitude: -95.48089007135243, location: "Dallas, TX, USA", tap_count: 29 },
+                    "a965d513-66e9-40ee-a4a7-0c256258683c": { latitude: 36.14750712066675, longitude: -86.80942534712561, location: "Nashville, TN, USA", tap_count: 3 },
+                    "aa19fab9-4254-4b8b-98e0-484f93478e15": { latitude: 32.217210575145074, longitude: -94.13217532742513, location: "Dallas, TX, USA", tap_count: 4 },
+                    "ab03d946-2c2f-41ca-ab9d-2ba07a9a7779": { latitude: 36.12006944437514, longitude: -86.92011952174238, location: "Nashville, TN, USA", tap_count: 1 },
+                    "abe35f8e-14ec-41e9-b2c5-44536aca3725": { latitude: 37.92312891416532, longitude: -122.50327606248742, location: "Corte Madera, CA, USA", tap_count: 1 },
+                    "ad432f6b-46e8-4e6f-89a0-0085bed67fbe": { latitude: 36.15648480486106, longitude: -86.83146757332216, location: "Nashville, TN, USA", tap_count: 2 },
+                    "afc82f4e-2958-4040-b50b-d769a5075eed": { latitude: 36.154800251113144, longitude: -86.78933293480931, location: "Nashville, TN, USA", tap_count: 5 },
+                    "b1e0411f-99c8-46d7-a884-e0213cfd99cd": { latitude: 30.284341341058603, longitude: -86.02728451948518, location: "Inlet Beach, FL, USA", tap_count: 3 },
+                    "b1fb9312-da83-4a2d-97e7-2d4f15c64730": { latitude: 32.84255104423626, longitude: -96.78741680522128, location: "University Park, TX, USA", tap_count: 1 },
+                    "b668bf67-dcf4-45f7-9088-0477115244a3": { latitude: 32.83155057263721, longitude: -96.77057276054927, location: "Dallas, TX, USA", tap_count: 1 },
+                    "b68de5a1-b4f8-4c68-8bb6-73a754a5e4ca": { latitude: 36.150497593472494, longitude: -86.80274539798295, location: "Nashville, TN, USA", tap_count: 2 },
+                    "b880f503-1d5d-48a1-8950-4961233fe76d": { latitude: 36.14466566322875, longitude: -86.79263902907303, location: "Nashville, TN, USA", tap_count: 1 },
+                    "ba5d7fd2-c224-4baa-b696-84ebb36ccdd1": { latitude: 36.14591240352853, longitude: -86.81275163232154, location: "Nashville, TN, USA", tap_count: 1 },
+                    "bcbb2fc8-8d9f-4e50-bb5a-1738064e3051": { latitude: 30.284345312073622, longitude: -86.02727449274715, location: "Inlet Beach, FL, USA", tap_count: 1 },
+                    "bdc83ccd-d213-425a-82cd-edc42738052a": { latitude: 32.82350085407573, longitude: -96.79009812359901, location: "Dallas, TX, USA", tap_count: 2 },
+                    "be7c916c-ab56-46c1-8ea9-20f247eca280": { latitude: 32.776502131825296, longitude: -96.807396107062, location: "Dallas, TX, USA", tap_count: 1 },
+                    "bf41bdc7-86a3-46f8-a4f3-0cd561b1ace9": { latitude: 36.16526951573829, longitude: -86.79064991572784, location: "Nashville, TN, USA", tap_count: 1 },
+                    "bffc2615-bfb7-432f-84ae-a64e8e873a0b": { latitude: 36.14897819834411, longitude: -86.79685450731509, location: "Nashville, TN, USA", tap_count: 5 },
+                    "c09cd6c7-415a-4213-9a65-79a4ac685590": { latitude: 32.3271857241399, longitude: -96.62894086083224, location: "Ennis, TX, USA", tap_count: 1 },
+                    "c68dd02c-b154-4a35-8442-9124034e5013": { latitude: 36.150311220090806, longitude: -86.80179632647611, location: "Nashville, TN, USA", tap_count: 1 },
+                    "cc8177a0-ae9f-44cd-b2a8-7424de63a660": { latitude: 37.79728435023365, longitude: -122.43353752902182, location: "San Francisco, CA, USA", tap_count: 1 },
+                    "cde79e0d-3158-46a5-9eb3-58875e351eb0": { latitude: 38.35022769582662, longitude: -103.72613585989924, location: "Dallas, TX, USA", tap_count: 2 },
+                    "ceef39e9-0611-44f7-a851-bd8da142bbfd": { latitude: 36.148010228481624, longitude: -86.80788426055418, location: "Nashville, TN, USA", tap_count: 1 },
+                    "d0a16b9d-006a-478a-9abf-8adb80e4fa33": { latitude: 32.35744293683801, longitude: -97.02400112796711, location: "Dallas, TX, USA", tap_count: 7 },
+                    "d1f027a0-3aa6-43ef-9677-40e3d8537afe": { latitude: 43.87613063490547, longitude: -110.13868588828981, location: "Cody, WY, USA", tap_count: 4 },
+                    "d2514e5c-1eca-4a6e-b990-aa451cd4dbc4": { latitude: 32.81151773897802, longitude: -96.78665941168344, location: "Dallas, TX, USA", tap_count: 1 },
+                    "d42a24bb-c6ab-4ff6-9098-4f4d4c2d55b6": { latitude: 43.50309171181045, longitude: -110.87019403561362, location: "Wilson, WY, USA", tap_count: 1 },
+                    "d4e8ffc8-e3fe-4af9-b917-42531872fbc4": { latitude: 36.15011722573375, longitude: -86.8211529311487, location: "Nashville, TN, USA", tap_count: 1 },
+                    "d76a880e-8f71-4d11-bf0e-eff634bf8348": { latitude: 32.073970894802414, longitude: -96.44439662272626, location: "Corsicana, TX, USA", tap_count: 1 },
+                    "dc89bceb-4d2f-467f-a58d-e884c32b974f": { latitude: 43.50312365777772, longitude: -110.87021370176015, location: "Wilson, WY, USA", tap_count: 4 },
+                    "e17ddec3-8fae-4fbf-8d18-c4b91b18ced6": { latitude: 32.84911385340805, longitude: -96.7915450615807, location: "University Park, TX, USA", tap_count: 2 },
+                    "e2ebef06-c46b-467f-a5b6-8e4bc9b545f4": { latitude: 36.16381086184526, longitude: -86.85522945909622, location: "Nashville, TN, USA", tap_count: 1 },
+                    "e348fd37-171f-4034-bde6-2beb363404ee": { latitude: 37.79181079922887, longitude: -122.4025529264647, location: "San Francisco, CA, USA", tap_count: 1 },
+                    "f0c336dd-60a7-4f47-834f-f1749d3b10c0": { latitude: 30.28430515287834, longitude: -86.0272424953753, location: "Inlet Beach, FL, USA", tap_count: 1 },
+                    "f1d8f71b-520b-4f06-a159-9ade69cd9ca3": { latitude: 37.45772933959961, longitude: -121.9051399230957, location: "Milpitas, CA, USA", tap_count: 1 },
+                    "f2c81df7-a6cc-4223-a0c1-9a71a8858a33": { latitude: 32.792171860899344, longitude: -96.80327496704611, location: "Dallas, TX, USA", tap_count: 1 },
+                    "f7db0c45-fb6f-4ddc-9b72-eb615bc41634": { latitude: 40.563935942896876, longitude: -101.6091006511886, location: "Atlanta, GA, USA", tap_count: 3 },
+                    "fa4a2987-3c22-4ca6-bbf7-49488409117f": { latitude: 36.16379349311657, longitude: -86.85522550491646, location: "Nashville, TN, USA", tap_count: 1 }
+                };
+                
+                // Add user data with enriched information
+                if (allNodes) {
+                    Object.keys(allNodes).forEach(nodeId => {
+                        const node = allNodes[nodeId];
+                        const userLocation = locationData[nodeId];
+                        
+                        context.users[nodeId] = {
+                            name: node.label || 'Unknown',
+                            username: node.username || '',
+                            taps: node.taps || 0,
+                            connections: node.connections || 0,
+                            activity_level: node.activity_level || 'unknown',
+                            linkedin_data: node.linkedin_data || {},
+                            profile_data: node.profile_data || {},
+                            // Include location data from enriched dataset
+                            location: userLocation ? userLocation.location : null,
+                            latitude: userLocation ? userLocation.latitude : null,
+                            longitude: userLocation ? userLocation.longitude : null,
+                            location_tap_count: userLocation ? userLocation.tap_count : 0,
+                            // Include any other enriched data fields
+                            company: node.company || null,
+                            job_title: node.job_title || null
+                        };
+                    });
+                }
+                
+                // Add connection data
+                if (allEdges) {
+                    Object.keys(allEdges).forEach(edgeId => {
+                        const edge = allEdges[edgeId];
+                        context.connections[edgeId] = {
+                            source: edge.source_name || 'Unknown',
+                            target: edge.target_name || 'Unknown',
+                            tap_count: edge.tap_count || 1,
+                            timestamp: edge.timestamp || null,
+                            location: edge.location || null
+                        };
+                    });
+                }
+                
+                // Add network statistics
+                context.network_stats = {
+                    total_users: Object.keys(context.users).length,
+                    total_connections: Object.keys(context.connections).length,
+                    most_active_user: findMostActiveUser(context.users),
+                    most_connected_user: findMostConnectedUser(context.users)
+                };
+                
+                // Add geographic analysis
+                const locations = Object.values(context.users).filter(user => user.location);
+                const locationCounts = {};
+                locations.forEach(user => {
+                    locationCounts[user.location] = (locationCounts[user.location] || 0) + 1;
+                });
+                
+                context.geographic_stats = {
+                    total_locations: Object.keys(locationCounts).length,
+                    most_popular_location: Object.keys(locationCounts).reduce((a, b) => locationCounts[a] > locationCounts[b] ? a : b, ''),
+                    location_distribution: locationCounts,
+                    users_with_location: locations.length
+                };
+                
+                console.log('Network context prepared:', {
+                    userCount: Object.keys(context.users).length,
+                    connectionCount: Object.keys(context.connections).length,
+                    sampleUser: Object.values(context.users)[0],
+                    sampleUserKeys: Object.keys(Object.values(context.users)[0] || {}),
+                    hasProfileData: Object.values(context.users).some(user => user.profile_data && Object.keys(user.profile_data).length > 0),
+                    hasLinkedInData: Object.values(context.users).some(user => user.linkedin_data && Object.keys(user.linkedin_data).length > 0)
+                });
+                
+                return context;
+            }
+            
+            function findMostActiveUser(users) {
+                let mostActive = null;
+                let maxTaps = 0;
+                
+                Object.values(users).forEach(user => {
+                    if (user.taps > maxTaps) {
+                        maxTaps = user.taps;
+                        mostActive = user.name;
+                    }
+                });
+                
+                return mostActive;
+            }
+            
+            function findMostConnectedUser(users) {
+                let mostConnected = null;
+                let maxConnections = 0;
+                
+                Object.values(users).forEach(user => {
+                    if (user.connections > maxConnections) {
+                        maxConnections = user.connections;
+                        mostConnected = user.name;
+                    }
+                });
+                
+                return mostConnected;
+            }
+            
+            function updateLoadingState(loading) {
+                const sendButton = document.getElementById('sendButton');
+                const chatInput = document.getElementById('chatInput');
+                
+                if (loading) {
+                    sendButton.textContent = '⏳';
+                    sendButton.disabled = true;
+                    chatInput.disabled = true;
+                } else {
+                    sendButton.textContent = '→';
+                    sendButton.disabled = false;
+                    chatInput.disabled = false;
+                }
+            }
+            
+            // Initialize the network
+            async function initNetwork() {
+                const container = document.getElementById('mynetwork');
+                
+                // Load data first
+                try {
+                    await loadData();
+                } catch (error) {
+                    console.error('Failed to load data:', error);
+                    return;
+                }
+                
+                // Create datasets (data is now loaded)
+                // nodes and edges are already created by createNetworkData()
+                
+                // Store references
+                allNodes = nodes.get({ returnType: "Object" });
+                allEdges = edges.get({ returnType: "Object" }); // Updated with new data
+                
+                // Store the total number of edges for consistent reference
+                totalEdgesInDataset = edges.length;
+                
+                // Debug: Check the actual total edges
+                
+                // Update header and loading stats with dynamic counts
+                const totalUsers = searchIndex.length; // Use searchIndex to include ALL users, even those with zero connections
+                const totalConnections = totalEdgesInDataset;
+                const headerStatsElement = document.getElementById('headerStats');
+                const loadingStatsElement = document.getElementById('loadingStats');
+                
+                if (loadingStatsElement) {
+                    loadingStatsElement.textContent = `Initializing ${totalUsers} users and ${totalConnections} connections...`;
+                }
+                
+                // Hide all nodes and edges initially (blank state until user is selected)
+                nodes.forEach(node => {
+                    nodes.update({id: node.id, hidden: true});
+                });
+                
+                edges.forEach(edge => {
+                    edges.update({id: edge.id, hidden: true});
+                });
+                
+                // Network options
+                const options = {
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: {
+                            gravitationalConstant: -100, // Reduced from -150 to decrease rotation
+                            centralGravity: 0.005,
+                            springLength: 250, // Longer springs = more spacing
+                            springConstant: 0.1,
+                            damping: 0.9, // Increased damping for smoother movement
+                            avoidOverlap: 1.2 // Higher overlap avoidance = more spacing
+                        },
+                        maxVelocity: 8, // Reduced max velocity for smoother movement
+                        minVelocity: 0.05, // Reduced min velocity for smoother movement
+                        timestep: 0.3, // Reduced timestep for smoother physics
+                        stabilization: {
+                            enabled: true,
+                            iterations: 200,
+                            updateInterval: 25, // Faster updates for smoother animation
+                            onlyDynamicEdges: false,
+                            fit: false
+                        }
+                    },
+                    nodes: {
+                        font: { size: 14.4, face: 'Arial' },
+                        color: { background: '#ffffff', border: '#ffffff', highlight: { background: '#ffffff', border: '#ffffff' } },
+                        borderWidth: 1,
+                        borderWidthSelected: 2,
+                        shadow: false
+                    },
+                    edges: {
+                        smooth: { type: 'continuous', forceDirection: 'none' },
+                        shadow: false,
+                        color: { inherit: false }
+                    },
+                    interaction: {
+                        hover: true,
+                        navigationButtons: false,
+                        keyboard: { enabled: true },
+                        multiselect: false,
+                        selectable: true,
+                        selectConnectedEdges: true,
+                        tooltipDelay: 200,
+                        zoomView: true,
+                        dragView: true,
+                        mouseWheel: {
+                            enabled: true,
+                            scaleSpeed: 0.15, // Reduced from default 1.0 by 85% (70% + 50% of remaining)
+                            zoomSpeed: 0.15   // Reduced from default 1.0 by 85% (70% + 50% of remaining)
+                        }
+                    },
+                    layout: {
+                        improvedLayout: false,
+                        hierarchical: { enabled: false }
+                    },
+                    manipulation: { enabled: false }
+                };
+                
+                // Create network
+                network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
+                
+                // Force white text for all nodes after network creation
+                setTimeout(() => {
+                    // Update all nodes with white font
+                    const allNodesData = nodes.get();
+                    allNodesData.forEach(node => {
+                        nodes.update({
+                            id: node.id,
+                            font: { size: 14.4, face: 'Arial', color: '#ffffff' }
+                        });
+                    });
+                    
+                    // Also try to force it via CSS after a delay
+                    setTimeout(() => {
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            .vis-network .vis-node text { fill: #ffffff !important; }
+                            .vis-network .vis-node .vis-label { color: #ffffff !important; fill: #ffffff !important; }
+                            .vis-network svg text { fill: #ffffff !important; }
+                        `;
+                        document.head.appendChild(style);
+                    }, 1000);
+                }, 500);
+                
+                // Event listeners
+                network.on('click', function(params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        selectNodeById(nodeId);
+                    } else if (params.edges.length > 0) {
+                        const edgeId = params.edges[0];
+                        // Edge click functionality removed - no popup needed
+                    }
+                });
+                
+                network.on('stabilizationProgress', function(params) {
+                    const progress = Math.round((params.iterations / params.total) * 100);
+                    document.getElementById('loadingContainer').querySelector('p').textContent = 
+                        `Stabilizing network... ${progress}%`;
+                });
+                
+                network.once('stabilizationIterationsDone', function() {
+                    setTimeout(() => {
+                        document.getElementById('loadingContainer').style.display = 'none';
+                        
+                        // Set a more zoomed-out view for better overview
+                        network.fit({
+                            animation: {
+                                duration: 1000,
+                                easingFunction: 'easeInOutQuad'
+                            }
+                        });
+                        
+                        // Further zoom out by 30% for better overview
+                        setTimeout(() => {
+                            const currentScale = network.getScale();
+                            network.moveTo({
+                                scale: currentScale * 0.7, // Zoom out by 30%
+                                animation: {
+                                    duration: 800,
+                                    easingFunction: 'easeInOutQuad'
+                                }
+                            });
+                        }, 1200);
+                        
+                    }, 500);
+                    
+                    // Force white text for all node labels
+                    setTimeout(() => {
+                        const nodeLabels = document.querySelectorAll('.vis-network .vis-node text');
+                        nodeLabels.forEach(label => {
+                            label.style.fill = '#ffffff';
+                            label.style.color = '#ffffff';
+                        });
+                    }, 1000);
+                });
+            }
+        
+            // Search functionality
+            function initSearch() {
+                const searchInput = document.getElementById('searchInput');
+                const searchResults = document.getElementById('searchResults');
+                
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase();
+                    if (query.length < 2) {
+                        searchResults.style.display = 'none';
+                        return;
+                    }
+                    
+                    const results = searchIndex.filter(item => 
+                        item.name.toLowerCase().includes(query) ||
+                        (item.username && item.username.toLowerCase().includes(query))
+                    ).slice(0, 10);
+                    
+                    displaySearchResults(results);
+                });
+                
+                searchInput.addEventListener('focus', function() {
+                    if (this.value.length >= 2) {
+                        searchResults.style.display = 'block';
+                    }
+                });
+                
+                // Hide results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                        searchResults.style.display = 'none';
+                    }
+                });
+            }
+        
+            function displaySearchResults(results) {
+                const searchResults = document.getElementById('searchResults');
+                
+                if (results.length === 0) {
+                    searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                } else {
+                    searchResults.innerHTML = results.map(item => `
+                        <div class="search-result-item" onclick="selectNodeById('${item.id}')" style="cursor: pointer;">
+                            <strong>${item.name}</strong><br>
+                            <small>${item.taps} taps • ${item.connections} connections • 
+                            <span class="activity-${item.activity_level}">${item.activity_level}</span></small>
+                        </div>
+                    `).join('');
+                }
+                
+                searchResults.style.display = 'block';
+            }
+        
+            function selectNodeById(nodeId) {
+                // Filter the network to show only connections from this user's perspective
+                filterNetworkByUser(nodeId);
+                network.selectNodes([nodeId]);
+                network.focus(nodeId, { scale: 0.4, animation: true }); // Zoomed out view
+                selectNode(nodeId);
+                document.getElementById('searchResults').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+            }
+        
+            function selectNode(nodeId) {
+                selectedNode = nodeId;
+                const node = allNodes[nodeId];
+                
+                if (!node) return;
+                
+                
+                // Show profile section
+                const profileSection = document.getElementById('profileSection');
+                profileSection.style.display = 'block';
+                
+                // Show degree filter section for user mode
+                const degreeFilterSection = document.getElementById('degreeFilterSection');
+                degreeFilterSection.style.display = 'block';
+                
+                // Update profile header
+                document.getElementById('profileName').textContent = node.label;
+                document.getElementById('profileActivity').textContent = 
+                    `Activity Level: ${node.activity_level || 'Unknown'}`;
+                
+                // Update stats
+                document.getElementById('profileTaps').textContent = node.taps || 0;
+                document.getElementById('profileConnections').textContent = node.connections || 0;
+                
+                // Display connections
+                displayConnections(nodeId);
+            }
+        
+            function displayConnections(nodeId) {
+                
+                const node = allNodes[nodeId];
+                if (!node || !node.profile_data) {
+                    return;
+                }
+                
+                const connectionsList = document.getElementById('connectionsList');
+                if (!connectionsList) {
+                    return;
+                }
+                
+                // Get connections based on current filter
+                let connections = [];
+                if (currentDegreeFilter[1] && node.profile_data.degree_1_connections) {
+                    connections = connections.concat(node.profile_data.degree_1_connections);
+                }
+                if (currentDegreeFilter[2] && node.profile_data.degree_2_connections) {
+                    connections = connections.concat(node.profile_data.degree_2_connections);
+                }
+                if (currentDegreeFilter[3] && node.profile_data.degree_3_connections) {
+                    connections = connections.concat(node.profile_data.degree_3_connections);
+                }
+                
+                // Create connection objects with tap count for sorting
+                const connectionObjects = connections.map(connId => {
+                    const connNode = allNodes[connId];
+                    if (!connNode) return null;
+                    return {
+                        id: connId,
+                        label: connNode.label,
+                        taps: connNode.taps || 0
+                    };
+                }).filter(conn => conn !== null);
+                
+                // Sort connections by tap count (highest to lowest)
+                connectionObjects.sort((a, b) => b.taps - a.taps);
+                
+                // Display sorted connections
+                connectionsList.innerHTML = connectionObjects.map(conn => `
+                    <div class="connection-item">
+                        <span>${conn.label}</span>
+                        <span>${conn.taps} taps</span>
+                    </div>
+                `).join('');
+                
+                // Update timeline slider to reflect the current state
+                if (timelineSlider) {
+                    updateTimelineDisplay(timelineSlider.value);
+                }
+                
+            }
+        
+        
+            function fitView() {
+                network.fit();
+            }
+        
+            function stabilize() {
+                network.stabilize(50);
+            }
+        
+            function resetView() {
+                network.fit();
+                network.stabilize(50);
+            }
+        
+            function showAllConnections() {
+                // Show all edges in the graph
+                edges.forEach(edge => {
+                    edges.update({id: edge.id, hidden: false});
+                });
+                
+                // Also update the sidebar
+                currentDegreeFilter = {1: true, 2: true, 3: true};
+                document.getElementById('degree1').checked = true;
+                document.getElementById('degree2').checked = true;
+                document.getElementById('degree3').checked = true;
+                if (selectedNode) {
+                    displayConnections(selectedNode);
+                }
+            }
+        
+            function hideConnections() {
+                const button = document.querySelector('button[onclick="hideConnections()"]');
+                const isCurrentlyHidden = button.textContent.includes('Show');
+                
+                if (isCurrentlyHidden) {
+                    // Show all connections
+                    edges.forEach(edge => {
+                        edges.update({id: edge.id, hidden: false});
+                    });
+                    button.textContent = 'Hide Connections';
+                    button.className = 'control-btn'; // Keep consistent floating control styling
+                } else {
+                    // Hide all connections
+                    edges.forEach(edge => {
+                        edges.update({id: edge.id, hidden: true});
+                    });
+                    button.textContent = 'Show Connections';
+                    button.className = 'control-btn'; // Keep consistent floating control styling
+                }
+                
+                // Update the user count display
+                const visibleNodeCount = nodes.get().filter(node => !node.hidden).length;
+                const connectionCountElement = document.getElementById('connectionCount');
+                if (connectionCountElement) {
+                    connectionCountElement.textContent = `${visibleNodeCount} total users`;
+                }
+            }
+        
+            // Global variables for filtering
+            let filteredNodes = new Set();
+            let filteredEdges = new Set();
+            let currentFilterUser = null;
+            
+            function filterNetworkByUser(userId) {
+                
+                currentFilterUser = userId;
+                const user = allNodes[userId];
+                if (!user || !user.profile_data) {
+                    return;
+                }
+                
+                // Reset degree filters to default
+                currentDegreeFilter = {1: true, 2: false, 3: false};
+                document.getElementById('degree1').checked = true;
+                document.getElementById('degree2').checked = false;
+                document.getElementById('degree3').checked = false;
+                
+                // Apply initial filter (1st degree only) FIRST
+                applyDegreeFilter();
+                
+                // Then set timeline to 100% to show user's connections
+                if (timelineSlider) {
+                    timelineSlider.value = 100;
+                    updateTimelineDisplay(100);
+                }
+                
+            }
+            
+            function applyDegreeFilter() {
+                
+                if (!currentFilterUser) {
+                    return;
+                }
+                
+                const user = allNodes[currentFilterUser];
+                if (!user || !user.profile_data) {
+                    return;
+                }
+                
+                // Collect all nodes to show based on degree filters
+                const nodesToShow = new Set();
+                const edgesToShow = new Set();
+                
+                // Always include the current user
+                nodesToShow.add(currentFilterUser);
+                
+                // Add nodes based on degree filters
+                if (currentDegreeFilter[1]) {
+                    user.profile_data.degree_1_connections.forEach(connId => {
+                        nodesToShow.add(connId);
+                    });
+                }
+                
+                if (currentDegreeFilter[2]) {
+                    user.profile_data.degree_2_connections.forEach(connId => {
+                        nodesToShow.add(connId);
+                    });
+                }
+                
+                if (currentDegreeFilter[3]) {
+                    user.profile_data.degree_3_connections.forEach(connId => {
+                        nodesToShow.add(connId);
+                    });
+                }
+                
+                // Batch collect all node updates
+                const nodeUpdates = [];
+                Object.entries(allNodes).forEach(([nodeId, node]) => {
+                    nodeUpdates.push({
+                        id: nodeId,
+                        hidden: !nodesToShow.has(nodeId)
+                    });
+                });
+                
+                // Batch collect all edge updates
+                const edgeUpdates = [];
+                Object.entries(allEdges).forEach(([edgeId, edge]) => {
+                    const fromIncluded = nodesToShow.has(edge.from);
+                    const toIncluded = nodesToShow.has(edge.to);
+                    edgeUpdates.push({
+                        id: edgeId,
+                        hidden: !(fromIncluded && toIncluded)
+                    });
+                });
+                
+                // Apply all updates in single batch operations
+                nodes.update(nodeUpdates);
+                
+                edges.update(edgeUpdates);
+                
+            }
+            
+            // DEACTIVATED: resetFilter function - no longer needed in user-centric mode
+            function resetFilter() {
+                // Function deactivated - reset functionality not needed in user-centric mode
+                console.log('Reset filter function deactivated');
+            }
+            
+            // Create edge ID mapping from time sequence to graph edges
+            function createEdgeIdMapping() {
+                const edgeMapping = new Map();
+                
+                // Use allEdges instead of edges.get() to avoid duplicate IDs
+                const graphEdges = Object.values(allEdges);
+                
+                // Create mapping based on source and target node IDs
+                // Only create one entry per edge to prevent duplicates
+                graphEdges.forEach(edge => {
+                    const key = `${edge.from}-${edge.to}`;
+                    // Only add if not already present to prevent duplicates
+                    if (!edgeMapping.has(key)) {
+                        edgeMapping.set(key, edge.id);
+                    }
+                });
+                
+                
+                return edgeMapping;
+            }
+            
+            // Degree filter state management functions
+            function saveDegreeFilterState() {
+                savedDegreeFilterState = {
+                    1: document.getElementById('degree1').checked,
+                    2: document.getElementById('degree2').checked,
+                    3: document.getElementById('degree3').checked
+                };
+                console.log('Saved degree filter state:', savedDegreeFilterState);
+            }
+            
+            function restoreDegreeFilterState() {
+                document.getElementById('degree1').checked = savedDegreeFilterState[1];
+                document.getElementById('degree2').checked = savedDegreeFilterState[2];
+                document.getElementById('degree3').checked = savedDegreeFilterState[3];
+                currentDegreeFilter = {...savedDegreeFilterState};
+                console.log('Restored degree filter state:', savedDegreeFilterState);
+            }
+            
+                    function setDegreeFiltersEnabled(enabled) {
+            const degree1 = document.getElementById('degree1');
+            const degree2 = document.getElementById('degree2');
+            const degree3 = document.getElementById('degree3');
+            
+            degree1.disabled = !enabled;
+            degree2.disabled = !enabled;
+            degree3.disabled = !enabled;
+            
+            // Visual feedback - gray out when disabled but preserve checked appearance
+            const checkboxes = [degree1, degree2, degree3];
+            checkboxes.forEach(checkbox => {
+                if (!enabled) {
+                    checkbox.style.opacity = '0.5';
+                    checkbox.style.cursor = 'not-allowed';
+                    // Ensure checked state is visually preserved when disabled
+                    if (checkbox.checked) {
+                        checkbox.style.accentColor = '#666'; // Gray color for checked disabled state
+                    }
+                } else {
+                    checkbox.style.opacity = '1';
+                    checkbox.style.cursor = 'pointer';
+                    checkbox.style.accentColor = ''; // Reset to default
+                }
+            });
+            
+        }
+            
+            // Timeline Slider functionality with smooth transitions
+            let updateTimeout = null;
+            let isUpdating = false;
+            
+            function initTimelineSlider() {
+                timelineSlider = document.getElementById('timelineSlider');
+                if (!timelineSlider) return;
+                
+                // Set initial state to blank (no connections shown)
+                timelineSlider.value = 0;
+                updateTimelineDisplay(0);
+                
+                // Add event listeners with debouncing
+                timelineSlider.addEventListener('input', function() {
+                    // Clear any pending update
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    
+                    // Debounce the update to reduce choppiness
+                    updateTimeout = setTimeout(() => {
+                        if (!isUpdating) {
+                            updateTimelineDisplay(this.value);
+                        }
+                    }, 16); // ~60fps update rate
+                });
+                
+                timelineSlider.addEventListener('mousedown', function() {
+                    isSliderDragging = true;
+                });
+                
+                timelineSlider.addEventListener('mouseup', function() {
+                    isSliderDragging = false;
+                    // Force immediate update when dragging ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    updateTimelineDisplay(this.value);
+                });
+                
+                timelineSlider.addEventListener('touchstart', function() {
+                    isSliderDragging = true;
+                });
+                
+                timelineSlider.addEventListener('touchend', function() {
+                    isSliderDragging = false;
+                    // Force immediate update when touch ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    updateTimelineDisplay(this.value);
+                });
+            }
+            
+            // Calculate node properties based on timeline position
+            function calculateTimelineNodeProperties(nodeId, eventIndex) {
+                const node = allNodes[nodeId];
+                if (!node) return { size: 10, color: "#87CEEB" }; // Default values
+                
+                // Count taps and connections up to this timeline point
+                let timelineTaps = 0;
+                let timelineConnections = new Set();
+                
+                // Count events involving this node up to the current timeline point
+                for (let i = 0; i < eventIndex; i++) {
+                    const event = timeSequence[i];
+                    if (event.user1_id === nodeId || event.user2_id === nodeId) {
+                        timelineTaps++;
+                        timelineConnections.add(event.user1_id);
+                        timelineConnections.add(event.user2_id);
+                    }
+                }
+                
+                // Remove the node itself from connections count
+                timelineConnections.delete(nodeId);
+                const connectionCount = timelineConnections.size;
+                
+                // Calculate size with smaller increments (10px → 11px → 12px → 13px...)
+                let size = 10; // Base size
+                if (timelineTaps > 0) {
+                    // More granular size increments: each tap adds 1px instead of 0.5px
+                    size = Math.max(10, Math.min(35, 10 + timelineTaps));
+                }
+                
+                // Grey to white gradient: Light grey → Medium grey → Dark grey → White
+                let color = "#D3D3D3"; // Default light grey
+                if (timelineTaps >= 25) {
+                    color = "#FFFFFF"; // White for very high activity
+                } else if (timelineTaps >= 20) {
+                    color = "#F5F5F5"; // Very light grey for high activity
+                } else if (timelineTaps >= 15) {
+                    color = "#E0E0E0"; // Light grey for medium-high activity
+                } else if (timelineTaps >= 10) {
+                    color = "#C0C0C0"; // Silver for medium activity
+                } else if (timelineTaps >= 5) {
+                    color = "#A9A9A9"; // Dark grey for low-medium activity
+                } else if (timelineTaps >= 1) {
+                    color = "#808080"; // Grey for low activity
+                }
+                
+                return { size, color, taps: timelineTaps, connections: connectionCount };
+            }
+            
+            // Format timestamp to user-friendly date format
+            function formatTimestamp(timestamp) {
+                try {
+                    const date = new Date(timestamp);
+                    const options = { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric'
+                    };
+                    return date.toLocaleDateString('en-US', options);
+                } catch (error) {
+                    // Fallback to original timestamp if parsing fails
+                    return timestamp;
+                }
+            }
+            
+            function updateTimelineDisplay(percentage) {
+                if (timeSequence.length === 0) return;
+                
+                // Prevent multiple simultaneous updates
+                if (isUpdating) return;
+                isUpdating = true;
+                
+                
+                // Calculate how many events to show based on percentage
+                const eventIndex = Math.floor((percentage / 100) * timeSequence.length);
+                
+                // Determine if we're in user-centric mode
+                let isUserCentric = false;
+                let selectedUserId = null;
+                
+                // Check if there's a current filter user (set by filterNetworkByUser)
+                
+                if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== null) {
+                    isUserCentric = true;
+                    selectedUserId = currentFilterUser;
+                    const user = allNodes[currentFilterUser];
+                } else {
+                }
+                
+                // Debug: Check degree filter state
+                const degree1Enabled = document.getElementById('degree1').checked;
+                const degree2Enabled = document.getElementById('degree2').checked;
+                const degree3Enabled = document.getElementById('degree3').checked;
+
+                                // NEW TIMELINE RULE: Handle degree filters based on timeline position
+                // MODIFIED: Keep degree filters enabled at all times for better user experience
+                if (isUserCentric && selectedUserId) {
+                    // Always enable degree filters - user can interact with them while sliding timeline
+                    setDegreeFiltersEnabled(true);
+                    
+                    if (percentage >= 100) {
+                        // Timeline at 100%: Restore previous state if available
+                        if (savedDegreeFilterState[1] !== undefined) {
+                            restoreDegreeFilterState();
+                        }
+                    } else {
+                        // Timeline < 100%: Save current state and show all degrees visually
+                        if (savedDegreeFilterState[1] === undefined) {
+                            saveDegreeFilterState();
+                        }
+                        // Visually check all degrees to show they're active
+                        document.getElementById('degree1').checked = true;
+                        document.getElementById('degree2').checked = true;
+                        document.getElementById('degree3').checked = true;
+                    }
+                } else {
+                    // Global mode: Disable degree filters since they don't apply to global view
+                    document.getElementById('degree1').checked = true;
+                    document.getElementById('degree2').checked = true;
+                    document.getElementById('degree3').checked = true;
+                    setDegreeFiltersEnabled(false);
+                }
+
+// First, show all nodes and edges (batch update)
+                const allNodeUpdates = [];
+                nodes.forEach(node => {
+                    allNodeUpdates.push({id: node.id, hidden: false});
+                });
+                
+                const allEdgeUpdates = [];
+                edges.forEach(edge => {
+                    allEdgeUpdates.push({id: edge.id, hidden: false});
+                });
+                
+                nodes.update(allNodeUpdates);
+                edges.update(allEdgeUpdates);
+                
+                // If in user-centric mode, apply user filtering first (batch update)
+                if (isUserCentric && selectedUserId) {
+                    // Hide all nodes except the selected user
+                    const userCentricNodeUpdates = [];
+                    nodes.forEach(node => {
+                        userCentricNodeUpdates.push({
+                            id: node.id, 
+                            hidden: node.id !== selectedUserId
+                        });
+                    });
+                    
+                    // Hide all edges initially
+                    const userCentricEdgeUpdates = [];
+                    edges.forEach(edge => {
+                        userCentricEdgeUpdates.push({id: edge.id, hidden: true});
+                    });
+                    
+                    nodes.update(userCentricNodeUpdates);
+                    edges.update(userCentricEdgeUpdates);
+                    
+                    // Degree filtering is now handled in the timeline filtering section below
+                }
+                
+                // Apply timeline filtering (or show all connections at 100%)
+                if (percentage < 100) {
+                    // Create edge ID mapping
+                    const edgeMapping = createEdgeIdMapping();
+                    
+                    // Create a set of edges that should be visible based on timeline
+                    const visibleEdgeIds = new Set();
+                    for (let i = 0; i < eventIndex; i++) {
+                        const event = timeSequence[i];
+                        // Map time sequence edge to graph edge using user1/user2
+                        const key = `${event.user1_id}-${event.user2_id}`;
+                        const reverseKey = `${event.user2_id}-${event.user1_id}`;
+                        
+                        const graphEdgeId = edgeMapping.get(key) || edgeMapping.get(reverseKey);
+                        if (graphEdgeId !== undefined) {
+                            visibleEdgeIds.add(graphEdgeId);
+                        }
+                        
+
+                    }
+                    
+
+                    
+                                            // If in user-centric mode, only hide edges that are both:
+                        // 1. Not in the timeline visible set AND
+                        // 2. Not part of the user's degree-filtered connections
+                        if (isUserCentric && selectedUserId) {
+                            // Get the user's degree-filtered connections
+                            const userNode = allNodes[selectedUserId];
+                            const profileData = userNode.profile_data;
+                            const degree1Connections = profileData.degree_1_connections || [];
+                            const degree2Connections = profileData.degree_2_connections || [];
+                            const degree3Connections = profileData.degree_3_connections || [];
+                            
+                            const degree1Enabled = document.getElementById('degree1').checked;
+                            const degree2Enabled = document.getElementById('degree2').checked;
+                            const degree3Enabled = document.getElementById('degree3').checked;
+                            
+                            // Collect all degree-filtered connections
+                            const degreeFilteredConnections = new Set();
+                            
+                                                    if (percentage < 100) {
+                            // Timeline < 100%: Automatically include ALL degrees
+                            // Always include the selected user themselves
+                            degreeFilteredConnections.add(selectedUserId);
+                            degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                        } else {
+                                // Timeline at 100%: Use checkbox states
+                                if (degree1Enabled) {
+                                    degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                                if (degree2Enabled) {
+                                    degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                                if (degree3Enabled) {
+                                    degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                            }
+                        
+                        
+                        // Hide edges that are not in timeline AND not in degree filter
+                        let hiddenCount = 0;
+                        
+                        // NEW TIMELINE RULE: When timeline < 100%, show all degrees automatically
+                        // For timeline < 100%, build connected component starting from selected user
+                        let connectedComponent = null;
+                        if (percentage < 100) {
+                            connectedComponent = new Set([selectedUserId]);
+                            const queue = [selectedUserId];
+                            
+                            // BFS to find all nodes reachable from selected user within degree-filtered connections
+                            while (queue.length > 0) {
+                                const current = queue.shift();
+                                Object.values(allEdges).forEach(edge => {
+                                    // Only consider edges that are in the timeline
+                                    if (!visibleEdgeIds.has(edge.id)) return;
+                                    
+                                    let neighbor = null;
+                                    if (edge.from === current && degreeFilteredConnections.has(edge.to)) {
+                                        neighbor = edge.to;
+                                    } else if (edge.to === current && degreeFilteredConnections.has(edge.from)) {
+                                        neighbor = edge.from;
+                                    }
+                                    
+                                    if (neighbor && !connectedComponent.has(neighbor)) {
+                                        connectedComponent.add(neighbor);
+                                        queue.push(neighbor);
+                                    }
+                                });
+                            }
+                        }
+                        
+                        let timelineEdgeCount = 0;
+                        let degreeFilterEdgeCount = 0;
+                        let intersectionCount = 0;
+                        
+                        // Batch collect all edge updates for user-centric mode
+                        const userCentricTimelineEdgeUpdates = [];
+                        Object.values(allEdges).forEach(edge => {
+                            const isInTimeline = visibleEdgeIds.has(edge.id);
+                            
+                            // When timeline < 100%, show all degrees for the user
+                            let isInDegreeFilter = false;
+                            
+                            if (percentage < 100) {
+                                // Timeline < 100%: Show all degrees (1st, 2nd, 3rd) for the user
+                                // Only show edges where both nodes are in the connected component
+                                isInDegreeFilter = connectedComponent.has(edge.from) && connectedComponent.has(edge.to);
+                            } else {
+                                // Timeline at 100%: Use normal degree filtering
+                                if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
+                                    // 1st degree only: only edges connected to Luke
+                                    isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
+                                                     (edge.to === selectedUserId && degree1Connections.includes(edge.from));
+                                } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
+                                    // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
+                                    const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
+                                                            (edge.to === selectedUserId && degree1Connections.includes(edge.from));
+                                    const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
+                                    isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
+                                } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
+                                    // All degrees: all edges between degree-filtered users
+                                    isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
+                                                     (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
+                                                     (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
+                                }
+                            }
+                            
+                            if (isInTimeline) timelineEdgeCount++;
+                            if (isInDegreeFilter) degreeFilterEdgeCount++;
+                            if (isInTimeline && isInDegreeFilter) intersectionCount++;
+                            
+                            // Collect edge update for batch processing
+                            const shouldShow = isInTimeline && isInDegreeFilter;
+                            userCentricTimelineEdgeUpdates.push({
+                                id: edge.id, 
+                                hidden: !shouldShow
+                            });
+                            
+                            if (!shouldShow) hiddenCount++;
+                        });
+                        
+                        // Apply all edge updates in batch
+                        edges.update(userCentricTimelineEdgeUpdates);
+                        
+                        // Debug: Check what edges are being counted as degree-filtered
+                        
+                        // Debug: Log some of the visible edges to see what's being shown
+                        const visibleEdges = edges.get().filter(edge => !edge.hidden);
+                        console.log('Sample visible edges:', visibleEdges.slice(0, 5).map(edge => ({
+                            from: edge.from,
+                            to: edge.to,
+                            isConnectedToSelected: edge.from === selectedUserId || edge.to === selectedUserId
+                        })));
+                        
+                        // Debug: Check if any visible edges are NOT connected to selected user
+                        const edgesNotConnectedToSelected = visibleEdges.filter(edge => 
+                            edge.from !== selectedUserId && edge.to !== selectedUserId
+                        );
+                        console.log('Edges NOT connected to selected user:', edgesNotConnectedToSelected.length);
+                        if (edgesNotConnectedToSelected.length > 0) {
+                            console.log('Sample edges NOT connected to selected user:', edgesNotConnectedToSelected.slice(0, 3).map(edge => ({
+                                from: edge.from,
+                                to: edge.to
+                            })));
+                        }
+                        
+                        // Debug: Log degree filter details
+                        
+
+                        
+                    } else {
+                        // Global mode - hide edges not in timeline (batch update)
+                        let hiddenCount = 0;
+                        const globalModeEdgeUpdates = [];
+                        Object.values(allEdges).forEach(edge => {
+                            const shouldHide = !visibleEdgeIds.has(edge.id);
+                            globalModeEdgeUpdates.push({
+                                id: edge.id, 
+                                hidden: shouldHide
+                            });
+                            if (shouldHide) hiddenCount++;
+                        });
+                        edges.update(globalModeEdgeUpdates);
+                    }
+                    
+                    // Hide nodes that don't have any visible connections
+                    const visibleNodeIds = new Set();
+                    
+                    // Only add nodes from visible edges (this ensures nodes without connections are hidden)
+                    edges.get().forEach(edge => {
+                        if (!edge.hidden) {
+                            visibleNodeIds.add(edge.from);
+                            visibleNodeIds.add(edge.to);
+                        }
+                    });
+                    
+                    
+                    // Debug: Check if selected user is in visible nodes
+                    if (isUserCentric && selectedUserId) {
+                    }
+                    
+                    // If in user-centric mode and no edges are visible, show the selected user
+                    if (isUserCentric && selectedUserId && visibleNodeIds.size === 0) {
+                        visibleNodeIds.add(selectedUserId);
+                    }
+                    
+                    // Batch collect all node updates for visibility and properties
+                    let hiddenNodeCount = 0;
+                    const finalNodeUpdates = [];
+                    nodes.forEach(node => {
+                        const isVisible = visibleNodeIds.has(node.id);
+                        if (!isVisible) hiddenNodeCount++;
+                        
+                        if (isVisible) {
+                            const timelineProps = calculateTimelineNodeProperties(node.id, eventIndex);
+                            finalNodeUpdates.push({
+                                id: node.id, 
+                                hidden: false,
+                                size: timelineProps.size,
+                                color: timelineProps.color,
+                                font: { size: 12, face: 'Arial', color: '#ffffff' },
+                                title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                            });
+                        } else {
+                            finalNodeUpdates.push({
+                                id: node.id, 
+                                hidden: true
+                            });
+                        }
+                    });
+                    
+                    // Apply all node updates in batch
+                    nodes.update(finalNodeUpdates);
+                } else {
+                                            // At 100% timeline, show all degree-filtered connections
+                        if (isUserCentric && selectedUserId) {
+                            // Get the user's degree-filtered connections
+                            const userNode = allNodes[selectedUserId];
+                            const profileData = userNode.profile_data;
+                            const degree1Connections = profileData.degree_1_connections || [];
+                            const degree2Connections = profileData.degree_2_connections || [];
+                            const degree3Connections = profileData.degree_3_connections || [];
+                            
+                            const degree1Enabled = document.getElementById('degree1').checked;
+                            const degree2Enabled = document.getElementById('degree2').checked;
+                            const degree3Enabled = document.getElementById('degree3').checked;
+                            
+                            // Collect all degree-filtered connections
+                            const degreeFilteredConnections = new Set();
+                            
+                            // At 100% timeline, always use checkbox states
+                            // Always include the selected user themselves
+                            degreeFilteredConnections.add(selectedUserId);
+                            
+                            if (degree1Enabled) {
+                                degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            }
+                            if (degree2Enabled) {
+                                degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            }
+                            if (degree3Enabled) {
+                                degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            }
+                        
+                        // Show all degree-filtered connections at 100% timeline (batch update)
+                        const hundredPercentEdgeUpdates = [];
+                        Object.values(allEdges).forEach(edge => {
+                            let isInDegreeFilter = false;
+                            
+                            if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
+                                // 1st degree only: only edges connected to Luke
+                                isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
+                                                 (edge.to === selectedUserId && degree1Connections.includes(edge.from));
+                            } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
+                                // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
+                                const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
+                                                        (edge.to === selectedUserId && degree1Connections.includes(edge.from));
+                                const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
+                                isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
+                            } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
+                                // All degrees: all edges between degree-filtered users
+                                isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
+                                                 (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
+                                                 (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
+                            }
+                            
+                            hundredPercentEdgeUpdates.push({
+                                id: edge.id, 
+                                hidden: !isInDegreeFilter
+                            });
+                        });
+                        edges.update(hundredPercentEdgeUpdates);
+                        
+                        // Show nodes that are part of the degree-filtered connections AND have visible edges (batch update)
+                        let visibleNodeCount = 0;
+                        const nodesWithVisibleEdges = new Set();
+                        
+                        // First, collect all nodes that have visible edges
+                        edges.get().forEach(edge => {
+                            if (!edge.hidden) {
+                                nodesWithVisibleEdges.add(edge.from);
+                                nodesWithVisibleEdges.add(edge.to);
+                            }
+                        });
+                        
+                        const hundredPercentNodeUpdates = [];
+                        nodes.forEach(node => {
+                            const shouldShow = node.id === selectedUserId || (degreeFilteredConnections.has(node.id) && nodesWithVisibleEdges.has(node.id));
+                            hundredPercentNodeUpdates.push({
+                                id: node.id, 
+                                hidden: !shouldShow
+                            });
+                            if (shouldShow) visibleNodeCount++;
+                        });
+                        nodes.update(hundredPercentNodeUpdates);
+                        
+                        
+                        // Update node properties based on timeline position (100% case) - batch update
+                        const hundredPercentNodePropsUpdates = [];
+                        nodes.forEach(node => {
+                            if (node.id === selectedUserId || (degreeFilteredConnections.has(node.id) && nodesWithVisibleEdges.has(node.id))) {
+                                const timelineProps = calculateTimelineNodeProperties(node.id, timeSequence.length); // Full timeline
+                                hundredPercentNodePropsUpdates.push({
+                                    id: node.id, 
+                                    size: timelineProps.size,
+                                    color: timelineProps.color,
+                                    title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                });
+                            }
+                        });
+                        nodes.update(hundredPercentNodePropsUpdates);
+                    } else {
+                        // Global mode at 100% timeline - show all nodes and edges with full timeline properties
+                        
+                        // Show all edges (batch update)
+                        const globalModeEdgeUpdates = [];
+                        Object.values(allEdges).forEach(edge => {
+                            globalModeEdgeUpdates.push({id: edge.id, hidden: false});
+                        });
+                        edges.update(globalModeEdgeUpdates);
+                        
+                        // Show all nodes and update properties (batch update)
+                        const globalModeNodeUpdates = [];
+                        nodes.forEach(node => {
+                            const timelineProps = calculateTimelineNodeProperties(node.id, timeSequence.length); // Full timeline
+                            globalModeNodeUpdates.push({
+                                id: node.id, 
+                                hidden: false,
+                                size: timelineProps.size,
+                                color: timelineProps.color,
+                                font: { size: 12, face: 'Arial', color: '#ffffff' },
+                                title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                            });
+                        });
+                        nodes.update(globalModeNodeUpdates);
+                    }
+                }
+                
+                // Update display information
+                if (eventIndex > 0) {
+                    const currentEvent = timeSequence[eventIndex - 1];
+                    const formattedDate = formatTimestamp(currentEvent.time);
+                    document.getElementById('currentTime').textContent = formattedDate;
+                } else {
+                    document.getElementById('currentTime').textContent = 'No connections shown';
+                }
+                
+                // Count visible nodes (users)
+                const visibleNodeCount = nodes.get().filter(node => !node.hidden).length;
+                
+                // Debug: Check if elements exist
+                const connectionCountElement = document.getElementById('connectionCount');
+                
+                if (connectionCountElement) {
+                    connectionCountElement.textContent = `${visibleNodeCount} total users`;
+                } else {
+                    console.error('Connection count element not found!');
+                }
+                
+                
+                // Reset update flag and allow smooth transitions
+                setTimeout(() => {
+                    isUpdating = false;
+                }, 50); // Small delay to ensure smooth transitions
+            }
+            
+            function applyDegreeFilterForUser(userId) {
+                // Get the user's profile data
+                const userNode = allNodes[userId];
+                if (!userNode || !userNode.profile_data) return;
+                
+                const profileData = userNode.profile_data;
+                const degree1Connections = profileData.degree_1_connections || [];
+                const degree2Connections = profileData.degree_2_connections || [];
+                const degree3Connections = profileData.degree_3_connections || [];
+                
+                // Get current degree filter settings
+                const degree1Enabled = document.getElementById('degree1').checked;
+                const degree2Enabled = document.getElementById('degree2').checked;
+                const degree3Enabled = document.getElementById('degree3').checked;
+                
+
+                
+                // Show connections based on degree filter
+                const connectionsToShow = [];
+                
+                if (degree1Enabled) {
+                    connectionsToShow.push(...degree1Connections);
+                }
+                if (degree2Enabled) {
+                    connectionsToShow.push(...degree2Connections);
+                }
+                if (degree3Enabled) {
+                    connectionsToShow.push(...degree3Connections);
+                }
+                
+                // Show the selected user's connections
+                connectionsToShow.forEach(connectionId => {
+                    nodes.update({id: connectionId, hidden: false});
+                    visibleNodes.add(connectionId);
+                });
+                
+                // Show edges between the selected user and their connections
+                edges.forEach(edge => {
+                    if ((edge.from === userId && connectionsToShow.includes(edge.to)) ||
+                        (edge.to === userId && connectionsToShow.includes(edge.from))) {
+                        edges.update({id: edge.id, hidden: false});
+                        visibleEdges.add(edge.id);
+                    }
+                });
+            }
+            
+
+            
+            // Initialize everything when the page loads
+            document.addEventListener('DOMContentLoaded', async function() {
+                // Initialize network (which will load data)
+                await initNetwork();
+                initSearch();
+                initTimelineSlider();
+                
+                // Check for userName parameter and auto-select user
+                const urlParams = new URLSearchParams(window.location.search);
+                const userName = urlParams.get('userName');
+                if (userName) {
+                    console.log('🎯 Auto-selecting user from URL:', userName);
+                    // Simulate typing in search and selecting the user
+                    setTimeout(() => {
+                        const searchInput = document.getElementById('searchInput');
+                        if (searchInput) {
+                            searchInput.value = userName;
+                            // Trigger search
+                            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            // After a brief delay, select the first result (should be the user)
+                            setTimeout(() => {
+                                const searchResults = document.getElementById('searchResults');
+                                const firstResult = searchResults.querySelector('.search-result-item');
+                                if (firstResult) {
+                                    firstResult.click();
+                                }
+                            }, 500);
+                        }
+                    }, 2000); // Wait longer for network to stabilize
+                }
+                
+                // Add degree filter event listeners
+                document.getElementById('degree1').addEventListener('change', function() {
+                    currentDegreeFilter[1] = this.checked;
+                    if (currentFilterUser) {
+                        applyDegreeFilter();
+                    } else if (selectedNode) {
+                        displayConnections(selectedNode);
+                    }
+                });
+                
+                document.getElementById('degree2').addEventListener('change', function() {
+                    currentDegreeFilter[2] = this.checked;
+                    // Ensure 1st degree is checked if 2nd degree is checked
+                    if (this.checked && !currentDegreeFilter[1]) {
+                        currentDegreeFilter[1] = true;
+                        document.getElementById('degree1').checked = true;
+                    }
+                    if (currentFilterUser) {
+                        applyDegreeFilter();
+                    } else if (selectedNode) {
+                        displayConnections(selectedNode);
+                    }
+                });
+                
+                document.getElementById('degree3').addEventListener('change', function() {
+                    currentDegreeFilter[3] = this.checked;
+                    // Ensure 1st and 2nd degree are checked if 3rd degree is checked
+                    if (this.checked && (!currentDegreeFilter[1] || !currentDegreeFilter[2])) {
+                        currentDegreeFilter[1] = true;
+                        currentDegreeFilter[2] = true;
+                        document.getElementById('degree1').checked = true;
+                        document.getElementById('degree2').checked = true;
+                    }
+                    if (currentFilterUser) {
+                        applyDegreeFilter();
+                    } else if (selectedNode) {
+                        displayConnections(selectedNode);
+                    }
+                });
+                
+                // Add chat event listeners
+                const chatInput = document.getElementById('chatInput');
+                
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+                
+                // Auto-expand when input is focused
+                chatInput.addEventListener('focus', function() {
+                    expandChatBar();
+                });
+                
+                // Initialize chat input bar in collapsed state
+                const chatInputBar = document.getElementById('chatInputBar');
+                chatInputBar.classList.remove('expanded');
+                
+                // Add drag event listeners only to the input container (top bar)
+                const inputContainer = chatInputBar.querySelector('.input-container');
+                if (inputContainer) {
+                    inputContainer.addEventListener('mousedown', startDrag);
+                    inputContainer.style.cursor = 'move';
+                }
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDrag);
+                
+                // Function to prevent wheel events from bubbling to network (allow scrolling, prevent zoom)
+                function preventWheelEvent(e) {
+                    // Allow scrolling on search results and other scrollable elements
+                    const target = e.target;
+                    const isScrollableElement = target.closest('.search-results') || 
+                                              target.closest('.connections-list') ||
+                                              target.closest('.chat-messages') ||
+                                              target.closest('[style*="overflow"]') ||
+                                              target.closest('.controls-section') ||
+                                              target.closest('.profile-section') ||
+                                              target.closest('.animation-section') ||
+                                              target.closest('.search-section');
+                    
+                    if (isScrollableElement) {
+                        // Allow normal scrolling, just prevent zoom
+                        e.stopPropagation();
+                        return; // Don't prevent default for scrollable elements
+                    }
+                    
+                    // For other elements, prevent both zoom and scroll
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+                
+                // Prevent wheel zoom on sidebar and chatbox
+                const sidebar = document.querySelector('.sidebar');
+                
+                // Add event listeners to prevent zoom on UI elements
+                if (sidebar) {
+                    sidebar.addEventListener('wheel', preventWheelEvent, { passive: false });
+                    // Also prevent on all child elements
+                    const sidebarElements = sidebar.querySelectorAll('*');
+                    sidebarElements.forEach(element => {
+                        element.addEventListener('wheel', preventWheelEvent, { passive: false });
+                    });
+                }
+                
+                // Prevent wheel events on chatbox input area and expanded chat messages area
+                if (chatInputBar) {
+                    chatInputBar.addEventListener('wheel', preventWheelEvent, { passive: false });
+                    // Also prevent on all child elements
+                    const chatElements = chatInputBar.querySelectorAll('*');
+                    chatElements.forEach(element => {
+                        element.addEventListener('wheel', preventWheelEvent, { passive: false });
+                    });
+                }
+                
+                // Prevent wheel events on other UI elements
+                const header = document.querySelector('.header');
+                const searchSection = document.querySelector('.search-section');
+                const loadingContainer = document.getElementById('loadingContainer');
+                
+                // Prevent wheel events on header
+                if (header) {
+                    header.addEventListener('wheel', preventWheelEvent, { passive: false });
+                }
+                
+                // Prevent wheel events on search section
+                if (searchSection) {
+                    searchSection.addEventListener('wheel', preventWheelEvent, { passive: false });
+                }
+                
+                // Prevent wheel events on loading container
+                if (loadingContainer) {
+                    loadingContainer.addEventListener('wheel', preventWheelEvent, { passive: false });
+                }
+                
+                // Prevent zoom at document level
+                document.addEventListener('wheel', function(e) {
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+                
+                // Add comprehensive debugging for minimize button
+                const minimizeButton = document.getElementById('minimizeButton');
+                if (minimizeButton) {
+                    
+                    // Test hover detection
+                    minimizeButton.addEventListener('mouseenter', function(e) {
+                        e.stopPropagation();
+                    });
+                    
+                    minimizeButton.addEventListener('mouseleave', function(e) {
+                        e.stopPropagation();
+                    });
+                    
+                    // Test mousedown detection
+                    minimizeButton.addEventListener('mousedown', function(e) {
+                        console.log('🖱️ MOUSEDOWN DETECTED on minimize button');
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    });
+                    
+                    // Test click detection
+                    minimizeButton.addEventListener('click', function(e) {
+                        console.log('🖱️ CLICK DETECTED on minimize button');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        collapseChatBar();
+                    });
+                    
+                    // Test if button is actually visible and positioned correctly
+                    setTimeout(() => {
+                        const rect = minimizeButton.getBoundingClientRect();
+                        const style = window.getComputedStyle(minimizeButton);
+                        console.log('📍 Minimize button position:', {
+                            top: rect.top,
+                            left: rect.left,
+                            width: rect.width,
+                            height: rect.height,
+                            visible: rect.width > 0 && rect.height > 0,
+                            display: style.display,
+                            zIndex: style.zIndex,
+                            pointerEvents: style.pointerEvents
+                        });
+                        
+                        // Test if we can detect mouse events on the button area
+                        document.addEventListener('mousemove', function(e) {
+                            const buttonRect = minimizeButton.getBoundingClientRect();
+                            if (e.clientX >= buttonRect.left && e.clientX <= buttonRect.right &&
+                                e.clientY >= buttonRect.top && e.clientY <= buttonRect.bottom) {
+                            }
+                        });
+                    }, 1000);
+                    
+                } else {
+                }
+                
+                // Test if collapseChatBar function exists
+            });
+        </script>
+    </body>
+    </html>

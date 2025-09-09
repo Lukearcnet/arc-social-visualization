@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ARC Unified Visualization</title>
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --fg-primary: #ffffff;
+            --fg-secondary: #cccccc;
+            --fg-muted: #888888;
+            --accent: #007bff;
+            --accent-hover: #0056b3;
+            --stroke: #333333;
+            --radius: 8px;
+            --radius-2: 4px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--fg-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Login Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .login-overlay.hidden {
+            display: none;
+        }
+
+        .login-container {
+            text-align: center;
+        }
+
+        .phone-input-container {
+            margin-bottom: 24px;
+        }
+
+        .phone-input {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            background: #000000;
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius-2);
+            color: var(--fg-primary);
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .phone-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .phone-input::placeholder {
+            color: var(--fg-muted);
+        }
+
+        .login-button {
+            background: #000000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--fg);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            min-width: 100px;
+        }
+
+        .login-button:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .login-button:disabled {
+            background: var(--fg-muted);
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            min-height: 20px;
+        }
+
+        .success-message {
+            color: #51cf66;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            min-height: 20px;
+        }
+
+        /* View Toggle Buttons */
+        .view-toggle {
+            position: absolute;
+            top: 20px;
+            left: 400px; /* Move to the right of the control panel (320px + 80px padding) */
+            z-index: 1000;
+            display: flex;
+            background: var(--stroke);
+            border-radius: var(--radius-2);
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--fg-muted);
+            border-radius: var(--radius-2);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            background: var(--fg-primary);
+            color: var(--bg-primary);
+        }
+
+        .nav-btn:hover:not(.active) {
+            background: var(--bg-tertiary);
+            color: var(--fg-primary);
+        }
+
+        /* Iframe Container */
+        .iframe-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        .iframe-container.active {
+            display: block;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-progress-container {
+            width: 200px;
+            height: 8px;
+            background-color: #000000;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background-color: #ffffff;
+            border-radius: 4px;
+            width: 0%;
+            animation: fillProgress 2.8s ease-out forwards;
+        }
+
+        @keyframes fillProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content h2 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .loading-content p {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .loading-text {
+            color: var(--fg-secondary);
+            font-size: 16px;
+        }
+
+        /* Hide loading screen when content is loaded */
+        .loaded .loading-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+    </div>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-container">
+            <div class="phone-input-container">
+                <input 
+                    type="tel" 
+                    id="phoneInput" 
+                    class="phone-input" 
+                    placeholder="(555) 123-4567"
+                    maxlength="14"
+                >
+            </div>
+            
+            <button id="loginButton" class="login-button" onclick="handleLogin()">
+                Enter
+            </button>
+            
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- View Toggle Buttons -->
+            <div class="view-toggle">
+                <button class="nav-btn active" id="mapBtn" onclick="switchView('map')">Map</button>
+                <button class="nav-btn" id="networkBtn" onclick="switchView('network')">Graph</button>
+                <button class="nav-btn logout-btn" onclick="logout()" style="margin-left: 10px; background: #dc3545; color: white;">Logout</button>
+                <button class="nav-btn" onclick="clearSession()" style="margin-left: 5px; background: #6c757d; color: white; font-size: 12px;">Clear Session</button>
+            </div>
+            
+            <!-- Map View Iframe -->
+            <iframe id="mapFrame" class="iframe-container active" src="8th_bedrock_map_user.html"></iframe>
+            
+            <!-- Network View Iframe -->
+            <iframe id="networkFrame" class="iframe-container" src="10th_bedrock_network_user.html?t=1757223100"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentView = 'map';
+        let mapFrame = null;
+        let networkFrame = null;
+        let userData = null;
+        let authenticatedUser = null;
+
+        // Format from a raw digits string (no side-effects on caret)
+        function formatFromDigits(digits) {
+            const d = digits.slice(0, 10);
+            if (d.length >= 7) {
+                return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+            } else if (d.length >= 4) {
+                return `(${d.slice(0,3)}) ${d.slice(3)}`;
+            } else if (d.length >= 1) {
+                return `(${d}`;
+            }
+            return "";
+        }
+
+        // Helper: count digits in a string slice
+        function countDigits(str) {
+            const m = str.match(/\d/g);
+            return m ? m.length : 0;
+        }
+
+        // Helper: given a formatted string and a target digit index,
+        // return the caret position right after that digit index
+        function caretPosForDigitIndex(formatted, digitIndex) {
+            if (digitIndex <= 0) return 0;
+            let idx = 0;
+            let seen = 0;
+            while (idx < formatted.length) {
+                if (/\d/.test(formatted[idx])) {
+                    seen++;
+                    if (seen === digitIndex) {
+                        // place caret *after* this digit
+                        return idx + 1;
+                    }
+                }
+                idx++;
+            }
+            // if we ran out, put caret at end
+            return formatted.length;
+        }
+
+        function setupPhoneInput() {
+            const el = document.getElementById('phoneInput');
+            if (!el) return;
+
+            // Initialize dataset storage
+            el.dataset.prev = el.value || "";
+
+            // Skip over formatting chars on Backspace/Delete
+            el.addEventListener('keydown', function(e) {
+                const val = el.value;
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+
+                // If there's a selection, let input handler deal with it
+                if (start !== end) return;
+
+                // Backspace: if just after a non-digit, jump left over it
+                if (e.key === 'Backspace' && start > 0 && /\D/.test(val[start - 1])) {
+                    e.preventDefault();
+                    const newPos = start - 1;
+                    el.setSelectionRange(newPos, newPos);
+                }
+
+                // Delete: if on a non-digit, jump right over it
+                if (e.key === 'Delete' && start < val.length && /\D/.test(val[start])) {
+                    e.preventDefault();
+                    const newPos = start + 1;
+                    el.setSelectionRange(newPos, newPos);
+                }
+
+                // Enter still triggers login
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleLogin();
+                }
+            });
+
+            // Reformat while preserving caret via "digit index" logic
+            el.addEventListener('input', function(e) {
+                const prevFormatted = el.dataset.prev || "";
+                const curFormatted = el.value;
+
+                // How many digits were before the caret in the *previous* string?
+                const caret = el.selectionStart || 0;
+                const prevDigitsBeforeCaret = countDigits(prevFormatted.slice(0, caret));
+
+                // Recompute digits from current raw input
+                const rawDigits = curFormatted.replace(/\D/g, '').slice(0, 10);
+                const nextFormatted = formatFromDigits(rawDigits);
+
+                // Set new value
+                el.value = nextFormatted;
+
+                // If we're adding digits (typing), position cursor after the new digit
+                // If we're removing digits (deleting), maintain the same digit position
+                const prevDigits = prevFormatted.replace(/\D/g, '');
+                let targetDigitIndex;
+                
+                if (rawDigits.length > prevDigits.length) {
+                    // Typing: position after the newly added digit
+                    targetDigitIndex = rawDigits.length;
+                } else {
+                    // Deleting: maintain same digit position
+                    targetDigitIndex = Math.min(prevDigitsBeforeCaret, rawDigits.length);
+                }
+                
+                const newCaret = caretPosForDigitIndex(nextFormatted, targetDigitIndex);
+                el.setSelectionRange(newCaret, newCaret);
+
+                // Cache for next event
+                el.dataset.prev = nextFormatted;
+            });
+        }
+
+        // Load user data from comprehensive_data.json
+        async function loadUserData() {
+            try {
+                const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                if (!response.ok) {
+                    throw new Error('Failed to load user data');
+                }
+                userData = await response.json();
+                console.log('✅ User data loaded:', userData.tap_data.length, 'taps');
+            } catch (error) {
+                console.error('❌ Error loading user data:', error);
+                showError('Failed to load user data. Please refresh the page.');
+            }
+        }
+
+        // Find user by phone number
+        function findUserByPhone(phoneNumber) {
+            if (!userData || !userData.tap_data) {
+                console.log('❌ No userData or tap_data available');
+                return null;
+            }
+
+            // Clean phone number for comparison
+            const cleanPhone = phoneNumber.replace(/\D/g, '');
+            console.log('🔍 Searching for phone:', cleanPhone);
+            
+            // Search for user with matching phone number in tap_data
+            for (const tap of userData.tap_data) {
+                // Check user1
+                if (tap.user1_phone_number) {
+                    const user1Phone = tap.user1_phone_number.replace(/\D/g, '');
+                    if (user1Phone === cleanPhone) {
+                        console.log('✅ Found user1 match:', tap.user1_name);
+                        return {
+                            user_id: tap.user1_id,
+                            name: tap.user1_name,
+                            username: tap.user1_username,
+                            phone_number: tap.user1_phone_number,
+                            tap_count: tap.user1_tap_count,
+                            connections_count: tap.user1_connections_count
+                        };
+                    }
+                }
+                
+                // Check user2
+                if (tap.user2_phone_number) {
+                    const user2Phone = tap.user2_phone_number.replace(/\D/g, '');
+                    if (user2Phone === cleanPhone) {
+                        console.log('✅ Found user2 match:', tap.user2_name);
+                        return {
+                            user_id: tap.user2_id,
+                            name: tap.user2_name,
+                            username: tap.user2_username,
+                            phone_number: tap.user2_phone_number,
+                            tap_count: tap.user2_tap_count,
+                            connections_count: tap.user2_connections_count
+                        };
+                    }
+                }
+            }
+
+            console.log('❌ No phone number match found');
+            return null;
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            errorDiv.textContent = message;
+            successDiv.textContent = '';
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            errorDiv.textContent = '';
+            successDiv.textContent = message;
+        }
+
+        // Clear messages
+        function clearMessages() {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+        }
+
+        // Handle login
+        async function handleLogin() {
+            const phoneInput = document.getElementById('phoneInput');
+            const loginButton = document.getElementById('loginButton');
+            const phoneNumber = phoneInput.value.trim();
+
+            // Clear previous messages
+            clearMessages();
+
+            // Validate phone number format
+            if (!phoneNumber) {
+                showError('Please enter your phone number');
+                return;
+            }
+
+            const cleanPhone = phoneNumber.replace(/\D/g, '');
+            if (cleanPhone.length !== 10) {
+                showError('Please enter a valid 10-digit phone number');
+                return;
+            }
+
+            // Disable button during validation
+            loginButton.disabled = true;
+            loginButton.textContent = 'Checking...';
+
+            try {
+                // Add +1 prefix to the phone number for matching
+                const fullPhoneNumber = '+1' + cleanPhone;
+                console.log('🔍 Searching with full phone number:', fullPhoneNumber);
+                
+                // Find user by phone number
+                const user = findUserByPhone(fullPhoneNumber);
+                
+                if (user) {
+                    // User found - authenticate
+                    authenticatedUser = user;
+                    const userName = user.name;
+                    showSuccess(`Welcome, ${userName}!`);
+                    
+                    // Store in sessionStorage for persistence
+                    sessionStorage.setItem('authenticatedUser', JSON.stringify(user));
+                    
+                    // Show loading screen immediately
+                    showLoadingScreen();
+                    
+                    // Hide login overlay after brief delay
+                    setTimeout(() => {
+                        hideLoginOverlay();
+                        // Pass user ID and name to bedrocks
+                        passUserToBedrocks(user.user_id, user.name);
+                    }, 500);
+                } else {
+                    // User not found
+                    showError('No account found for this phone number');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('An error occurred. Please try again.');
+            } finally {
+                // Re-enable button
+                loginButton.disabled = false;
+                loginButton.textContent = 'Access Network';
+            }
+        }
+
+        // Hide login overlay
+        function hideLoginOverlay() {
+            const loginOverlay = document.getElementById('loginOverlay');
+            loginOverlay.classList.add('hidden');
+        }
+
+        // Show loading screen
+        function showLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+                loadingScreen.innerHTML = `
+                    <div class="loading-progress-container">
+                        <div class="loading-progress-bar"></div>
+                    </div>
+                `;
+            }
+        }
+
+        // Hide loading screen
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            // Clear authentication
+            authenticatedUser = null;
+            sessionStorage.removeItem('authenticatedUser');
+            
+            // Show login overlay
+            const loginOverlay = document.getElementById('loginOverlay');
+            loginOverlay.classList.remove('hidden');
+            
+            // Clear phone input
+            const phoneInput = document.getElementById('phoneInput');
+            phoneInput.value = '';
+            
+            // Clear messages
+            clearMessages();
+            
+            console.log('🚪 User logged out');
+        }
+
+        // Clear session storage (for testing)
+        function clearSession() {
+            sessionStorage.clear();
+            console.log('🧹 Session storage cleared');
+            location.reload();
+        }
+
+        // Pass user ID to bedrocks via URL parameters
+        function passUserToBedrocks(userId, userName) {
+            console.log('🎯 Passing user to bedrocks:', userName);
+            
+            // Ensure iframes are initialized
+            if (!mapFrame || !networkFrame) {
+                mapFrame = document.getElementById('mapFrame');
+                networkFrame = document.getElementById('networkFrame');
+            }
+            
+            // Load both iframes simultaneously
+            const mapUrl = `8th_bedrock_map_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
+            const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
+            
+            console.log('🗺️ Setting map URL:', mapUrl);
+            console.log('🕸️ Setting network URL:', networkUrl);
+            
+            // Track which iframe is the currently visible one
+            let visibleIframeLoaded = false;
+            let hiddenIframeLoaded = false;
+            
+            // Function to check if we should hide loading screen
+            function checkLoadingComplete() {
+                if (visibleIframeLoaded && hiddenIframeLoaded) {
+                    console.log('✅ Both iframes loaded, hiding loading screen');
+                    setTimeout(() => {
+                        hideLoadingScreen();
+                    }, 2800); // Give more time for the auto-selection to complete
+                }
+            }
+            
+            // Set up load listeners for both iframes
+            if (mapFrame) {
+                mapFrame.onload = function() {
+                    console.log('🗺️ Map iframe loaded');
+                    if (currentView === 'map') {
+                        visibleIframeLoaded = true;
+                    } else {
+                        hiddenIframeLoaded = true;
+                    }
+                    checkLoadingComplete();
+                };
+                mapFrame.src = mapUrl;
+            }
+            
+            if (networkFrame) {
+                networkFrame.onload = function() {
+                    console.log('🕸️ Network iframe loaded');
+                    if (currentView === 'network') {
+                        visibleIframeLoaded = true;
+                    } else {
+                        hiddenIframeLoaded = true;
+                    }
+                    checkLoadingComplete();
+                };
+                networkFrame.src = networkUrl;
+            }
+            
+            // Initialize bedrocks after setting user name
+            initializeBedrocks();
+        }
+
+        // Check for existing authentication
+        function checkExistingAuth() {
+            const storedUser = sessionStorage.getItem('authenticatedUser');
+            if (storedUser) {
+                try {
+                    authenticatedUser = JSON.parse(storedUser);
+                    const userName = authenticatedUser.name;
+                    console.log('✅ Existing authentication found for:', userName);
+                    
+                    // Skip login overlay and go straight to loading screen
+                    hideLoginOverlay();
+                    showLoadingScreen();
+                    passUserToBedrocks(authenticatedUser.user_id, authenticatedUser.name);
+                    return true;
+                } catch (error) {
+                    console.error('Error parsing stored user:', error);
+                    sessionStorage.removeItem('authenticatedUser');
+                }
+            }
+            return false;
+        }
+
+        // Initialize the application
+        async function init() {
+            console.log('🚀 Starting unified bedrock initialization...');
+            
+            // Setup phone input formatting
+            setupPhoneInput();
+            
+            // Load user data
+            await loadUserData();
+            
+            // Check for existing authentication
+            if (checkExistingAuth()) {
+                // User is already authenticated, continue with normal initialization
+                initializeBedrocks();
+            } else {
+                // Show login overlay
+                console.log('🔐 No authentication found, showing login screen');
+                const loginOverlay = document.getElementById('loginOverlay');
+                if (loginOverlay) {
+                    loginOverlay.classList.remove('hidden');
+                }
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize bedrocks after authentication
+        function initializeBedrocks() {
+            // Get iframe references
+            mapFrame = document.getElementById('mapFrame');
+            networkFrame = document.getElementById('networkFrame');
+            
+            // Check URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            console.log('🔍 URL view parameter:', viewParam);
+            
+            if (viewParam === 'map' || viewParam === 'network') {
+                currentView = viewParam;
+                console.log('✅ Set currentView from URL:', currentView);
+            } else {
+                console.log('⚠️ No valid view param, using default:', currentView);
+            }
+            
+            // Update navigation
+            updateNavigation();
+            
+            // Switch to the correct view
+            switchViewContent();
+            
+            // Hide loading screen after a short delay
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+                console.log('✅ Unified bedrock initialization complete!');
+            }, 1000);
+        }
+
+        // Switch between views
+        function switchView(view) {
+            if (view === currentView) return;
+            
+            console.log('🔄 Switching view from', currentView, 'to', view);
+            
+            // Update current view
+            currentView = view;
+            
+            // Update navigation
+            updateNavigation();
+            
+            // Update URL
+            updateURL();
+            
+            // Switch view content
+            switchViewContent();
+        }
+
+        // Update navigation buttons
+        function updateNavigation() {
+            const mapBtn = document.getElementById('mapBtn');
+            const networkBtn = document.getElementById('networkBtn');
+            
+            mapBtn.classList.toggle('active', currentView === 'map');
+            networkBtn.classList.toggle('active', currentView === 'network');
+        }
+
+        // Update URL
+        function updateURL() {
+            const url = new URL(window.location);
+            url.searchParams.set('view', currentView);
+            window.history.pushState({}, '', url);
+        }
+
+        // Switch view content
+        function switchViewContent() {
+            console.log('🔄 switchViewContent called, currentView:', currentView);
+            
+            // Hide all iframes
+            mapFrame.classList.remove('active');
+            networkFrame.classList.remove('active');
+            
+            // Show the active iframe
+            if (currentView === 'map') {
+                mapFrame.classList.add('active');
+                console.log('🗺️ Showing map view');
+            } else {
+                networkFrame.classList.add('active');
+                console.log('🕸️ Showing network view');
+            }
+        }
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', function(event) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            if (viewParam && viewParam !== currentView) {
+                switchView(viewParam);
+            }
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+        });
+    </script>
+</body>
+</html>

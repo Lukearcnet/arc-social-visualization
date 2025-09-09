@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ARC Social Network - Geographic Map</title>
+    
+    <!-- Leaflet.js CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    
+    <style>
+        /* CSS Custom Properties - Normalized from bedrock 5 */
+        :root {
+            --space-1: 8px;
+            --space-2: 12px;
+            --space-3: 16px;
+            --space-4: 20px;
+            --radius-1: 6px;
+            --radius-2: 8px;
+            --radius-3: 10px;
+            --fg: #ffffff;
+            --fg-muted: #cccccc;
+            --bg-1: #000000;
+            --bg-2: #141414;
+            --bg-3: #1c1c1c;
+            --bg-4: #2a2a2a;
+            --stroke: rgba(255, 255, 255, 0.1);
+            --stroke-muted: rgba(255, 255, 255, 0.2);
+            --text-sm: 0.8rem;
+            --text-md: 0.9rem;
+            --text-lg: 1rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+        }
+        
+        /* Modern CSS Reset and Base Styles */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-1);
+            min-height: 100vh;
+            color: var(--fg);
+            line-height: 1.6;
+        }
+        
+        /* CSS Grid Layout - Normalized for localhost */
+        html, body, .main-container {
+            height: 100%;
+            margin: 0;
+        }
+        
+        .main-container {
+            display: grid;
+            /* exact match at common desktop widths, no clipping */
+            grid-template-columns: 380px 1fr;
+            grid-template-rows: 100%;
+            height: 100vh;
+            background: #000000;
+        }
+        
+        /* Guardrails - No transforms on layout containers */
+        html, body, .main-container, .map-container, #map {
+            transform: none !important;
+        }
+        
+        /* Sidebar - Normalized from bedrock 5 */
+        .sidebar {
+            width: auto;
+            box-sizing: border-box;
+            overflow: auto;
+            padding: 0 16px 16px 16px; /* Remove top padding to eliminate gray gap */
+            min-width: 0; /* allow content to wrap */
+            background: rgba(20, 20, 20, 0.98);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(64, 64, 64, 0.8);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .map-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Floating Map Controls - Top Right */
+        .map-controls-floating {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .map-controls-floating .control-btn {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--fg);
+            padding: 8px 12px;
+            border-radius: var(--radius-1);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            min-width: 100px;
+        }
+        
+        .map-controls-floating .control-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Header Styling - Normalized from bedrock 5 */
+        .header {
+            background: #000000; /* Pure black instead of var(--bg-1) */
+            padding: var(--space-4) var(--space-4) calc(var(--space-4) + 5px) var(--space-4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Very thin grey line */
+            text-align: center;
+            margin: 0 -16px var(--space-4) -16px; /* Negative margins to extend to edges */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Match 10th bedrock shadow */
+        }
+        
+        .header h3 {
+            font-family: 'Euclid', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 3rem; /* Doubled from var(--text-2xl) which is 1.5rem */
+            font-weight: 700; /* Match 10th bedrock thickness */
+            margin: 5px 0 0 0; /* Move arc text down 5px to match 10th bedrock */
+            padding: 0;
+            color: var(--fg);
+        }
+        
+        .header small {
+            color: var(--fg-muted);
+            font-size: var(--text-md);
+            display: block;
+            margin-top: 5px;
+        }
+        
+        /* Controls Section - Normalized from bedrock 5 */
+        .controls-section {
+            padding: calc(var(--space-4) / 2 * 0.6) 16px;
+            border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+        }
+        
+        .control-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: var(--space-1);
+            color: var(--fg);
+            font-weight: 500;
+            font-size: var(--text-md);
+        }
+        
+        /* Profile Section - Replicated from 10th bedrock */
+        .profile-section {
+            padding: calc(var(--space-4) / 2 * 0.6) var(--space-2);
+            margin: 0 calc(-1 * var(--space-4)) 0 calc(-1 * var(--space-4));
+            display: none;
+            background: transparent;
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+        
+        .profile-header {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .profile-name,
+        .profile-header h4,
+        #profileName {
+            font-size: 1.95rem !important;
+            font-weight: 700 !important;
+            margin-bottom: 10px;
+            letter-spacing: -0.025em;
+        }
+        
+        .profile-header p,
+        #profileActivity {
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            margin: 4px 0 !important;
+            color: var(--fg-muted);
+        }
+        
+        .profile-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-number,
+        .profile-stats .stat-card .stat-number,
+        #profileTaps,
+        #profileConnections {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label,
+        .profile-stats .stat-card .stat-label {
+            font-size: 0.8rem !important;
+            font-weight: 500 !important;
+            color: var(--fg-muted);
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em;
+        }
+
+        /* Timeline Slider - Normalized from bedrock 5 */
+        .timeline-container {
+            margin-bottom: var(--space-4);
+        }
+        
+        .timeline-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--stroke);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--fg);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .timeline-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--fg);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .timeline-slider:disabled {
+            cursor: not-allowed;
+        }
+        
+        .timeline-slider:disabled::-webkit-slider-thumb {
+            cursor: not-allowed;
+            background: #666666;
+        }
+        
+        .timeline-slider:disabled::-moz-range-thumb {
+            cursor: not-allowed;
+            background: #666666;
+        }
+        
+        .timeline-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: var(--space-1);
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+        }
+        
+        /* Mode Toggle - Normalized from bedrock 5 */
+        .mode-toggle {
+            display: flex;
+            background: var(--stroke);
+            border-radius: var(--radius-2);
+            padding: 4px;
+            margin-bottom: var(--space-4);
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: var(--space-1) var(--space-2);
+            border: none;
+            background: transparent;
+            color: var(--fg-muted);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+            font-size: var(--text-md);
+            transition: all 0.2s ease;
+        }
+        
+        .mode-btn.active {
+            background: var(--fg);
+            color: var(--bg-1);
+        }
+        
+        /* Search Input - Match button styling */
+        .search-input {
+            background: var(--stroke) !important;
+            border: 1px solid var(--stroke-muted) !important;
+            color: var(--fg) !important;
+            border-radius: var(--radius-1) !important;
+            padding: var(--space-1) var(--space-2) !important;
+            font-size: var(--text-md) !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .search-input::placeholder {
+            color: var(--fg-muted);
+        }
+        
+        /* Search Results - Match search bar styling */
+        .search-results {
+            margin-top: var(--space-2);
+            max-height: 150px; /* Reduced to ensure scrolling triggers sooner */
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: var(--stroke-muted) transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Visible border for debugging */
+        }
+        
+        /* Only show height when there are results */
+        .search-results:not(:empty) {
+            min-height: 40px;
+        }
+        
+        .search-results::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .search-results::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .search-results::-webkit-scrollbar-thumb {
+            background: var(--stroke-muted);
+            border-radius: 3px;
+        }
+        
+        .search-result {
+            padding: 8px var(--space-2);
+            background: var(--stroke);
+            margin-bottom: var(--space-1);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+            font-size: var(--text-md);
+            color: var(--fg);
+            transition: background 0.2s ease;
+            min-height: auto; /* Match search bar height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.2;
+        }
+        
+        .search-result:hover {
+            background: var(--stroke-muted);
+        }
+        
+        .search-result .user-name {
+            font-weight: 500;
+            color: var(--fg);
+        }
+        
+        .search-result .user-location {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            margin-top: 2px;
+        }
+        
+        /* Stats Display - Normalized from bedrock 5 */
+        .stats-display {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-2);
+            padding: 15px;
+            margin-bottom: var(--space-4);
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--space-1);
+            font-size: var(--text-md);
+        }
+        
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .stat-label {
+            color: var(--fg-muted);
+        }
+        
+        .stat-value {
+            color: var(--fg);
+            font-weight: 500;
+        }
+        
+        /* Map Styling */
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #000000;
+        }
+        
+        /* Scale up Leaflet zoom controls */
+        .leaflet-control-zoom {
+            transform: scale(2.5) !important;
+            transform-origin: top left !important;
+        }
+        
+        .leaflet-control-zoom a {
+            width: 60px !important;
+            height: 60px !important;
+            line-height: 60px !important;
+            font-size: 30px !important;
+        }
+        
+        /* Prevent zoom events on UI elements */
+        .sidebar, .custom-popup {
+            pointer-events: auto;
+        }
+        
+        .sidebar *, .custom-popup * {
+            pointer-events: auto;
+        }
+        
+        /* Inline Map Controls - Normalized from bedrock 5 */
+        .map-controls-inline {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+        
+        .control-btn {
+            padding: var(--space-1) var(--space-2);
+            background: var(--stroke);
+            border: 1px solid var(--stroke-muted);
+            border-radius: var(--radius-1);
+            color: var(--fg);
+            font-size: var(--text-md);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: var(--stroke-muted);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .loading-spinner {
+            width: 120px; /* 40px * 3 */
+            height: 120px; /* 40px * 3 */
+            border: 9px solid rgba(255, 255, 255, 0.1); /* 3px * 3 */
+            border-top: 9px solid #ffffff; /* 3px * 3 */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 60px; /* 20px * 3 */
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #ffffff;
+            font-size: 3.3em; /* 1.1em * 3 */
+            text-align: center;
+        }
+        
+        /* Custom Marker Popup */
+        .custom-popup {
+            background: rgba(0, 0, 0, 0.95);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 9px;
+            color: #ffffff;
+            padding: 15px;
+            font-size: 13.5px;
+            max-width: 300px;
+            min-width: 225px;
+            line-height: 1.4;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .popup-title {
+            font-weight: 600;
+            margin-bottom: 7.5px;
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        
+        .popup-info {
+            color: #cccccc;
+            font-size: 12px;
+            margin-bottom: 3.75px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Degree Connection Filters */
+        .degree-filters {
+            display: flex;
+            flex-direction: column;
+            gap: 8px; /* Reduced from 24px to 8px for tighter spacing */
+        }
+        
+        .degree-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: var(--text-md);
+            color: var(--fg);
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .degree-checkbox input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 16px;
+            width: 16px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            transition: all 0.2s ease;
+        }
+        
+        .degree-checkbox:hover .checkmark {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .degree-checkbox input:checked ~ .checkmark {
+            background-color: #ffffff;
+            border-color: #ffffff;
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid #000000;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .degree-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .color-swatch {
+            display: inline-block;
+            width: 16px; /* Reduced to match text height */
+            height: 16px; /* Reduced to match text height */
+            border-radius: 50%; /* Makes it a circle */
+            margin-left: 12px; /* Reduced spacing */
+            vertical-align: middle; /* Align with text */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Reduced border */
+        }
+        
+        /* Leaflet Popup Overrides */
+        .leaflet-popup-content-wrapper {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+        
+        .leaflet-popup-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+        }
+        
+        .leaflet-popup-tip {
+            background: rgba(0, 0, 0, 0.95) !important;
+            border: 3px solid rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        /* Hide Leaflet Zoom Controls */
+        .leaflet-control-zoom {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Header -->
+            <div class="header">
+                <h3>arc</h3>
+            </div>
+            
+            <!-- Controls Section -->
+            <div class="controls-section">
+                <!-- User Search (hidden in user-centric view) -->
+                <div class="control-group" id="userSearchGroup" style="display: none;">
+                    <label>Search User</label>
+                    <input type="text" id="userSearchInput" class="form-control search-input" placeholder="Type a name...">
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+                
+                <!-- Profile Section (User-Centric Mode Only) -->
+                <div id="profileSection" class="profile-section">
+                    <div class="profile-header">
+                        <h4 id="profileName">User Profile</h4>
+                        <p id="profileActivity">Activity Level</p>
+                    </div>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileTaps">0</div>
+                            <div class="stat-label">Taps</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileConnections">0</div>
+                            <div class="stat-label">Connections</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timeline Slider -->
+                <div class="control-group">
+                    <label>Timeline</label>
+                    <div class="timeline-container">
+                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
+                        <div class="timeline-info">
+                            <span id="timelineValue">100%</span>
+                            <span id="currentTime">All taps shown</span>
+                        </div>
+                        <div class="timeline-options" style="margin-top: 24px;">
+                            <label class="degree-checkbox">
+                                <input type="checkbox" id="cumulativeCheck" checked>
+                                <span class="checkmark"></span>
+                                Cumulative
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <!-- Stats Display -->
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <span class="stat-label">Visible Taps:</span>
+                        <span class="stat-value" id="visibleTaps">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Taps:</span>
+                        <span class="stat-value" id="totalTaps">647</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Active Users:</span>
+                        <span class="stat-value" id="activeUsers">197</span>
+                    </div>
+                </div>
+                
+                <!-- Degree Connection Filters (User-Centric Mode Only) -->
+                <div class="control-group" id="degreeFiltersGroup" style="display: none;">
+                    <label>Degree Connections</label>
+                    <div class="degree-filters">
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree1Check" checked>
+                            <span class="checkmark"></span>
+                            1st Degree
+                            <span class="color-swatch" style="background-color: #0E76A8;"></span>
+                        </label>
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree2Check">
+                            <span class="checkmark"></span>
+                            2nd Degree
+                            <span class="color-swatch" style="background-color: #3EC1D3;"></span>
+                        </label>
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree3Check">
+                            <span class="checkmark"></span>
+                            3rd Degree
+                            <span class="color-swatch" style="background-color: #9BE3DE;"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Show All Toggle -->
+                <div class="control-group">
+                    <label>Display Options</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" id="showAllBtn" onclick="toggleShowAll()">Show All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Floating Map Controls - Top Right -->
+            <div class="map-controls-floating">
+                <button class="control-btn" onclick="fitMapToBounds()">Fit to Data</button>
+                <button class="control-btn" onclick="resetMapView()">Reset View</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            <p>Loading geographic data...</p>
+            <p id="loadingStats">Initializing map</p>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let map;
+        let markers = [];
+        let markerGroups = {};
+        let currentMode = 'user';
+        let selectedUserId = null;
+        let timelineData = [];
+        let tapLocationData = {};
+        let edgesData = [];
+        let timelineSlider;
+        let clusteringEnabled = true;
+        let completeLocationData = []; // Make this global
+        let showAllEnabled = false; // Track Show All toggle state
+        let cumulativeEnabled = true; // Track Cumulative toggle state
+        let degreeFilters = {
+            degree1: true,
+            degree2: false,
+            degree3: false
+        }; // Track degree filter states
+        
+        // Initialize the application
+        async function init() {
+            try {
+                // Load data
+                await loadData();
+                
+                // Initialize map
+                initMap();
+                
+                // Initialize timeline
+                initTimeline();
+                
+                // Update display
+                updateDisplay();
+                
+                // Hide loading screen
+                document.getElementById('loadingScreen').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                document.getElementById('loadingStats').textContent = 'Error loading data: ' + error.message;
+            }
+        }
+        
+        // Load data from JSON files
+        async function loadData() {
+            try {
+                
+                // Load comprehensive data from JSON file
+                const comprehensiveResponse = await fetch(`../data/comprehensive_data.json?t=${Date.now()}`);
+                if (!comprehensiveResponse.ok) {
+                    throw new Error(`Failed to load comprehensive data: ${comprehensiveResponse.status}`);
+                }
+                const comprehensiveData = await comprehensiveResponse.json();
+                const tapData = comprehensiveData.tap_data;
+                
+                
+                // Transform tap data to match expected format
+                completeLocationData = tapData.map(tap => ({
+                    tap_id: tap.tap_id,
+                    user1_id: tap.user1_id,
+                    user1_name: tap.user1_name,
+                    user1_home: tap.user1_home,
+                    user2_id: tap.user2_id,
+                    user2_name: tap.user2_name,
+                    user2_home: tap.user2_home,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time
+                }));
+                
+                
+                
+                // User location data is included in comprehensive data
+                
+                // Metadata is included in comprehensive data
+                const metadata = comprehensiveData.metadata;
+                
+                // Generate edges data from tap data
+                const edgeMap = new Map();
+                
+                completeLocationData.forEach(tap => {
+                    const sourceId = tap.user1_id;
+                    const targetId = tap.user2_id;
+                    const edgeKey = `${sourceId}-${targetId}`;
+                    
+                    if (edgeMap.has(edgeKey)) {
+                        const existingEdge = edgeMap.get(edgeKey);
+                        existingEdge.tap_count += 1;
+                        existingEdge.thickness = Math.min(existingEdge.tap_count * 0.5, 5.0);
+                    } else {
+                        edgeMap.set(edgeKey, {
+                            source_id: sourceId,
+                            source_name: tap.user1_name,
+                            target_id: targetId,
+                            target_name: tap.user2_name,
+                            tap_count: 1,
+                            thickness: 1.0,
+                            color: "#E0E0E0"
+                        });
+                    }
+                });
+                
+                edgesData = Array.from(edgeMap.values());
+                
+                // Convert to tapLocationData object for quick lookup
+                completeLocationData.forEach(tap => {
+                    const tapKey = tap.tap_id;
+                    tapLocationData[tapKey] = {
+                        tap_id: tap.tap_id,
+                        user1_id: tap.user1_id,
+                        user1_name: tap.user1_name,
+                        user2_id: tap.user2_id,
+                        user2_name: tap.user2_name,
+                        latitude: tap.latitude,
+                        longitude: tap.longitude,
+                        location: tap.location,
+                        time: tap.time,
+                        formatted_time: tap.formatted_time
+                    };
+                });
+                
+                // Create timeline data from the loaded tap data
+                createTimelineData();
+                
+            } catch (error) {
+                console.error('❌ Error loading data:', error);
+                throw error;
+            }
+        }
+        
+                
+                // HARDCODED EDGES DATA COMMENTED OUT - NOW GENERATED DYNAMICALLY
+                
+                // edgesData is now set dynamically in loadData() function
+                
+                // LEGACY CODE COMMENTED OUT - NOW USING JSON LOADING
+                /*
+                // Create timeline data (simplified for now)
+                createTimelineData();
+                
+                console.log('Data loaded:', {
+                    taps: completeLocationData.length,
+                    edges: edgesData.length,
+                    timelineEvents: timelineData.length
+                });
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                throw error;
+            }
+        }
+                */
+        
+        // Create timeline data from actual tap data
+        function createTimelineData(userId = null) {
+            timelineData = [];
+            let eventIndex = 0;
+            
+            // Create timeline events from completeLocationData
+            completeLocationData.forEach(tap => {
+                const tapTime = new Date(tap.time).getTime();
+                
+                // Create timeline event
+                timelineData.push({
+                    id: eventIndex++,
+                    timestamp: tapTime,
+                    tap_id: tap.tap_id,
+                    user1_id: tap.user1_id,
+                    user1_name: tap.user1_name,
+                    user2_id: tap.user2_id,
+                    user2_name: tap.user2_name,
+                    location: tap.location,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude
+                });
+            });
+            
+            // Sort by timestamp
+            timelineData.sort((a, b) => a.timestamp - b.timestamp);
+            
+        }
+        
+        // Initialize Leaflet map
+        function initMap() {
+            // Check map container
+            const mapContainer = document.getElementById('map');
+            console.log('Map container:', mapContainer);
+            console.log('Map container dimensions:', mapContainer.offsetWidth, 'x', mapContainer.offsetHeight);
+            console.log('Map container style:', mapContainer.style.cssText);
+            
+                    // Create map with dark theme
+        map = L.map('map', {
+            center: [39.8283, -98.5795], // Center of USA
+            zoom: 4, // Zoomed out to show entire continental USA
+            zoomControl: true,
+            attributionControl: false
+        });
+            
+            // Add dark tile layer with standard configuration
+            const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '©OpenStreetMap, ©CartoDB',
+                subdomains: 'abcd',
+                maxZoom: 19,
+                tileSize: 256,  // Standard tile size
+                zoomOffset: 0   // No offset
+            }).addTo(map);
+            
+            // Add event listeners to check if tiles are loading
+            tileLayer.on('loading', function() {
+                console.log('Map tiles loading...');
+            });
+            
+            tileLayer.on('load', function() {
+                console.log('Map tiles loaded successfully');
+            });
+            
+            tileLayer.on('tileerror', function(e) {
+                console.error('Map tile error:', e);
+            });
+            
+            // Zoom control removed - not needed
+            
+            console.log('Map initialized');
+            
+            // Test marker removed - map is working correctly
+            
+            // Force map to resize and invalidate
+            setTimeout(() => {
+                map.invalidateSize();
+                console.log('Map invalidated and resized');
+            }, 100);
+            
+            // Prevent zoom events on UI elements
+            preventZoomOnUIElements();
+        }
+        
+        // Function to prevent zoom events on UI elements
+        function preventZoomOnUIElements() {
+            // Get UI elements
+            const sidebar = document.querySelector('.sidebar');
+            
+            // Function to prevent wheel events from bubbling to map
+            function preventWheelEvent(e) {
+                // Allow scrolling on search results and other scrollable elements
+                const target = e.target;
+                const isScrollableElement = target.closest('.search-results') || 
+                                          target.closest('[style*="overflow"]') ||
+                                          target.closest('.controls-section');
+                
+                if (isScrollableElement) {
+                    // Allow normal scrolling, just prevent zoom
+                    e.stopPropagation();
+                    return; // Don't prevent default for scrollable elements
+                }
+                
+                // For other elements, prevent both zoom and scroll
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            
+            // Function to prevent touch events (pinch-to-zoom)
+            function preventTouchEvent(e) {
+                if (e.touches.length > 1) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }
+            
+            // Function to prevent keyboard zoom shortcuts
+            function preventKeyboardZoom(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.keyCode === 61 || e.keyCode === 173)) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }
+            
+            // Function to disable map zoom when hovering over UI elements
+            function disableMapZoom() {
+                map.scrollWheelZoom.disable();
+                map.doubleClickZoom.disable();
+                map.touchZoom.disable();
+            }
+            
+            // Function to enable map zoom when leaving UI elements
+            function enableMapZoom() {
+                map.scrollWheelZoom.enable();
+                map.doubleClickZoom.enable();
+                map.touchZoom.enable();
+            }
+            
+            // Add event listeners to prevent zoom on UI elements
+            if (sidebar) {
+                sidebar.addEventListener('wheel', preventWheelEvent, { passive: false });
+                sidebar.addEventListener('touchstart', preventTouchEvent, { passive: false });
+                sidebar.addEventListener('touchmove', preventTouchEvent, { passive: false });
+                sidebar.addEventListener('keydown', preventKeyboardZoom, { passive: false });
+                sidebar.addEventListener('mouseenter', disableMapZoom);
+                sidebar.addEventListener('mouseleave', enableMapZoom);
+                // Also prevent on all child elements
+                const sidebarElements = sidebar.querySelectorAll('*');
+                sidebarElements.forEach(element => {
+                    element.addEventListener('wheel', preventWheelEvent, { passive: false });
+                    element.addEventListener('touchstart', preventTouchEvent, { passive: false });
+                    element.addEventListener('touchmove', preventTouchEvent, { passive: false });
+                    element.addEventListener('keydown', preventKeyboardZoom, { passive: false });
+                });
+            }
+            
+            // Map controls are now inline in the sidebar, so no separate handling needed
+            
+            // Prevent zoom on popups when they appear
+            map.on('popupopen', function(e) {
+                const popup = e.popup.getElement();
+                if (popup) {
+                    popup.addEventListener('wheel', preventWheelEvent, { passive: false });
+                    popup.addEventListener('touchstart', preventTouchEvent, { passive: false });
+                    popup.addEventListener('touchmove', preventTouchEvent, { passive: false });
+                    popup.addEventListener('keydown', preventKeyboardZoom, { passive: false });
+                    popup.addEventListener('mouseenter', disableMapZoom);
+                    popup.addEventListener('mouseleave', enableMapZoom);
+                    // Also prevent on all child elements
+                    const popupElements = popup.querySelectorAll('*');
+                    popupElements.forEach(element => {
+                        element.addEventListener('wheel', preventWheelEvent, { passive: false });
+                        element.addEventListener('touchstart', preventTouchEvent, { passive: false });
+                        element.addEventListener('touchmove', preventTouchEvent, { passive: false });
+                        element.addEventListener('keydown', preventKeyboardZoom, { passive: false });
+                    });
+                }
+            });
+            
+        }
+        
+        // Initialize timeline slider
+        function initTimeline() {
+            timelineSlider = document.getElementById('timelineSlider');
+            timelineSlider.addEventListener('input', function() {
+                // Always update timeline display, but handle Show All mode differently
+                updateTimelineDisplay();
+            });
+            
+            // Add cumulative checkbox event listener (works in both global and user modes)
+            const cumulativeCheck = document.getElementById('cumulativeCheck');
+            cumulativeCheck.addEventListener('change', function() {
+                cumulativeEnabled = this.checked;
+                
+                // Force update markers to reflect the new cumulative setting
+                if (!showAllEnabled) {
+                    // Normal timeline mode - updateTimelineDisplay will handle marker updates
+                    updateTimelineDisplay();
+                } else {
+                    // When Show All is enabled, force update with current timeline value
+                    const timelineValue = document.getElementById('timelineSlider').value;
+                    if (timelineData.length > 0) {
+                        const earliestTime = timelineData[0].timestamp;
+                        const latestTime = timelineData[timelineData.length - 1].timestamp;
+                        const currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
+                        updateMarkers(currentTime);
+                    } else {
+                        updateMarkers(0);
+                    }
+                }
+            });
+            
+            // Set initial value to 0%
+            timelineSlider.value = 0;
+            updateTimelineDisplay();
+            
+            console.log('Timeline initialized');
+        }
+        
+        // Update timeline display
+        function updateTimelineDisplay() {
+            const timelineValue = timelineSlider.value;
+            
+            // Calculate current time based on appropriate data range
+            let earliestTime, latestTime, currentTime;
+            
+            if (currentMode === 'user' && selectedUserId) {
+                // In user mode with degree filters, use complete location data for timeline range
+                if (completeLocationData.length > 0) {
+                    const timestamps = completeLocationData.map(tap => new Date(tap.time).getTime()).sort((a, b) => a - b);
+                    earliestTime = timestamps[0];
+                    latestTime = timestamps[timestamps.length - 1];
+                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
+                } else {
+                    // Fallback to timeline data
+                    earliestTime = timelineData[0].timestamp;
+                    latestTime = timelineData[timelineData.length - 1].timestamp;
+                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
+                }
+            } else {
+                // Normal mode, use timeline data
+                if (timelineData.length > 0) {
+                    earliestTime = timelineData[0].timestamp;
+                    latestTime = timelineData[timelineData.length - 1].timestamp;
+                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
+                } else {
+                    // Fallback if no timeline data
+                    document.getElementById('timelineValue').textContent = 'No data';
+                    document.getElementById('currentTime').textContent = 'No events';
+                    return;
+                }
+            }
+            
+            // Format current time as date
+            const currentDate = new Date(currentTime);
+            const formattedDate = currentDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            // Update display
+            document.getElementById('timelineValue').textContent = formattedDate;
+            
+            // Update the current time display based on mode
+            if (currentMode === 'user' && selectedUserId) {
+                // In user mode, show degree-filtered event count
+                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
+                document.getElementById('currentTime').textContent = 
+                    timelineValue === '100' ? 'All degree-filtered taps shown' : `${completeLocationData.length} total taps (${modeText})`;
+            } else {
+                // In global mode, show normal timeline info
+                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
+                document.getElementById('currentTime').textContent = 
+                    timelineValue === '100' ? 'All taps shown' : `${timelineData.length} total taps (${modeText})`;
+            }
+            
+            // Update markers based on timeline
+            updateMarkers(currentTime);
+        }
+        
+        // Update markers based on timeline and mode
+        function updateMarkers(currentTime) {
+            // Clear existing markers
+            clearMarkers();
+            
+            let filteredEvents;
+            
+            if (currentMode === 'user' && selectedUserId) {
+                // In user mode, always start with complete location data for degree filtering
+                // Transform completeLocationData to match expected structure
+                filteredEvents = completeLocationData.map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1, // Each tap represents one connection
+                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
+                }));
+            } else if (showAllEnabled) {
+                // Show All mode: display all events regardless of timeline
+                // Transform completeLocationData to match expected structure
+                filteredEvents = completeLocationData.map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1, // Each tap represents one connection
+                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
+                }));
+            } else {
+                // Normal timeline mode: use complete location data for consistent filtering
+                // Transform completeLocationData to match expected structure
+                filteredEvents = completeLocationData.map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1, // Each tap represents one connection
+                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
+                }));
+            }
+            
+            // Filter events based on mode and degree connections
+            if (currentMode === 'user' && selectedUserId) {
+                // Calculate degree connections for the selected user
+                const degreeConnections = calculateDegreeConnections(selectedUserId);
+                
+                
+                // Filter events based on selected degree filters
+                filteredEvents = filteredEvents.filter(event => {
+                    const sourceUserId = event.source_id;
+                    const targetUserId = event.target_id;
+                    
+                    let shouldShow = false;
+                    
+                    // For 1st degree: Only show connections that directly involve the selected user
+                    if (degreeFilters.degree1) {
+                        if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                            // This is a direct connection to the selected user
+                            shouldShow = true;
+                        }
+                    }
+                    
+                    // For 2nd degree: Show connections where at least one user is a 1st degree connection to selected user
+                    if (degreeFilters.degree2) {
+                        if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
+                            // Neither user is the selected user
+                            if (degreeConnections.degree1.has(sourceUserId) || degreeConnections.degree1.has(targetUserId)) {
+                                // At least one user is a 1st degree connection to selected user
+                                shouldShow = true;
+                            }
+                        }
+                    }
+                    
+                    // For 3rd degree: Show connections between 2nd degree users (not involving selected user or 1st degree users)
+                    if (degreeFilters.degree3) {
+                        if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
+                            // Neither user is the selected user
+                            if (!degreeConnections.degree1.has(sourceUserId) && !degreeConnections.degree1.has(targetUserId)) {
+                                // Neither user is a 1st degree connection
+                                if (degreeConnections.degree2.has(sourceUserId) && degreeConnections.degree2.has(targetUserId)) {
+                                    // Both users are 2nd degree connections to selected user
+                                    shouldShow = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    return shouldShow;
+                });
+                
+            }
+            
+            // Apply timeline filtering if not in Show All mode OR if we're in user mode with degree filters
+            if (!showAllEnabled || (currentMode === 'user' && selectedUserId)) {
+                const beforeTimeline = filteredEvents.length;
+                
+                if (cumulativeEnabled) {
+                    // Cumulative mode: show all events up to current time
+                    filteredEvents = filteredEvents.filter(event => {
+                        const eventTime = event.timestamp;
+                        const eventDate = new Date(eventTime).toLocaleDateString();
+                        const isInRange = eventTime <= currentTime;
+                        // Removed verbose event logging to reduce console clutter
+                        return isInRange;
+                    });
+                } else {
+                    // Non-cumulative mode: show only events at current time point (within a small window)
+                    const timeWindow = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+                    filteredEvents = filteredEvents.filter(event => {
+                        const eventTime = event.timestamp;
+                        const eventDate = new Date(eventTime).toLocaleDateString();
+                        const isAtCurrentTime = Math.abs(eventTime - currentTime) <= timeWindow;
+                        return isAtCurrentTime;
+                    });
+                }
+            }
+            
+            // Create markers for filtered events
+            filteredEvents.forEach(event => {
+                // Use location data from the timeline event (which now includes actual tap data)
+                if (event.latitude && event.longitude) {
+                    const location = {
+                        latitude: event.latitude,
+                        longitude: event.longitude,
+                        location: event.location || 'Unknown location'
+                    };
+                    addTapMarker(location, event);
+                } else {
+                    console.log('Event missing latitude/longitude:', event);
+                }
+            });
+            
+            // Update stats
+            updateStats(filteredEvents);
+            
+            // Don't auto-fit map on timeline changes - let user control the view
+            // Only fit bounds when explicitly requested or when switching modes
+        }
+        
+        // Add tap marker to map
+        function addTapMarker(location, event) {
+            
+            // Default white for global mode
+            let markerColor = '#ffffff';
+            let fillColor = '#ffffff';
+            
+            if (currentMode === 'user' && selectedUserId) {
+                const sourceUserId = event.source_id;
+                const targetUserId = event.target_id;
+                
+                // Determine the degree based on the actual filtering logic
+                if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                    // Direct connection to selected user = 1st degree
+                    markerColor = '#0E76A8'; // Deep azure blue for 1st degree (strong & trustworthy)
+                    fillColor = '#0E76A8';
+                } else {
+                    // Check if at least one user is a 1st degree connection to selected user (2nd degree)
+                    const degreeConnections = calculateDegreeConnections(selectedUserId);
+                    if (degreeConnections.degree1.has(sourceUserId) || degreeConnections.degree1.has(targetUserId)) {
+                        markerColor = '#3EC1D3'; // Teal/cyan for 2nd degree (lighter connection)
+                        fillColor = '#3EC1D3';
+                    } else if (degreeConnections.degree2.has(sourceUserId) || degreeConnections.degree2.has(targetUserId)) {
+                        markerColor = '#9BE3DE'; // Pale aqua for 3rd degree (far/distant)
+                        fillColor = '#9BE3DE';
+                    }
+                }
+            }
+            
+            const marker = L.circleMarker([location.latitude, location.longitude], {
+                radius: 4, /* Further reduced from 6 */
+                fillColor: fillColor,
+                color: markerColor,
+                weight: 2, /* Further reduced from 3 */
+                opacity: 0.8,
+                fillOpacity: 0.7
+            }).addTo(map);
+            
+            
+            // Debug: Log event data to see what fields are available
+            
+            // Create popup content showing the connection
+            const venueInfo = event.venue_context || {};
+            const venueName = venueInfo.venue_name || 'Unknown Location';
+            const venueCategory = venueInfo.venue_category || 'unknown';
+            const venueDisplay = venueCategory !== 'unknown' ? `${venueName} (${venueCategory})` : venueName;
+            
+            const popupContent = `
+                <div class="custom-popup">
+                    <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
+                    <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                    <div class="popup-info">Venue: ${venueDisplay}</div>
+                    <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            markers.push(marker);
+        }
+        
+        // Clear all markers
+        function clearMarkers() {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+        }
+        
+        // Update statistics display
+        function updateStats(events) {
+            const uniqueUsers = new Set();
+            events.forEach(event => {
+                uniqueUsers.add(event.source_id);
+                uniqueUsers.add(event.target_id);
+            });
+            
+            // Get the appropriate total tap count based on current mode
+            let totalTapCount;
+            if (currentMode === 'user' && selectedUserId) {
+                // In user mode, count only taps involving the selected user
+                totalTapCount = completeLocationData.filter(tap => 
+                    tap.user1_id === selectedUserId || tap.user2_id === selectedUserId
+                ).length;
+            } else {
+                // In global mode, use all taps
+                totalTapCount = completeLocationData.length;
+            }
+            
+            document.getElementById('visibleTaps').textContent = events.length;
+            document.getElementById('totalTaps').textContent = totalTapCount;
+            document.getElementById('activeUsers').textContent = uniqueUsers.size;
+            
+        }
+        
+        // Set view mode (global or user-centric) - DEACTIVATED: Always user-centric
+        function setMode(mode) {
+            // Force user-centric mode
+            currentMode = 'user';
+            
+            // Always show user search and degree filters
+            const userSearchGroup = document.getElementById('userSearchGroup');
+            const degreeFiltersGroup = document.getElementById('degreeFiltersGroup');
+            const profileSection = document.getElementById('profileSection');
+            
+            userSearchGroup.style.display = 'block';
+            degreeFiltersGroup.style.display = 'block';
+            profileSection.style.display = 'none'; // Hide profile section initially
+            initUserSearch();
+            
+            // Reset Show All toggle when switching modes
+            if (showAllEnabled) {
+                toggleShowAll(); // This will turn off Show All mode
+            }
+            
+            // Reset timeline slider to 0
+            timelineSlider.value = 0;
+            
+            // Update display
+            updateTimelineDisplay();
+            
+            // Don't auto-fit map when switching modes - let user control the view
+        }
+        
+        // Map control functions
+        function fitMapToBounds() {
+            console.log('fitMapToBounds called, markers.length:', markers.length);
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                const bounds = group.getBounds();
+                console.log('Map bounds:', bounds);
+                
+                // Add more padding and limit zoom level for better user experience
+                const paddedBounds = bounds.pad(0.2); // More padding
+                map.fitBounds(paddedBounds, {
+                    maxZoom: 10, // Limit maximum zoom level
+                    animate: true
+                });
+                console.log('Map fitted to bounds with padding and zoom limit');
+            } else {
+                console.log('No markers to fit bounds to');
+            }
+        }
+        
+        function resetMapView() {
+            map.setView([39.8283, -98.5795], 4);
+        }
+        
+        function toggleClustering() {
+            clusteringEnabled = !clusteringEnabled;
+            console.log('Clustering:', clusteringEnabled ? 'enabled' : 'disabled');
+            // TODO: Implement clustering logic
+        }
+        
+        // Toggle Show All functionality
+        function toggleShowAll() {
+            showAllEnabled = !showAllEnabled;
+            const showAllBtn = document.getElementById('showAllBtn');
+            const timelineSlider = document.getElementById('timelineSlider');
+            
+            // Update button appearance
+            if (showAllEnabled) {
+                showAllBtn.classList.add('active');
+                showAllBtn.textContent = 'Show Timeline';
+                // Disable timeline slider
+                timelineSlider.disabled = true;
+                timelineSlider.style.opacity = '0.5';
+                // Set timeline to 100%
+                timelineSlider.value = 100;
+            } else {
+                showAllBtn.classList.remove('active');
+                showAllBtn.textContent = 'Show All';
+                // Enable timeline slider
+                timelineSlider.disabled = false;
+                timelineSlider.style.opacity = '1';
+            }
+            
+            // Update display
+            updateTimelineDisplay();
+        }
+        
+        // Initialize user search functionality
+        function initUserSearch() {
+            const searchInput = document.getElementById('userSearchInput');
+            const searchResults = document.getElementById('searchResults');
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                
+                if (query.length < 2) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+                
+                // Search through all users in edges data
+                const matches = [];
+                const seenUsers = new Set();
+                
+                // Search through all users in tap data (which has home locations)
+                completeLocationData.forEach(tap => {
+                    // Check user1
+                    if (tap.user1_name.toLowerCase().includes(query) && !seenUsers.has(tap.user1_id)) {
+                        matches.push({
+                            id: tap.user1_id,
+                            name: tap.user1_name,
+                            location: tap.user1_home || 'Unknown location'
+                        });
+                        seenUsers.add(tap.user1_id);
+                    }
+                    
+                    // Check user2
+                    if (tap.user2_name.toLowerCase().includes(query) && !seenUsers.has(tap.user2_id)) {
+                        matches.push({
+                            id: tap.user2_id,
+                            name: tap.user2_name,
+                            location: tap.user2_home || 'Unknown location'
+                        });
+                        seenUsers.add(tap.user2_id);
+                    }
+                });
+                
+                // Display results
+                if (matches.length > 0) {
+                    searchResults.innerHTML = matches.slice(0, 10).map(user => `
+                        <div class="search-result" onclick="selectUser('${user.id}', '${user.name}')">
+                            <div class="user-name">${user.name}</div>
+                            <div class="user-location">${user.location}</div>
+                        </div>
+                    `).join('');
+                    
+                    // Debug: Log container info
+                } else {
+                    searchResults.innerHTML = '<div class="search-result" style="color: var(--fg-muted); cursor: default;">No users found</div>';
+                }
+            });
+            
+            // Clear search when switching modes
+            searchInput.value = '';
+            searchResults.innerHTML = '';
+        }
+        
+        // Select a user for user-centric mode
+        function selectUser(userId, userName) {
+            selectedUserId = userId;
+            
+            // Update search input
+            document.getElementById('userSearchInput').value = userName;
+            document.getElementById('searchResults').innerHTML = '';
+            
+            // Show profile section and update profile data
+            updateUserProfile(userId, userName);
+            
+            // Initialize degree filters for the selected user
+            initDegreeFilters();
+            
+            // Regenerate timeline for selected user
+            createTimelineData(userId);
+            
+            // Reset timeline slider to 0
+            timelineSlider.value = 0;
+            
+            // Update display
+            updateTimelineDisplay();
+            
+            // Don't auto-fit map when selecting users - let user control the view
+            
+        }
+        
+        // Update user profile section
+        function updateUserProfile(userId, userName) {
+            // Show profile section
+            const profileSection = document.getElementById('profileSection');
+            profileSection.style.display = 'block';
+            
+            // Update profile header
+            document.getElementById('profileName').textContent = userName;
+            
+            // Calculate user stats
+            const userTaps = completeLocationData.filter(tap => 
+                tap.user1_id === userId || tap.user2_id === userId
+            ).length;
+            
+            // Calculate connections (unique users this user has tapped with)
+            const connectedUserIds = new Set();
+            completeLocationData.forEach(tap => {
+                if (tap.user1_id === userId) {
+                    connectedUserIds.add(tap.user2_id);
+                } else if (tap.user2_id === userId) {
+                    connectedUserIds.add(tap.user1_id);
+                }
+            });
+            const connectionCount = connectedUserIds.size;
+            
+            // Determine activity level
+            let activityLevel = 'low';
+            if (userTaps > 50) activityLevel = 'high';
+            else if (userTaps > 20) activityLevel = 'medium';
+            
+            // Update profile data
+            document.getElementById('profileActivity').textContent = `Activity Level: ${activityLevel}`;
+            document.getElementById('profileTaps').textContent = userTaps;
+            document.getElementById('profileConnections').textContent = connectionCount;
+        }
+        
+        // Initialize degree filters
+        function initDegreeFilters() {
+            const degreeFiltersGroup = document.getElementById('degreeFiltersGroup');
+            const degree1Check = document.getElementById('degree1Check');
+            const degree2Check = document.getElementById('degree2Check');
+            const degree3Check = document.getElementById('degree3Check');
+            
+            // Show degree filters in user mode
+            degreeFiltersGroup.style.display = 'block';
+            
+            // Set default state (1st degree checked)
+            degree1Check.checked = true;
+            degree2Check.checked = false;
+            degree3Check.checked = false;
+            degreeFilters.degree1 = true;
+            degreeFilters.degree2 = false;
+            degreeFilters.degree3 = false;
+            
+            // Add event listeners
+            degree1Check.addEventListener('change', updateDegreeFilters);
+            degree2Check.addEventListener('change', updateDegreeFilters);
+            degree3Check.addEventListener('change', updateDegreeFilters);
+        }
+        
+        // Update degree filters
+        function updateDegreeFilters() {
+            console.log('updateDegreeFilters called!');
+            const degree1Check = document.getElementById('degree1Check');
+            const degree2Check = document.getElementById('degree2Check');
+            const degree3Check = document.getElementById('degree3Check');
+            
+            degreeFilters.degree1 = degree1Check.checked;
+            degreeFilters.degree2 = degree2Check.checked;
+            degreeFilters.degree3 = degree3Check.checked;
+            
+            console.log('Degree filters updated:', degreeFilters);
+            
+            // Update display - force a proper update regardless of Show All state
+            if (showAllEnabled) {
+                // When Show All is enabled, force update with current timeline value
+                const timelineValue = document.getElementById('timelineSlider').value;
+                if (timelineData.length > 0) {
+                    const earliestTime = timelineData[0].timestamp;
+                    const latestTime = timelineData[timelineData.length - 1].timestamp;
+                    const currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
+                    updateMarkers(currentTime);
+                } else {
+                    updateMarkers(0);
+                }
+            } else {
+                // Normal timeline mode
+                updateTimelineDisplay();
+            }
+        }
+        
+        // Calculate degree connections for a user based on complete network
+        function calculateDegreeConnections(userId) {
+            const connections = {
+                degree1: new Set(),
+                degree2: new Set(),
+                degree3: new Set()
+            };
+            
+            // Find 1st degree connections (direct connections to the user)
+            completeLocationData.forEach(tap => {
+                if (tap.user1_id === userId) {
+                    connections.degree1.add(tap.user2_id);
+                } else if (tap.user2_id === userId) {
+                    connections.degree1.add(tap.user1_id);
+                }
+            });
+            
+            // Find 2nd degree connections (connections of 1st degree users)
+            connections.degree1.forEach(firstDegreeUser => {
+                completeLocationData.forEach(tap => {
+                    if (tap.user1_id === firstDegreeUser && tap.user2_id !== userId) {
+                        connections.degree2.add(tap.user2_id);
+                    } else if (tap.user2_id === firstDegreeUser && tap.user1_id !== userId) {
+                        connections.degree2.add(tap.user1_id);
+                    }
+                });
+            });
+            
+            // Find 3rd degree connections (connections of 2nd degree users)
+            connections.degree2.forEach(secondDegreeUser => {
+                completeLocationData.forEach(tap => {
+                    if (tap.user1_id === secondDegreeUser && tap.user2_id !== userId && !connections.degree1.has(tap.user2_id)) {
+                        connections.degree3.add(tap.user2_id);
+                    } else if (tap.user2_id === secondDegreeUser && tap.user1_id !== userId && !connections.degree1.has(tap.user1_id)) {
+                        connections.degree3.add(tap.user1_id);
+                    }
+                });
+            });
+            
+            
+            return connections;
+        }
+        
+        // Check if a tap involves users of the specified degree
+        function isTapInDegree(tap, userId, degreeConnections, degree) {
+            const otherUserId = tap.user1_id === userId ? tap.user2_id : tap.user1_id;
+            
+            switch(degree) {
+                case 1:
+                    return degreeConnections.degree1.has(otherUserId);
+                case 2:
+                    return degreeConnections.degree2.has(otherUserId);
+                case 3:
+                    return degreeConnections.degree3.has(otherUserId);
+                default:
+                    return false;
+            }
+        }
+        
+        // Update display
+        function updateDisplay() {
+            // Update header stats
+            // Count unique users from tap data
+            const uniqueUsers = new Set();
+            completeLocationData.forEach(tap => {
+                uniqueUsers.add(tap.user1_id);
+                uniqueUsers.add(tap.user2_id);
+            });
+            const totalUsers = uniqueUsers.size;
+            const totalTaps = completeLocationData.length; // Use actual tap count instead of edges
+            
+            // Update loading stats
+            document.getElementById('loadingStats').textContent = 
+                `Loaded ${totalUsers} users with location data`;
+            
+            // Update timeline display to show initial markers
+            updateTimelineDisplay();
+        }
+        
+        // Reset browser zoom and viewport
+        function resetBrowserView() {
+            // Multiple approaches to force browser zoom reset
+            
+            // Method 1: CSS zoom reset
+            document.body.style.zoom = '1';
+            document.body.style.transform = 'scale(1)';
+            document.body.style.transformOrigin = 'top left';
+            
+            // Method 2: Force viewport reset
+            let viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            } else {
+                viewport = document.createElement('meta');
+                viewport.name = 'viewport';
+                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+                document.head.appendChild(viewport);
+            }
+            
+            // Method 3: Force document zoom reset
+            document.documentElement.style.zoom = '1';
+            document.documentElement.style.transform = 'scale(1)';
+            
+            // Method 4: Force window resize to trigger browser zoom reset
+            window.dispatchEvent(new Event('resize'));
+            
+            // Method 5: Force a reflow and repaint
+            document.body.offsetHeight;
+            document.body.style.display = 'none';
+            document.body.offsetHeight;
+            document.body.style.display = '';
+            
+        }
+        
+        // Global zoom prevention
+        function preventGlobalZoom() {
+            // Reset browser view first
+            resetBrowserView();
+            
+            // Prevent zoom on the entire document
+            document.addEventListener('wheel', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Prevent touch zoom
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Prevent keyboard zoom
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.keyCode === 61 || e.keyCode === 173)) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            console.log('🛡️ Global zoom prevention enabled');
+        }
+        
+        // Manual reset function - call this from console if needed
+        window.resetView = function() {
+            resetBrowserView();
+        };
+        
+        // Nuclear option - force complete browser zoom reset
+        window.forceZoomReset = function() {
+            console.log('🚀 Starting nuclear zoom reset...');
+            
+            // Step 1: Reset all zoom-related styles
+            document.body.style.zoom = '1';
+            document.body.style.transform = 'scale(1)';
+            document.documentElement.style.zoom = '1';
+            document.documentElement.style.transform = 'scale(1)';
+            
+            // Step 2: Force viewport meta tag update
+            let viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.remove();
+            }
+            viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+            document.head.appendChild(viewport);
+            
+            // Step 3: Force multiple resize events
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, i * 100);
+            }
+            
+            // Step 4: Force complete page reflow
+            setTimeout(() => {
+                document.body.style.display = 'none';
+                setTimeout(() => {
+                    document.body.style.display = '';
+                    console.log('💥 Nuclear zoom reset completed - sidebar should now be visible');
+                }, 100);
+            }, 500);
+        };
+        
+        // Debug and fix sidebar visibility
+        window.fixSidebar = function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContainer = document.querySelector('.main-container');
+            
+            if (sidebar) {
+                
+                // Force sidebar to be visible with aggressive styling
+                sidebar.style.display = 'block';
+                sidebar.style.visibility = 'visible';
+                sidebar.style.position = 'fixed';
+                sidebar.style.top = '0';
+                sidebar.style.left = '0';
+                sidebar.style.zIndex = '9999';
+                sidebar.style.backgroundColor = 'rgba(255, 0, 0, 0.9)'; // Bright red background for visibility
+                sidebar.style.border = '5px solid yellow'; // Yellow border for visibility
+                sidebar.style.width = '1140px';
+                sidebar.style.height = '100vh';
+                
+            } else {
+                console.log('❌ Sidebar not found');
+            }
+            
+            if (mainContainer) {
+            }
+        };
+        
+        // Restore original sidebar styling
+        window.restoreSidebar = function() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                // Remove the aggressive styling
+                sidebar.style.position = '';
+                sidebar.style.top = '';
+                sidebar.style.left = '';
+                sidebar.style.backgroundColor = '';
+                sidebar.style.border = '';
+                sidebar.style.width = '';
+                sidebar.style.height = '';
+                sidebar.style.zIndex = '1000';
+                
+            }
+        };
+        
+        // Create a completely new visible sidebar for testing
+        window.createTestSidebar = function() {
+            // Remove existing test sidebar if it exists
+            const existingTest = document.getElementById('test-sidebar');
+            if (existingTest) {
+                existingTest.remove();
+            }
+            
+            // Create a new test sidebar
+            const testSidebar = document.createElement('div');
+            testSidebar.id = 'test-sidebar';
+            testSidebar.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 300px;
+                    height: 100vh;
+                    background: linear-gradient(45deg, #ff0000, #ffff00);
+                    border: 10px solid #00ff00;
+                    z-index: 99999;
+                    padding: 20px;
+                    font-size: 24px;
+                    color: #000000;
+                    font-weight: bold;
+                ">
+                    <h1>TEST SIDEBAR</h1>
+                    <p>If you can see this, the sidebar system works!</p>
+                    <button onclick="document.getElementById('test-sidebar').remove()" style="
+                        background: #000000;
+                        color: #ffffff;
+                        padding: 10px 20px;
+                        border: none;
+                        cursor: pointer;
+                        font-size: 16px;
+                    ">Remove Test Sidebar</button>
+                </div>
+            `;
+            
+            document.body.appendChild(testSidebar);
+            console.log('🧪 Test sidebar created - you should see a bright red/yellow sidebar');
+        };
+        
+        // Emergency full-screen overlay to test if ANY elements can be rendered
+        window.emergencyOverlay = function() {
+            // Remove any existing emergency overlay
+            const existing = document.getElementById('emergency-overlay');
+            if (existing) {
+                existing.remove();
+            }
+            
+            // Create a full-screen overlay that covers everything
+            const overlay = document.createElement('div');
+            overlay.id = 'emergency-overlay';
+            overlay.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ffff00) !important;
+                z-index: 999999 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 48px !important;
+                font-weight: bold !important;
+                color: #ffffff !important;
+                text-shadow: 2px 2px 4px #000000 !important;
+                border: 10px solid #ffffff !important;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="text-align: center;">
+                    <h1>EMERGENCY OVERLAY</h1>
+                    <p>If you can see this, the browser can render elements!</p>
+                    <button onclick="document.getElementById('emergency-overlay').remove()" style="
+                        background: #000000;
+                        color: #ffffff;
+                        padding: 20px 40px;
+                        border: 3px solid #ffffff;
+                        cursor: pointer;
+                        font-size: 24px;
+                        margin-top: 20px;
+                    ">REMOVE OVERLAY</button>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            console.log('🚨 EMERGENCY OVERLAY CREATED - This should cover the entire screen!');
+        };
+        
+        // Check for any CSS that might be hiding elements
+        window.debugCSS = function() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                const computedStyle = window.getComputedStyle(sidebar);
+                console.log('  display:', computedStyle.display);
+                console.log('  visibility:', computedStyle.visibility);
+                console.log('  opacity:', computedStyle.opacity);
+                console.log('  position:', computedStyle.position);
+                console.log('  top:', computedStyle.top);
+                console.log('  left:', computedStyle.left);
+                console.log('  width:', computedStyle.width);
+                console.log('  height:', computedStyle.height);
+                console.log('  z-index:', computedStyle.zIndex);
+                console.log('  transform:', computedStyle.transform);
+                console.log('  clip-path:', computedStyle.clipPath);
+                console.log('  overflow:', computedStyle.overflow);
+                console.log('  clip:', computedStyle.clip);
+                
+                // Check if parent elements are hiding it
+                let parent = sidebar.parentElement;
+                let level = 0;
+                while (parent && level < 5) {
+                    const parentStyle = window.getComputedStyle(parent);
+                    console.log(`🔍 PARENT ${level} (${parent.tagName}):`, {
+                        display: parentStyle.display,
+                        visibility: parentStyle.visibility,
+                        opacity: parentStyle.opacity,
+                        overflow: parentStyle.overflow,
+                        clip: parentStyle.clip
+                    });
+                    parent = parent.parentElement;
+                    level++;
+                }
+            }
+        };
+        
+        // Add keyboard shortcut for manual reset (Ctrl/Cmd + Shift + R)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
+                e.preventDefault();
+                resetBrowserView();
+            }
+        });
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            preventGlobalZoom();
+            init();
+            
+            // Initialize user search immediately (user-centric mode)
+            initUserSearch();
+            
+            // Check for userName parameter and auto-select user
+            const urlParams = new URLSearchParams(window.location.search);
+            const userName = urlParams.get('userName');
+            console.log('🔍 8th Bedrock - URL params:', window.location.search);
+            console.log('🔍 8th Bedrock - userName param:', userName);
+            if (userName) {
+                console.log('🎯 Auto-selecting user from URL:', userName);
+                // Simulate typing in search and selecting the user
+                setTimeout(() => {
+                    const searchInput = document.getElementById('userSearchInput');
+                    if (searchInput) {
+                        searchInput.value = userName;
+                        // Trigger search
+                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        // After a longer delay, select the first result (should be the user)
+                        setTimeout(() => {
+                            const searchResults = document.getElementById('searchResults');
+                            const firstResult = searchResults.querySelector('.search-result');
+                            if (firstResult) {
+                                console.log('🎯 Clicking search result for:', userName);
+                                firstResult.click();
+                            } else {
+                                console.log('❌ No search result found for:', userName);
+                                // Try again after another delay
+                                setTimeout(() => {
+                                    const retryResult = searchResults.querySelector('.search-result');
+                                    if (retryResult) {
+                                        console.log('🎯 Retry: Clicking search result for:', userName);
+                                        retryResult.click();
+                                    }
+                                }, 1000);
+                            }
+                        }, 1500); // Increased delay
+                    }
+                }, 1500); // Increased initial delay
+            }
+            
+            // Sidebar is now working properly with browser zoom fixed
+            // No need for aggressive styling fixes
+        });
+    </script>
+</body>
+</html>

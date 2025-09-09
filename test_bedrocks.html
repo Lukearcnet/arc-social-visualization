@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bedrock Test Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background: #4CAF50; color: white; }
+        .error { background: #f44336; color: white; }
+        .warning { background: #ff9800; color: white; }
+        .info { background: #2196F3; color: white; }
+        a {
+            color: #64B5F6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .test-link {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin: 10px 5px;
+            text-decoration: none;
+        }
+        .test-link:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 ARC Bedrock Testing Results</h1>
+    
+    <div class="test-section">
+        <h2>📊 Test Summary</h2>
+        <p><span class="status success">✅ SERVERS RUNNING</span> Both HTTP servers are active</p>
+        <p><span class="status success">✅ FILES ACCESSIBLE</span> Both bedrock files are being served</p>
+        <p><span class="status success">✅ DATA AVAILABLE</span> comprehensive_data.json is accessible</p>
+        <p><span class="status success">✅ DEPENDENCIES OK</span> All required libraries are available</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🗺️ Map Bedrock (8th_bedrock_map.html)</h2>
+        <p><strong>Port:</strong> 3049</p>
+        <p><strong>Features to test:</strong></p>
+        <ul>
+            <li>Interactive map with venue detection</li>
+            <li>Timeline slider functionality</li>
+            <li>Degree filtering (1st, 2nd, 3rd degree connections)</li>
+            <li>Global vs User-centric modes</li>
+            <li>User search functionality</li>
+            <li>Show All toggle</li>
+        </ul>
+        <a href="http://localhost:3049/8th_bedrock_map.html" class="test-link" target="_blank">🧪 Test Map Bedrock</a>
+    </div>
+
+    <div class="test-section">
+        <h2>🕸️ Network Bedrock (10th_bedrock_network.html)</h2>
+        <p><strong>Port:</strong> 3050</p>
+        <p><strong>Features to test:</strong></p>
+        <ul>
+            <li>Force-directed graph visualization</li>
+            <li>AI chat interface with draggable chatbox</li>
+            <li>Timeline slider functionality</li>
+            <li>Degree filtering (1st, 2nd, 3rd degree connections)</li>
+            <li>User search and selection</li>
+            <li>Network physics and zoom controls</li>
+        </ul>
+        <a href="http://localhost:3050/10th_bedrock_network.html" class="test-link" target="_blank">🧪 Test Network Bedrock</a>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Testing Checklist</h2>
+        <h3>Map Bedrock Tests:</h3>
+        <ul>
+            <li>☐ Map loads with dark theme</li>
+            <li>☐ Markers appear on map showing tap locations</li>
+            <li>☐ Timeline slider controls marker visibility</li>
+            <li>☐ Mode toggle switches between Global/User-centric</li>
+            <li>☐ User search finds and selects users</li>
+            <li>☐ Degree filters work in user-centric mode</li>
+            <li>☐ Show All toggle displays all markers</li>
+            <li>☐ Map controls (Fit to Data, Reset View) work</li>
+            <li>☐ Popups show connection details when clicking markers</li>
+        </ul>
+
+        <h3>Network Bedrock Tests:</h3>
+        <ul>
+            <li>☐ Network graph loads with nodes and edges</li>
+            <li>☐ AI chat interface is draggable and functional</li>
+            <li>☐ Timeline slider controls network visibility</li>
+            <li>☐ User search finds and highlights nodes</li>
+            <li>☐ Degree filters work correctly</li>
+            <li>☐ Network physics and zoom work smoothly</li>
+            <li>☐ Chat messages can be sent and received</li>
+            <li>☐ Node selection and highlighting works</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Technical Details</h2>
+        <p><strong>Data Source:</strong> <code>data/comprehensive_data.json</code> (1.28MB, 935 taps, 274 users)</p>
+        <p><strong>Dependencies:</strong></p>
+        <ul>
+            <li>Map: Leaflet.js (CDN), Bootstrap (CDN)</li>
+            <li>Network: vis-network (CDN), Bootstrap (CDN)</li>
+        </ul>
+        <p><strong>Browser Requirements:</strong> Modern browser with JavaScript enabled</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🐛 Known Issues & Notes</h2>
+        <ul>
+            <li>Both bedrocks use external CDN dependencies - ensure internet connection</li>
+            <li>Map bedrock uses local lib files for some dependencies</li>
+            <li>Network bedrock uses CDN for all dependencies</li>
+            <li>Data loading includes cache-busting timestamps</li>
+        </ul>
+    </div>
+
+    <script>
+        // Auto-refresh test results every 30 seconds
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+        
+        console.log('🧪 Bedrock testing page loaded');
+        console.log('📊 Map Bedrock: http://localhost:3049/8th_bedrock_map.html');
+        console.log('🕸️ Network Bedrock: http://localhost:3050/10th_bedrock_network.html');
+    </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ARC Unified Visualization</title>
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --fg-primary: #ffffff;
+            --fg-secondary: #cccccc;
+            --fg-muted: #888888;
+            --accent: #007bff;
+            --accent-hover: #0056b3;
+            --stroke: #333333;
+            --radius: 8px;
+            --radius-2: 4px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--fg-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* View Toggle Buttons */
+        .view-toggle {
+            position: absolute;
+            top: 20px;
+            left: 400px; /* Move to the right of the control panel (320px + 80px padding) */
+            z-index: 1000;
+            display: flex;
+            background: var(--stroke);
+            border-radius: var(--radius-2);
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--fg-muted);
+            border-radius: var(--radius-2);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            background: var(--fg-primary);
+            color: var(--bg-primary);
+        }
+
+        .nav-btn:hover:not(.active) {
+            background: var(--bg-tertiary);
+            color: var(--fg-primary);
+        }
+
+        /* Iframe Container */
+        .iframe-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        .iframe-container.active {
+            display: block;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--stroke);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--fg-secondary);
+            font-size: 16px;
+        }
+
+        /* Hide loading screen when content is loaded */
+        .loaded .loading-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading unified visualization...</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- View Toggle Buttons -->
+            <div class="view-toggle">
+                <button class="nav-btn active" id="mapBtn" onclick="switchView('map')">Map</button>
+                <button class="nav-btn" id="networkBtn" onclick="switchView('network')">Graph</button>
+            </div>
+            
+            <!-- Map View Iframe -->
+            <iframe id="mapFrame" class="iframe-container active" src="8th_bedrock_map.html"></iframe>
+            
+            <!-- Network View Iframe -->
+            <iframe id="networkFrame" class="iframe-container" src="10th_bedrock_network.html?t=1757223100"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentView = 'map';
+        let mapFrame = null;
+        let networkFrame = null;
+
+        // Initialize the application
+        function init() {
+            console.log('🚀 Starting unified bedrock initialization...');
+            
+            // Get iframe references
+            mapFrame = document.getElementById('mapFrame');
+            networkFrame = document.getElementById('networkFrame');
+            
+            // Check URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            console.log('🔍 URL view parameter:', viewParam);
+            
+            if (viewParam === 'map' || viewParam === 'network') {
+                currentView = viewParam;
+                console.log('✅ Set currentView from URL:', currentView);
+            } else {
+                console.log('⚠️ No valid view param, using default:', currentView);
+            }
+            
+            // Update navigation
+            updateNavigation();
+            
+            // Switch to the correct view
+            switchViewContent();
+            
+            // Hide loading screen after a short delay
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+                console.log('✅ Unified bedrock initialization complete!');
+            }, 1000);
+        }
+
+        // Switch between views
+        function switchView(view) {
+            if (view === currentView) return;
+            
+            console.log('🔄 Switching view from', currentView, 'to', view);
+            
+            // Update current view
+            currentView = view;
+            
+            // Update navigation
+            updateNavigation();
+            
+            // Update URL
+            updateURL();
+            
+            // Switch view content
+            switchViewContent();
+        }
+
+        // Update navigation buttons
+        function updateNavigation() {
+            const mapBtn = document.getElementById('mapBtn');
+            const networkBtn = document.getElementById('networkBtn');
+            
+            mapBtn.classList.toggle('active', currentView === 'map');
+            networkBtn.classList.toggle('active', currentView === 'network');
+        }
+
+        // Update URL
+        function updateURL() {
+            const url = new URL(window.location);
+            url.searchParams.set('view', currentView);
+            window.history.pushState({}, '', url);
+        }
+
+        // Switch view content
+        function switchViewContent() {
+            console.log('🔄 switchViewContent called, currentView:', currentView);
+            
+            // Hide all iframes
+            mapFrame.classList.remove('active');
+            networkFrame.classList.remove('active');
+            
+            // Show the active iframe
+            if (currentView === 'map') {
+                mapFrame.classList.add('active');
+                console.log('🗺️ Showing map view');
+            } else {
+                networkFrame.classList.add('active');
+                console.log('🕸️ Showing network view');
+            }
+        }
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', function(event) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            if (viewParam && viewParam !== currentView) {
+                switchView(viewParam);
+            }
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+        });
+    </script>
+</body>
+</html>
