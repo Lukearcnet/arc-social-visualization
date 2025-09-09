@@ -282,4 +282,84 @@ arc-social-visualization/
 
 ---
 
+## 🔄 **ITERATION WORKING PROCESS**
+
+### **Development Workflow with Terminal Commands**
+
+This section documents the working process for making updates and avoiding merge conflicts during development.
+
+#### **Standard Update Process:**
+```bash
+# 1. Make changes to files
+# 2. Stage and commit changes
+git add .
+git commit -m "Descriptive commit message"
+git push origin main
+
+# 3. Vercel automatically redeploys (1-2 minutes)
+# 4. Test at https://arc-social-viz.vercel.app
+```
+
+#### **When Merge Conflicts Occur:**
+If you encounter merge conflicts (common during rapid iteration):
+
+**Step 1: Check what's different**
+```bash
+git fetch origin
+git log --oneline HEAD..origin/main
+```
+
+**Step 2: Choose resolution method**
+- **If remote has important changes**: `git pull --no-rebase origin main`
+- **If remote changes are outdated**: `git push --force origin main`
+
+**Step 3: If merge conflicts occur**
+```bash
+# Abort and use force push (safest for rapid iteration)
+git merge --abort
+git push --force origin main
+```
+
+#### **Common Issues and Solutions:**
+
+**CSP (Content Security Policy) Violations:**
+- **Error**: `Refused to frame because of CSP directive`
+- **Solution**: Update `_headers` and `vercel.json` with proper frame-ancestors
+- **Required domains**: `'self'`, `https://*.webflow.io`, `https://arcsocial.app`, `https://*.vercel.app`
+
+**Iframe Rendering Issues:**
+- **Problem**: Network graph shows black screen on first load
+- **Solution**: Reload iframe when switching to network view
+- **Reason**: vis.js networks need to initialize while visible
+
+**Git Rebase Conflicts:**
+- **Problem**: `git pull` creates merge conflicts
+- **Solution**: Use `git push --force origin main` for rapid iteration
+- **Note**: Only safe when you know your local changes are correct
+
+#### **Testing Workflow:**
+1. **Make changes locally**
+2. **Commit and push** (using commands above)
+3. **Wait for Vercel redeploy** (1-2 minutes)
+4. **Test at Vercel URL**: `https://arc-social-viz.vercel.app`
+5. **Check console for errors** (F12 → Console)
+6. **Test both Map and Graph views**
+
+#### **Debugging Process:**
+1. **Check browser console** for JavaScript errors
+2. **Check Network tab** for failed requests
+3. **Verify CSP headers** are correct
+4. **Test iframe URLs directly** in browser
+5. **Use git log** to track changes
+
+#### **Emergency Rollback:**
+```bash
+# If something breaks, revert to previous commit
+git log --oneline  # Find working commit
+git reset --hard COMMIT_HASH
+git push --force origin main
+```
+
+---
+
 **🎯 This plan ensures a robust, scalable integration that allows for dynamic updates while maintaining professional standards and avoiding common deployment pitfalls.**
