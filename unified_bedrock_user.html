@@ -804,24 +804,33 @@
         // Switch view content
         function switchViewContent() {
             console.log('🔄 switchViewContent called, currentView:', currentView);
-            
+            console.log('🔍 DEBUG: About to check if currentView === "map"');
+
             // Hide all iframes
             mapFrame.classList.remove('active');
             networkFrame.classList.remove('active');
-            
+            console.log('🔍 DEBUG: Iframes hidden, about to check view type');
+
             // Show the active iframe
             if (currentView === 'map') {
+                console.log('🔍 DEBUG: currentView is "map", going to map branch');
                 mapFrame.classList.add('active');
                 console.log('🗺️ Showing map view');
             } else {
+                console.log('🔍 DEBUG: currentView is NOT "map", going to network branch');
+                console.log('🔍 DEBUG: currentView value:', currentView, 'type:', typeof currentView);
+                
                 // For network view, reload the iframe so it initializes while visible
                 console.log('🕸️ Switching to network view - reloading iframe for proper initialization');
-                
+
                 // Get current URL and reload the iframe
                 const currentSrc = networkFrame.src;
+                console.log('🔍 DEBUG: Current networkFrame.src:', currentSrc);
                 networkFrame.src = '';
-                
+                console.log('🔍 DEBUG: Cleared networkFrame.src, setting timeout');
+
                 setTimeout(() => {
+                    console.log('🔍 DEBUG: Timeout executed, setting networkFrame.src back');
                     networkFrame.src = currentSrc;
                     networkFrame.classList.add('active');
                     console.log('🕸️ Network iframe reloaded and shown - should initialize while visible');
