@@ -771,9 +771,12 @@
             if (view === currentView) return;
             
             console.log('🔄 Switching view from', currentView, 'to', view);
+            console.log('🔍 DEBUG: switchView called with view:', view);
+            console.log('🔍 DEBUG: currentView before update:', currentView);
             
             // Update current view
             currentView = view;
+            console.log('🔍 DEBUG: currentView after update:', currentView);
             
             // Update navigation
             updateNavigation();
