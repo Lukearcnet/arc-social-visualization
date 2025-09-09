@@ -671,14 +671,20 @@
             if (networkFrame) {
                 networkFrame.onload = function() {
                     console.log('🕸️ Network iframe loaded');
+                    console.log('🔍 DEBUG: Network iframe onload - currentView:', currentView);
+                    console.log('🔍 DEBUG: Network iframe onload - networkFrame.src:', networkFrame.src);
+                    
                     if (currentView === 'network') {
                         visibleIframeLoaded = true;
+                        console.log('🔍 DEBUG: Network iframe loaded as visible iframe');
                     } else {
                         hiddenIframeLoaded = true;
+                        console.log('🔍 DEBUG: Network iframe loaded as hidden iframe');
                     }
                     checkLoadingComplete();
                 };
                 networkFrame.src = networkUrl;
+                console.log('🔍 DEBUG: Set networkFrame.src to:', networkUrl);
             }
             
             // Initialize bedrocks after setting user name
@@ -840,14 +846,39 @@
                     // Get current URL and reload the iframe
                     const currentSrc = networkFrame.src;
                     console.log('🔍 DEBUG: Current networkFrame.src:', currentSrc);
+                    console.log('🔍 DEBUG: About to clear networkFrame.src');
                     networkFrame.src = '';
                     console.log('🔍 DEBUG: Cleared networkFrame.src, setting timeout');
 
                     setTimeout(() => {
                         console.log('🔍 DEBUG: Timeout executed, setting networkFrame.src back');
-                        networkFrame.src = currentSrc;
-                        networkFrame.classList.add('active');
-                        console.log('🕸️ Network iframe reloaded and shown - should initialize while visible');
+                        console.log('🔍 DEBUG: Setting networkFrame.src to:', currentSrc);
+                        
+                        // Force a complete reload by setting src to empty first, then the target URL
+                        networkFrame.src = '';
+                        setTimeout(() => {
+                            networkFrame.src = currentSrc;
+                            networkFrame.classList.add('active');
+                            console.log('🕸️ Network iframe reloaded and shown - should initialize while visible');
+                            
+                            // Add additional debugging for iframe content
+                            setTimeout(() => {
+                                console.log('🔍 DEBUG: Checking iframe content after reload...');
+                                console.log('🔍 DEBUG: networkFrame.src after reload:', networkFrame.src);
+                                console.log('🔍 DEBUG: networkFrame.contentDocument:', networkFrame.contentDocument);
+                                console.log('🔍 DEBUG: networkFrame.contentWindow:', networkFrame.contentWindow);
+                                
+                                // Try to trigger a resize event to help with rendering
+                                if (networkFrame.contentWindow) {
+                                    console.log('🔍 DEBUG: Triggering resize event in iframe');
+                                    networkFrame.contentWindow.dispatchEvent(new Event('resize'));
+                                    
+                                    // Also try to trigger a custom event that the network iframe might listen for
+                                    console.log('🔍 DEBUG: Triggering custom network-reload event');
+                                    networkFrame.contentWindow.dispatchEvent(new CustomEvent('network-reload'));
+                                }
+                            }, 200);
+                        }, 50);
                     }, 100);
                 }
                 console.log('🔍 DEBUG: Function completed successfully');
