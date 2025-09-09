@@ -814,8 +814,18 @@
                 mapFrame.classList.add('active');
                 console.log('🗺️ Showing map view');
             } else {
-                networkFrame.classList.add('active');
-                console.log('🕸️ Showing network view');
+                // For network view, reload the iframe so it initializes while visible
+                console.log('🕸️ Switching to network view - reloading iframe for proper initialization');
+                
+                // Get current URL and reload the iframe
+                const currentSrc = networkFrame.src;
+                networkFrame.src = '';
+                
+                setTimeout(() => {
+                    networkFrame.src = currentSrc;
+                    networkFrame.classList.add('active');
+                    console.log('🕸️ Network iframe reloaded and shown - should initialize while visible');
+                }, 100);
             }
         }
 
