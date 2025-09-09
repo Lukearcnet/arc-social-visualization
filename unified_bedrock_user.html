@@ -840,46 +840,38 @@
                     console.log('🔍 DEBUG: currentView is NOT "map", going to network branch');
                     console.log('🔍 DEBUG: currentView value:', currentView, 'type:', typeof currentView);
                     
-                    // For network view, reload the iframe so it initializes while visible
-                    console.log('🕸️ Switching to network view - reloading iframe for proper initialization');
+        // For network view, reload the iframe so it initializes while visible
+        console.log('🕸️ Switching to network view - reloading iframe for proper initialization');
 
-                    // Get current URL and reload the iframe
-                    const currentSrc = networkFrame.src;
-                    console.log('🔍 DEBUG: Current networkFrame.src:', currentSrc);
-                    console.log('🔍 DEBUG: About to clear networkFrame.src');
-                    networkFrame.src = '';
-                    console.log('🔍 DEBUG: Cleared networkFrame.src, setting timeout');
-
-                    setTimeout(() => {
-                        console.log('🔍 DEBUG: Timeout executed, setting networkFrame.src back');
-                        console.log('🔍 DEBUG: Setting networkFrame.src to:', currentSrc);
-                        
-                        // Force a complete reload by setting src to empty first, then the target URL
-                        networkFrame.src = '';
-                        setTimeout(() => {
-                            networkFrame.src = currentSrc;
-                            networkFrame.classList.add('active');
-                            console.log('🕸️ Network iframe reloaded and shown - should initialize while visible');
-                            
-                            // Add additional debugging for iframe content
-                            setTimeout(() => {
-                                console.log('🔍 DEBUG: Checking iframe content after reload...');
-                                console.log('🔍 DEBUG: networkFrame.src after reload:', networkFrame.src);
-                                console.log('🔍 DEBUG: networkFrame.contentDocument:', networkFrame.contentDocument);
-                                console.log('🔍 DEBUG: networkFrame.contentWindow:', networkFrame.contentWindow);
-                                
-                                // Try to trigger a resize event to help with rendering
-                                if (networkFrame.contentWindow) {
-                                    console.log('🔍 DEBUG: Triggering resize event in iframe');
-                                    networkFrame.contentWindow.dispatchEvent(new Event('resize'));
-                                    
-                                    // Also try to trigger a custom event that the network iframe might listen for
-                                    console.log('🔍 DEBUG: Triggering custom network-reload event');
-                                    networkFrame.contentWindow.dispatchEvent(new CustomEvent('network-reload'));
-                                }
-                            }, 200);
-                        }, 50);
-                    }, 100);
+        // Get the CORRECT network URL with user parameters
+        const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(currentUser)}&t=${Date.now()}`;
+        console.log('🔍 DEBUG: Correct network URL:', networkUrl);
+        
+        // Clear and reload with the correct URL
+        networkFrame.src = '';
+        setTimeout(() => {
+            networkFrame.src = networkUrl;
+            networkFrame.classList.add('active');
+            console.log('🕸️ Network iframe reloaded with correct URL');
+            
+            // Add additional debugging for iframe content
+            setTimeout(() => {
+                console.log('🔍 DEBUG: Checking iframe content after reload...');
+                console.log('🔍 DEBUG: networkFrame.src after reload:', networkFrame.src);
+                console.log('🔍 DEBUG: networkFrame.contentDocument:', networkFrame.contentDocument);
+                console.log('🔍 DEBUG: networkFrame.contentWindow:', networkFrame.contentWindow);
+                
+                // Try to trigger a resize event to help with rendering
+                if (networkFrame.contentWindow) {
+                    console.log('🔍 DEBUG: Triggering resize event in iframe');
+                    networkFrame.contentWindow.dispatchEvent(new Event('resize'));
+                    
+                    // Also try to trigger a custom event that the network iframe might listen for
+                    console.log('🔍 DEBUG: Triggering custom network-reload event');
+                    networkFrame.contentWindow.dispatchEvent(new CustomEvent('network-reload'));
+                }
+            }, 200);
+        }, 100);
                 }
                 console.log('🔍 DEBUG: Function completed successfully');
             } catch (error) {
