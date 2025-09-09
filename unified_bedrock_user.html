@@ -807,8 +807,11 @@
             console.log('🔍 DEBUG: About to check if currentView === "map"');
             console.log('🔍 DEBUG: Function started successfully');
             console.log('🔍 DEBUG: TEST MESSAGE - IF YOU SEE THIS, THE FUNCTION IS RUNNING');
-
+            
             try {
+                console.log('🔍 DEBUG: About to access mapFrame and networkFrame');
+                console.log('🔍 DEBUG: mapFrame:', mapFrame);
+                console.log('🔍 DEBUG: networkFrame:', networkFrame);
                 // Hide all iframes
                 console.log('🔍 DEBUG: About to hide iframes');
                 mapFrame.classList.remove('active');
