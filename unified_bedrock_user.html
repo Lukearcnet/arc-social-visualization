@@ -840,28 +840,44 @@
                     console.log('🔍 DEBUG: currentView is NOT "map", going to network branch');
                     console.log('🔍 DEBUG: currentView value:', currentView, 'type:', typeof currentView);
                     
-        // For network view, show loading screen and reload iframe
-        // LOADING SCREEN FIX - VERSION 2.0
-        console.log('🕸️ Switching to network view - showing loading screen');
+        // For network view, check if this is the first time loading
+        console.log('🕸️ Switching to network view');
         
-        // Show the existing loading screen (same as initial load)
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) {
-            loadingScreen.style.display = 'flex';
-            console.log('🔄 Loading screen shown for network view');
-        }
-        
-        // Reload the network iframe (necessary for vis.js to render properly)
-        const userName = authenticatedUser ? authenticatedUser.name : 'Unknown User';
-        const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
-        console.log('🔍 DEBUG: Reloading network iframe with URL:', networkUrl);
-        
-        networkFrame.src = '';
-        setTimeout(() => {
-            networkFrame.src = networkUrl;
+        // Check if network has been loaded before (using a simple flag)
+        if (window.networkGraphLoaded) {
+            console.log('✅ Network graph already loaded, showing immediately');
             networkFrame.classList.add('active');
-            console.log('🕸️ Network iframe reloaded and shown');
-        }, 100);
+            
+            // Trigger resize event to ensure proper rendering
+            if (networkFrame.contentWindow) {
+                networkFrame.contentWindow.dispatchEvent(new Event('resize'));
+            }
+        } else {
+            console.log('⚠️ First time loading network graph, showing loading screen');
+            
+            // Show loading screen for first-time load
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+                console.log('🔄 Loading screen shown for network view');
+            }
+            
+            // Reload the network iframe (necessary for vis.js to render properly)
+            const userName = authenticatedUser ? authenticatedUser.name : 'Unknown User';
+            const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
+            console.log('🔍 DEBUG: Reloading network iframe with URL:', networkUrl);
+            
+            networkFrame.src = '';
+            setTimeout(() => {
+                networkFrame.src = networkUrl;
+                networkFrame.classList.add('active');
+                console.log('🕸️ Network iframe reloaded and shown');
+                
+                // Set flag to indicate network has been loaded
+                window.networkGraphLoaded = true;
+                console.log('✅ Network graph loaded flag set');
+            }, 100);
+        }
                 }
                 console.log('🔍 DEBUG: Function completed successfully');
             } catch (error) {
