@@ -1,4 +1,4 @@
 /*
   X-Frame-Options: ALLOWALL
-  Content-Security-Policy: frame-ancestors 'self' https://*.webflow.io https://arcsocial.app https://*.vercel.app https://*.squarespace.com
+  Content-Security-Policy: frame-ancestors 'self' https://*.webflow.io https://arcsocial.app https://www.arcsocial.app https://*.vercel.app https://*.squarespace.com
   Cache-Control: public, max-age=31536000
