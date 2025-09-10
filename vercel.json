@@ -1,13 +1,13 @@
 {
   "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "ALLOWALL" },
-        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://*.webflow.io https://arcsocial.app https://*.vercel.app" },
-        { "key": "Cache-Control", "value": "public, max-age=31536000" }
-      ]
-    }
+        {
+          "source": "/(.*)",
+          "headers": [
+            { "key": "X-Frame-Options", "value": "ALLOWALL" },
+            { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://*.webflow.io https://arcsocial.app https://*.vercel.app https://*.squarespace.com" },
+            { "key": "Cache-Control", "value": "public, max-age=31536000" }
+          ]
+        }
   ],
   "rewrites": [
     {
