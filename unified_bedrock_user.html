@@ -852,7 +852,7 @@
         }
         
         // Reload the network iframe (necessary for vis.js to render properly)
-        const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(currentUser)}&t=${Date.now()}`;
+        const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(selectedUser)}&t=${Date.now()}`;
         console.log('🔍 DEBUG: Reloading network iframe with URL:', networkUrl);
         
         networkFrame.src = '';
