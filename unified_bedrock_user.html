@@ -421,7 +421,6 @@
                     throw new Error('Failed to load user data');
                 }
                 userData = await response.json();
-                console.log('✅ User data loaded:', userData.tap_data.length, 'taps');
             } catch (error) {
                 console.error('❌ Error loading user data:', error);
                 showError('Failed to load user data. Please refresh the page.');
@@ -431,13 +430,11 @@
         // Find user by phone number
         function findUserByPhone(phoneNumber) {
             if (!userData || !userData.tap_data) {
-                console.log('❌ No userData or tap_data available');
                 return null;
             }
 
             // Clean phone number for comparison
             const cleanPhone = phoneNumber.replace(/\D/g, '');
-            console.log('🔍 Searching for phone:', cleanPhone);
             
             // Search for user with matching phone number in tap_data
             for (const tap of userData.tap_data) {
@@ -445,7 +442,6 @@
                 if (tap.user1_phone_number) {
                     const user1Phone = tap.user1_phone_number.replace(/\D/g, '');
                     if (user1Phone === cleanPhone) {
-                        console.log('✅ Found user1 match:', tap.user1_name);
                         return {
                             user_id: tap.user1_id,
                             name: tap.user1_name,
@@ -461,7 +457,6 @@
                 if (tap.user2_phone_number) {
                     const user2Phone = tap.user2_phone_number.replace(/\D/g, '');
                     if (user2Phone === cleanPhone) {
-                        console.log('✅ Found user2 match:', tap.user2_name);
                         return {
                             user_id: tap.user2_id,
                             name: tap.user2_name,
@@ -474,7 +469,6 @@
                 }
             }
 
-            console.log('❌ No phone number match found');
             return null;
         }
 
@@ -530,7 +524,6 @@
             try {
                 // Add +1 prefix to the phone number for matching
                 const fullPhoneNumber = '+1' + cleanPhone;
-                console.log('🔍 Searching with full phone number:', fullPhoneNumber);
                 
                 // Find user by phone number
                 const user = findUserByPhone(fullPhoneNumber);
@@ -597,7 +590,6 @@
 
         // Pass user ID to bedrocks via URL parameters
         function passUserToBedrocks(userId, userName) {
-            console.log('🎯 Passing user to bedrocks:', userName);
             
             // Ensure iframes are initialized
             if (!mapFrame || !networkFrame) {
@@ -609,8 +601,6 @@
             const mapUrl = `8th_bedrock_map_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
             const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
             
-            console.log('🗺️ Setting map URL:', mapUrl);
-            console.log('🕸️ Setting network URL:', networkUrl);
             
             // Track which iframe is the currently visible one
             let visibleIframeLoaded = false;
@@ -619,7 +609,6 @@
             // Function to check if we should hide loading screen
             function checkLoadingComplete() {
                 if (visibleIframeLoaded && hiddenIframeLoaded) {
-                    console.log('✅ Both iframes loaded, hiding loading screen');
                     setTimeout(() => {
                         hideLoadingScreen();
                     }, 2800); // Give more time for the auto-selection to complete
@@ -629,7 +618,6 @@
             // Set up load listeners for both iframes
             if (mapFrame) {
                 mapFrame.onload = function() {
-                    console.log('🗺️ Map iframe loaded');
                     if (currentView === 'map') {
                         visibleIframeLoaded = true;
                     } else {
@@ -642,21 +630,14 @@
             
             if (networkFrame) {
                 networkFrame.onload = function() {
-                    console.log('🕸️ Network iframe loaded');
-                    console.log('🔍 DEBUG: Network iframe onload - currentView:', currentView);
-                    console.log('🔍 DEBUG: Network iframe onload - networkFrame.src:', networkFrame.src);
-                    
                     if (currentView === 'network') {
                         visibleIframeLoaded = true;
-                        console.log('🔍 DEBUG: Network iframe loaded as visible iframe');
                     } else {
                         hiddenIframeLoaded = true;
-                        console.log('🔍 DEBUG: Network iframe loaded as hidden iframe');
                     }
                     checkLoadingComplete();
                 };
                 networkFrame.src = networkUrl;
-                console.log('🔍 DEBUG: Set networkFrame.src to:', networkUrl);
             }
             
             // Initialize bedrocks after setting user name
@@ -670,7 +651,6 @@
                 try {
                     authenticatedUser = JSON.parse(storedUser);
                     const userName = authenticatedUser.name;
-                    console.log('✅ Existing authentication found for:', userName);
                     
                     // Skip login overlay and go straight to loading screen
                     hideLoginOverlay();
@@ -687,7 +667,6 @@
 
         // Initialize the application
         async function init() {
-            console.log('🚀 Starting unified bedrock initialization...');
             
             // Setup phone input formatting
             setupPhoneInput();
@@ -701,7 +680,6 @@
                 initializeBedrocks();
             } else {
                 // Show login overlay
-                console.log('🔐 No authentication found, showing login screen');
                 const loginOverlay = document.getElementById('loginOverlay');
                 if (loginOverlay) {
                     loginOverlay.classList.remove('hidden');
@@ -722,13 +700,9 @@
             // Check URL parameters
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view');
-            console.log('🔍 URL view parameter:', viewParam);
             
             if (viewParam === 'map' || viewParam === 'network') {
                 currentView = viewParam;
-                console.log('✅ Set currentView from URL:', currentView);
-            } else {
-                console.log('⚠️ No valid view param, using default:', currentView);
             }
             
             // Update navigation
@@ -740,7 +714,6 @@
             // Hide loading screen after a short delay
             setTimeout(() => {
                 document.body.classList.add('loaded');
-                console.log('✅ Unified bedrock initialization complete!');
             }, 1000);
         }
 
@@ -748,13 +721,8 @@
         function switchView(view) {
             if (view === currentView) return;
             
-            console.log('🔄 Switching view from', currentView, 'to', view);
-            console.log('🔍 DEBUG: switchView called with view:', view);
-            console.log('🔍 DEBUG: currentView before update:', currentView);
-            
             // Update current view
             currentView = view;
-            console.log('🔍 DEBUG: currentView after update:', currentView);
             
             // Update navigation
             updateNavigation();
@@ -782,78 +750,48 @@
             window.history.pushState({}, '', url);
         }
 
-        // Test message to verify file is loaded
-        console.log('🔍 DEBUG: FILE LOADED - switchViewContent function defined');
-        
         // Switch view content
         function switchViewContent() {
-            console.log('🔄 switchViewContent called, currentView:', currentView);
-            console.log('🔍 DEBUG: About to check if currentView === "map"');
-            console.log('🔍 DEBUG: Function started successfully');
-            console.log('🔍 DEBUG: TEST MESSAGE - IF YOU SEE THIS, THE FUNCTION IS RUNNING');
-            console.log('🔍 DEBUG: IMMEDIATE TEST - FUNCTION IS DEFINITELY RUNNING');
-            
             try {
-                console.log('🔍 DEBUG: About to access mapFrame and networkFrame');
-                console.log('🔍 DEBUG: mapFrame:', mapFrame);
-                console.log('🔍 DEBUG: networkFrame:', networkFrame);
                 // Hide all iframes
-                console.log('🔍 DEBUG: About to hide iframes');
                 mapFrame.classList.remove('active');
                 networkFrame.classList.remove('active');
-                console.log('🔍 DEBUG: Iframes hidden, about to check view type');
 
                 // Show the active iframe
                 if (currentView === 'map') {
-                    console.log('🔍 DEBUG: currentView is "map", going to map branch');
                     mapFrame.classList.add('active');
-                    console.log('🗺️ Showing map view');
                 } else {
-                    console.log('🔍 DEBUG: currentView is NOT "map", going to network branch');
-                    console.log('🔍 DEBUG: currentView value:', currentView, 'type:', typeof currentView);
-                    
-        // For network view, check if this is the first time loading
-        console.log('🕸️ Switching to network view');
-        
-        // Check if network has been loaded before (using a simple flag)
-        if (window.networkGraphLoaded) {
-            console.log('✅ Network graph already loaded, showing immediately');
-            networkFrame.classList.add('active');
-            
-            // Trigger resize event to ensure proper rendering
-            if (networkFrame.contentWindow) {
-                networkFrame.contentWindow.dispatchEvent(new Event('resize'));
-            }
-        } else {
-            console.log('⚠️ First time loading network graph, showing loading screen');
-            
-            // Show loading screen for first-time load
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                loadingScreen.style.display = 'flex';
-                console.log('🔄 Loading screen shown for network view');
-            }
-            
-            // Reload the network iframe (necessary for vis.js to render properly)
-            const userName = authenticatedUser ? authenticatedUser.name : 'Unknown User';
-            const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
-            console.log('🔍 DEBUG: Reloading network iframe with URL:', networkUrl);
-            
-            networkFrame.src = '';
-            setTimeout(() => {
-                networkFrame.src = networkUrl;
-                networkFrame.classList.add('active');
-                console.log('🕸️ Network iframe reloaded and shown');
-                
-                // Set flag to indicate network has been loaded
-                window.networkGraphLoaded = true;
-                console.log('✅ Network graph loaded flag set');
-            }, 100);
-        }
+                    // For network view, check if this is the first time loading
+                    if (window.networkGraphLoaded) {
+                        networkFrame.classList.add('active');
+                        
+                        // Trigger resize event to ensure proper rendering
+                        if (networkFrame.contentWindow) {
+                            networkFrame.contentWindow.dispatchEvent(new Event('resize'));
+                        }
+                    } else {
+                        // Show loading screen for first-time load
+                        const loadingScreen = document.getElementById('loadingScreen');
+                        if (loadingScreen) {
+                            loadingScreen.style.display = 'flex';
+                        }
+                        
+                        // Reload the network iframe (necessary for vis.js to render properly)
+                        const userName = authenticatedUser ? authenticatedUser.name : 'Unknown User';
+                        const networkUrl = `10th_bedrock_network_user.html?userName=${encodeURIComponent(userName)}&t=${Date.now()}`;
+                        
+                        networkFrame.src = '';
+                        setTimeout(() => {
+                            networkFrame.src = networkUrl;
+                            networkFrame.classList.add('active');
+                            
+                            // Set flag to indicate network has been loaded
+                            window.networkGraphLoaded = true;
+                        }, 100);
+                    }
                 }
-                console.log('🔍 DEBUG: Function completed successfully');
             } catch (error) {
-                console.error('🔍 DEBUG: Error in switchViewContent:', error);
+                console.error('Error in switchViewContent:', error);
             }
         }
 
