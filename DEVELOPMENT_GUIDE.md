@@ -97,16 +97,23 @@ git push origin develop
 
 ```
 arc_unified_graph_map/
-├── unified_bedrock_user.html    # Main entry point
-├── 8th_bedrock_map_user.html    # Map visualization
-├── 10th_bedrock_network_user.html # Network visualization
+├── unified_bedrock_user.html    # Main entry point (ACTIVE)
+├── 8th_bedrock_map_user.html    # Map visualization (ACTIVE)
+├── 10th_bedrock_network_user.html # Network visualization (ACTIVE)
 ├── data/
-│   └── comprehensive_data.json  # Visualization data
+│   └── comprehensive_data.json  # Visualization data (1037 taps, 280 users)
 ├── _headers                     # Netlify headers
 ├── vercel.json                  # Vercel configuration
 ├── _redirects                   # Netlify redirects
+├── User Version/                # OLD BACKUP FILES (don't edit)
+├── lib/                         # OLD BACKUP FILES (don't edit)
 └── README.md                    # Project documentation
 ```
+
+### Important Notes
+- **ALWAYS edit root-level files** - `unified_bedrock_user.html`, `8th_bedrock_map_user.html`, `10th_bedrock_network_user.html`
+- **NEVER edit subdirectory files** - `User Version/` and `lib/` contain old backups
+- **All active development** happens in the root directory
 
 ## Important Notes
 

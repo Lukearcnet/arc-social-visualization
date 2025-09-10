@@ -2,14 +2,15 @@
 
 ## 🎯 **QUICK START - Essential Files**
 
-### **1. Production-Ready Bedrocks**
-- **`8th_bedrock_map.html`** - Map visualization (production-ready)
-- **`10th_bedrock_network.html`** - Network visualization (production-ready)
-- **`unified_bedrock.html`** - Coming soon with toggle functionality
+### **1. Production-Ready Bedrocks (Root Level)**
+- **`8th_bedrock_map_user.html`** - Map visualization (production-ready)
+- **`10th_bedrock_network_user.html`** - Network visualization (production-ready)
+- **`unified_bedrock_user.html`** - Main entry point with toggle functionality
 
 ### **2. Data & Dependencies**
-- **`data/comprehensive_data.json`** - Active data file (246 users, 371 connections)
-- **`lib/`** - All required libraries (vis.js, tom-select, bindings)
+- **`data/comprehensive_data.json`** - Active data file (1037 taps, 280 users)
+- **Root-level files** - All active HTML files are in the main directory
+- **Subdirectories** - `User Version/`, `lib/` contain old backup files
 
 ### **3. Documentation**
 - **`docs/DATA_REFRESH_GUIDE.md`** - How to update data from database
@@ -33,9 +34,9 @@
 
 ## 🚨 **DEVELOPMENT RULES**
 
-### **BEDROCK PRESERVATION**
-- **NEVER modify bedrock versions directly** - they are production-ready
-- **ALWAYS create separate versions** for development/testing
+### **ROOT-LEVEL FILE MANAGEMENT**
+- **ALWAYS work with root-level files** - `unified_bedrock_user.html`, `8th_bedrock_map_user.html`, `10th_bedrock_network_user.html`
+- **NEVER edit files in subdirectories** - `User Version/`, `lib/` contain old backups
 - **Test thoroughly** before suggesting changes
 - **Preserve all functionality** - timeline, search, degree filtering
 
@@ -68,29 +69,28 @@
 
 ```
 arc_unified_graph_map/
-├── 8th_bedrock_map.html          # Map visualization (production-ready)
-├── 10th_bedrock_network.html     # Network visualization (production-ready)
-├── unified_bedrock.html          # Coming soon - unified version
+├── unified_bedrock_user.html     # Main entry point (ACTIVE)
+├── 8th_bedrock_map_user.html     # Map visualization (ACTIVE)
+├── 10th_bedrock_network_user.html # Network visualization (ACTIVE)
 ├── data/
-│   └── comprehensive_data.json   # Active data file (246 users)
-├── lib/
-│   ├── vis-9.1.2/               # Vis.js network library
-│   ├── tom-select/              # Search autocomplete library
-│   └── bindings/                # Utility functions
+│   └── comprehensive_data.json   # Active data file (1037 taps, 280 users)
 ├── docs/
 │   ├── AGENT_HANDOFF.md         # This file
 │   ├── DATA_REFRESH_GUIDE.md    # Data update process
 │   └── BEDROCK_REFERENCE.md     # Technical details
+├── User Version/                 # OLD BACKUP FILES (don't edit)
+├── lib/                         # OLD BACKUP FILES (don't edit)
 └── To do.md                     # Progress tracking
 ```
 
 ## 🎯 **CURRENT STATUS**
 
-- ✅ **8th Bedrock**: Production-ready map visualization
-- ✅ **10th Bedrock**: Production-ready network visualization
-- 🚧 **Unified Version**: In development with toggle functionality
-- ✅ **Data**: Dynamic loading from JSON
+- ✅ **8th Bedrock**: Production-ready map visualization (root level)
+- ✅ **10th Bedrock**: Production-ready network visualization (root level)
+- ✅ **Unified Version**: Complete with toggle functionality (root level)
+- ✅ **Data**: Dynamic loading from JSON (1037 taps, 280 users)
 - ✅ **Performance**: 90%+ optimized
+- ✅ **Deployment**: Live on Vercel and integrated with Squarespace
 
 ---
 

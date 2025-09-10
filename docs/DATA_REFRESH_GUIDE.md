@@ -5,9 +5,9 @@
 **When user says "Refresh the data" or "Update the data":**
 
 1. **Run the data export script**: `python3 src/SQL-based/data_export_for_visualizations.py`
-2. **Copy files to frontend**: `cp data/SQL-based/comprehensive_data_with_geocoding.json data/comprehensive_data.json`
-3. **Update output directory**: `cp data/comprehensive_data.json output/SQL-based/data/comprehensive_data.json`
-4. **Test the map**: Open `http://localhost:3000/arc_social_graph_map_bedrock_fresh.html`
+2. **Copy to Git repo**: `cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
+3. **Commit and push**: `git add data/comprehensive_data.json && git commit -m "Update data" && git push origin main`
+4. **Test the unified bedrock**: Open `https://arc-social-visualization.vercel.app`
 
 ---
 
@@ -21,45 +21,49 @@ python3 src/SQL-based/data_export_for_visualizations.py
 
 **What this does:**
 - ✅ Connects to PostgreSQL database
-- ✅ Fetches latest tap data (currently ~934 taps)
+- ✅ Fetches latest tap data (currently ~1037 taps)
 - ✅ Processes coordinates through Google Geocoding API
 - ✅ Converts coordinates to city names (e.g., "Nashville, TN, US")
 - ✅ Caches results to avoid repeated API calls
-- ✅ Exports to `data/SQL-based/comprehensive_data_with_geocoding.json`
+- ✅ Exports to `output/SQL-based/data/comprehensive_data.json`
 
 **Expected output:**
 ```
-🔄 Processing 934 taps with reverse geocoding...
-📍 Geocoded: 36.140892,-86.806279 → Nashville, TN, US
-📍 Geocoded: 32.807120,-96.794139 → Dallas, TX, US
-...
-✅ Data exported with reverse geocoding to: data/SQL-based/comprehensive_data_with_geocoding.json
-   Total taps: 934
-   Cached coordinates: 923
+Comprehensive data ready: 1037 taps, 280 users
+   📍 Geocoded locations: 1021
+   🏪 Venue lookups: 1021
+✅ Data exported successfully!
+   📁 Output directory: output/SQL-based/data
+   📄 Comprehensive data: output/SQL-based/data/comprehensive_data.json
 ```
 
-### **Step 2: Copy to Frontend Directory**
+### **Step 2: Copy to Git Repository**
 ```bash
-cp data/SQL-based/comprehensive_data_with_geocoding.json data/comprehensive_data.json
+cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 ```
 
 **What this does:**
-- ✅ Makes the new data accessible to the frontend
-- ✅ Frontend loads from `./data/comprehensive_data.json`
+- ✅ Copies fresh data to Git repository
+- ✅ **Root-level unified bedrock** loads from `./data/comprehensive_data.json`
+- ✅ **Active files** are in the root directory, not subdirectories
 
-### **Step 3: Update Output Directory**
+### **Step 3: Commit and Push to Deploy**
 ```bash
-cp data/comprehensive_data.json output/SQL-based/data/comprehensive_data.json
+cd /Users/lukeblanton/Documents/arc_unified_graph_map
+git add data/comprehensive_data.json
+git commit -m "Update data with latest taps and users"
+git push origin main
 ```
 
 **What this does:**
-- ✅ Ensures the output directory has the latest data
-- ✅ Prevents any caching issues
+- ✅ Commits the updated data to Git
+- ✅ Vercel automatically redeploys with fresh data
+- ✅ Unified bedrock gets updated data
 
 ### **Step 4: Test the Results**
-1. **Open the map**: `http://localhost:3000/arc_social_graph_map_bedrock_fresh.html`
-2. **Check console**: Should show `✅ Tap data loaded: 934 taps` (or current count)
-3. **Click a tap marker**: Should show city names like "Nashville, TN, US" instead of coordinates
+1. **Open the unified bedrock**: `https://arc-social-visualization.vercel.app`
+2. **Check console**: Should show `✅ User data loaded: 1037 taps` (or current count)
+3. **Test both map and network views** with fresh data
 
 ---
 
@@ -73,18 +77,22 @@ echo "🔄 Refreshing social graph data..."
 
 # Run data export
 echo "📊 Exporting data from database..."
+cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
 python3 src/SQL-based/data_export_for_visualizations.py
 
-# Copy to frontend
-echo "📁 Copying to frontend directory..."
-cp data/SQL-based/comprehensive_data_with_geocoding.json data/comprehensive_data.json
+# Copy to Git repo
+echo "📁 Copying to Git repository..."
+cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 
-# Update output directory
-echo "📁 Updating output directory..."
-cp data/comprehensive_data.json output/SQL-based/data/comprehensive_data.json
+# Commit and push
+echo "📤 Committing and pushing to deploy..."
+cd /Users/lukeblanton/Documents/arc_unified_graph_map
+git add data/comprehensive_data.json
+git commit -m "Update data with latest taps and users"
+git push origin main
 
 echo "✅ Data refresh complete!"
-echo "🌐 Test at: http://localhost:3000/arc_social_graph_map_bedrock_fresh.html"
+echo "🌐 Test at: https://arc-social-visualization.vercel.app"
 ```
 
 **Make it executable:**
@@ -102,22 +110,28 @@ chmod +x update_data.sh
 ## 📊 **WHAT GETS UPDATED**
 
 ### **Data Files Updated:**
-- `data/SQL-based/comprehensive_data_with_geocoding.json` - Source file with geocoded data
-- `data/comprehensive_data.json` - Frontend-accessible data
-- `output/SQL-based/data/comprehensive_data.json` - Output directory data
+- `output/SQL-based/data/comprehensive_data.json` - Source file with geocoded data
+- `arc_unified_graph_map/data/comprehensive_data.json` - **Root-level Git repository data**
+- **Vercel deployment** - Automatically updated via Git push
+
+### **Active Files (Root Level):**
+- `unified_bedrock_user.html` - Main entry point
+- `8th_bedrock_map_user.html` - Map visualization  
+- `10th_bedrock_network_user.html` - Network visualization
+- `data/comprehensive_data.json` - Data file
 
 ### **Data Includes:**
-- **934 taps** (current count, may increase)
-- **273 users** (current count, may increase)
+- **1037 taps** (current count, may increase)
+- **280 users** (current count, may increase)
 - **Geocoded locations** (coordinates → city names)
 - **User profiles** with home locations
 - **Timeline data** for slider functionality
 - **Venue context** from Google Places API
 
-### **Frontend Changes:**
-- **Popup cards** show city names instead of coordinates
-- **Search results** show home locations
-- **Timeline slider** works with latest data
+### **Unified Bedrock Changes:**
+- **Map view** shows updated tap data
+- **Network view** shows updated user connections
+- **Search functionality** works with latest data
 - **All existing functionality** preserved
 
 ---
@@ -139,33 +153,34 @@ pip install psycopg2-binary
 - Check PostgreSQL is running
 - Verify database credentials in `config/database_config.py`
 
-#### **4. "Frontend still shows old data"**
+#### **4. "Unified bedrock still shows old data"**
 - Clear browser cache (Ctrl+F5 or Cmd+Shift+R)
-- Check console for cache-busting parameter: `?t=1234567890`
+- Check Vercel deployment status
+- Verify Git push was successful
 
-#### **5. "Coordinates still showing instead of city names"**
-- Verify the data export completed successfully
-- Check console shows: `🔍 Sample formatted_location: Nashville, TN, US`
-- Ensure files were copied to correct locations
+#### **5. "Wrong file copied"**
+- **Correct source:** `output/SQL-based/data/comprehensive_data.json`
+- **Wrong source:** `data/SQL-based/comprehensive_data_with_geocoding.json`
+- Always copy from the `output/` directory, not `data/` directory
 
 ---
 
 ## 📈 **PERFORMANCE NOTES**
 
 ### **API Usage:**
-- **First run**: ~934 API calls (one per unique coordinate)
+- **First run**: ~1037 API calls (one per unique coordinate)
 - **Subsequent runs**: Much fewer due to caching
 - **Google Geocoding API**: Very affordable (<$1 for 1000 requests)
 
 ### **Processing Time:**
-- **Data export**: ~2-3 minutes for 934 taps
+- **Data export**: ~2-3 minutes for 1037 taps
 - **File copying**: <1 second
-- **Frontend update**: Immediate (with cache-busting)
+- **Git push and Vercel deploy**: ~1-2 minutes
 
 ### **Data Size:**
-- **Source file**: ~1.2MB (comprehensive_data_with_geocoding.json)
-- **Frontend file**: ~1.2MB (comprehensive_data.json)
-- **Memory usage**: Minimal impact on frontend
+- **Source file**: ~1.3MB (comprehensive_data.json)
+- **Git repo file**: ~1.3MB (comprehensive_data.json)
+- **Memory usage**: Minimal impact on unified bedrock
 
 ---
 
@@ -179,11 +194,11 @@ pip install psycopg2-binary
 - **Weekly maintenance** (recommended)
 
 ### **What Stays the Same:**
-- **All UI functionality** preserved
-- **Search and filtering** unchanged
-- **Timeline slider** works with new data
-- **Map interactions** remain the same
-- **Control panel** functionality intact
+- **All unified bedrock functionality** preserved
+- **Map and network view switching** unchanged
+- **User authentication** works with new data
+- **Search and filtering** remain the same
+- **Loading screen behavior** intact
 
 ---
 
@@ -192,22 +207,27 @@ pip install psycopg2-binary
 ### **Quick Commands:**
 ```bash
 # Full refresh
-python3 src/SQL-based/data_export_for_visualizations.py && cp data/SQL-based/comprehensive_data_with_geocoding.json data/comprehensive_data.json && cp data/comprehensive_data.json output/SQL-based/data/comprehensive_data.json
+cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
+python3 src/SQL-based/data_export_for_visualizations.py
+cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
+cd /Users/lukeblanton/Documents/arc_unified_graph_map
+git add data/comprehensive_data.json && git commit -m "Update data" && git push origin main
 
 # Test results
-open http://localhost:3000/arc_social_graph_map_bedrock_fresh.html
+open https://arc-social-visualization.vercel.app
 ```
 
 ### **Key Files:**
 - **Export script**: `src/SQL-based/data_export_for_visualizations.py`
-- **Frontend map**: `output/SQL-based/arc_social_graph_map_bedrock_fresh.html`
-- **Data files**: `data/comprehensive_data.json`
+- **Unified bedrock**: `https://arc-social-visualization.vercel.app`
+- **Root-level data**: `arc_unified_graph_map/data/comprehensive_data.json`
+- **Active HTML files**: All in root directory (not in subdirectories)
 
 ### **Success Indicators:**
-- ✅ Console shows: `✅ Tap data loaded: 934 taps` (or current count)
-- ✅ Popup cards show: `Location: Nashville, TN, US` (not coordinates)
-- ✅ Search results show home locations
-- ✅ Timeline slider works with latest data
+- ✅ Console shows: `✅ User data loaded: 1037 taps` (or current count)
+- ✅ Map view shows updated tap data
+- ✅ Network view shows updated user connections
+- ✅ Both views load with fresh data
 
 ---
 
