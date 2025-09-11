@@ -2748,13 +2748,55 @@ Remember: You're helping someone explore and understand their social network dat
                 network.fit();
             }
         
+            // Global variable to track freeze state
+            let isFrozen = false;
+
             function stabilize() {
-                network.stabilize(50);
+                if (isFrozen) {
+                    // Unfreeze - enable physics
+                    network.setOptions({
+                        physics: {
+                            enabled: true,
+                            solver: 'forceAtlas2Based',
+                            forceAtlas2Based: {
+                                gravitationalConstant: -100,
+                                centralGravity: 0.005,
+                                springLength: 250,
+                                springConstant: 0.1,
+                                damping: 0.9,
+                                avoidOverlap: 1.2
+                            },
+                            maxVelocity: 8,
+                            minVelocity: 0.05,
+                            timestep: 0.3,
+                            stabilization: {
+                                enabled: true,
+                                iterations: 200,
+                                updateInterval: 25,
+                                onlyDynamicEdges: false,
+                                fit: false
+                            }
+                        }
+                    });
+                    isFrozen = false;
+                    document.querySelector('.control-btn[onclick="stabilize()"]').textContent = 'Freeze';
+                } else {
+                    // Freeze - disable physics
+                    network.setOptions({
+                        physics: {
+                            enabled: false
+                        }
+                    });
+                    isFrozen = true;
+                    document.querySelector('.control-btn[onclick="stabilize()"]').textContent = 'Unfreeze';
+                }
             }
         
             function resetView() {
                 network.fit();
-                network.stabilize(50);
+                if (!isFrozen) {
+                    network.stabilize(50);
+                }
             }
         
             function showAllConnections() {
