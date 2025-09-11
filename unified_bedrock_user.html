@@ -72,13 +72,11 @@
 
         .phone-input-container {
             margin-bottom: 24px;
-            position: relative;
         }
 
         .phone-input, .sms-input {
             width: 100%;
             padding: 16px;
-            padding-left: 35px;
             font-size: 1.1rem;
             background: #000000;
             border: 1px solid var(--stroke);
@@ -98,16 +96,6 @@
             color: var(--fg-muted);
         }
 
-        .phone-prefix {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--fg-secondary);
-            font-size: 1.1rem;
-            pointer-events: none;
-            z-index: 1;
-        }
 
         .resend-text {
             margin-top: 12px;
@@ -289,7 +277,6 @@
             <!-- Phone Entry State -->
             <div id="phoneEntryState">
                 <div class="phone-input-container">
-                    <span class="phone-prefix">+1</span>
                     <input 
                         type="tel" 
                         id="phoneInput" 
