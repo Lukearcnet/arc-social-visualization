@@ -74,8 +74,10 @@
             margin-bottom: 24px;
         }
 
-        .phone-input {
+        .phone-input, .sms-input {
             width: 100%;
+            min-width: 280px;
+            max-width: 280px;
             padding: 16px;
             font-size: 1.1rem;
             background: #000000;
@@ -84,16 +86,37 @@
             color: var(--fg-primary);
             text-align: center;
             letter-spacing: 1px;
+            box-sizing: border-box;
         }
 
-        .phone-input:focus {
+        .phone-input:focus, .sms-input:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
         }
 
-        .phone-input::placeholder {
+        .phone-input::placeholder, .sms-input::placeholder {
             color: var(--fg-muted);
+            font-size: 1.1rem;
+        }
+
+
+        .resend-text {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--fg-muted);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .resend-text:hover {
+            color: var(--fg-secondary);
+        }
+
+        .resend-text.disabled {
+            color: var(--fg-muted);
+            cursor: not-allowed;
+            text-decoration: none;
         }
 
         .login-button {
@@ -127,7 +150,7 @@
         }
 
         .success-message {
-            color: #51cf66;
+            color: var(--fg-primary);
             font-size: 0.9rem;
             margin-top: 16px;
             min-height: 20px;
@@ -255,19 +278,43 @@
     <!-- Login Overlay -->
     <div id="loginOverlay" class="login-overlay hidden">
         <div class="login-container">
-            <div class="phone-input-container">
-                <input 
-                    type="tel" 
-                    id="phoneInput" 
-                    class="phone-input" 
-                    placeholder="(555) 123-4567"
-                    maxlength="14"
-                >
+            <!-- Phone Entry State -->
+            <div id="phoneEntryState">
+                <div class="phone-input-container">
+                    <input 
+                        type="tel" 
+                        id="phoneInput" 
+                        class="phone-input" 
+                        placeholder="(555) 123-4567"
+                        maxlength="14"
+                    >
+                </div>
+                
+                <button id="loginButton" class="login-button" onclick="handleLogin()">
+                    Enter
+                </button>
             </div>
-            
-            <button id="loginButton" class="login-button" onclick="handleLogin()">
-                Enter
-            </button>
+
+            <!-- SMS Code Entry State -->
+            <div id="smsEntryState" style="display: none;">
+                <div class="phone-input-container">
+                    <input 
+                        type="tel" 
+                        id="smsInput" 
+                        class="phone-input" 
+                        placeholder="Enter SMS code"
+                        maxlength="8"
+                    >
+                </div>
+                
+                <button id="smsButton" class="login-button" onclick="handleSMSVerification()">
+                    Enter
+                </button>
+                
+                <div id="resendText" class="resend-text" onclick="resendSMS()">
+                    Resend SMS
+                </div>
+            </div>
             
             <div id="errorMessage" class="error-message"></div>
             <div id="successMessage" class="success-message"></div>
@@ -413,6 +460,20 @@
             });
         }
 
+        // Setup SMS input with Enter key support
+        function setupSMSInput() {
+            const el = document.getElementById('smsInput');
+            if (!el) return;
+
+            el.addEventListener('keydown', function(e) {
+                // Enter triggers SMS verification
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSMSVerification();
+                }
+            });
+        }
+
         // Load user data from comprehensive_data.json
         async function loadUserData() {
             try {
@@ -496,7 +557,11 @@
             successDiv.textContent = '';
         }
 
-        // Handle login
+        // Global variables for SMS flow
+        let currentPhoneNumber = '';
+        let resendCooldown = 0;
+
+        // Handle login - now sends SMS instead of direct authentication
         async function handleLogin() {
             const phoneInput = document.getElementById('phoneInput');
             const loginButton = document.getElementById('loginButton');
@@ -517,16 +582,95 @@
                 return;
             }
 
-            // Disable button during validation
+            // Disable button during SMS sending
             loginButton.disabled = true;
-            loginButton.textContent = 'Checking...';
+            loginButton.textContent = 'Sending...';
 
             try {
-                // Add +1 prefix to the phone number for matching
+                // Add +1 prefix to the phone number
                 const fullPhoneNumber = '+1' + cleanPhone;
+                currentPhoneNumber = fullPhoneNumber;
                 
+                // Send SMS via our API
+                const response = await fetch('/api/auth/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: fullPhoneNumber })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.ok) {
+                    // SMS sent successfully - switch to SMS entry state
+                    showSMSEntryState();
+                    showSuccess('SMS sent! Check your phone for the verification code.');
+                } else {
+                    showError('Failed to send SMS. Please try again.');
+                }
+            } catch (error) {
+                console.error('SMS send error:', error);
+                showError('An error occurred. Please try again.');
+            } finally {
+                // Re-enable button
+                loginButton.disabled = false;
+                loginButton.textContent = 'Enter';
+            }
+        }
+
+        // Handle SMS verification
+        async function handleSMSVerification() {
+            const smsInput = document.getElementById('smsInput');
+            const smsButton = document.getElementById('smsButton');
+            const code = smsInput.value.trim();
+
+            // Clear previous messages
+            clearMessages();
+
+            // Validate SMS code format
+            if (!/^\d{4,8}$/.test(code)) {
+                showError('Please enter a valid SMS code');
+                return;
+            }
+
+            // Disable button during verification
+            smsButton.disabled = true;
+            smsButton.textContent = 'Verifying...';
+
+            try {
+                // Verify SMS code via our API
+                const response = await fetch('/api/auth/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: currentPhoneNumber, code: code })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.ok) {
+                    // SMS verified successfully - proceed with authentication
+                    await authenticateUser();
+                } else {
+                    showError('Invalid or expired code. Please try again.');
+                }
+            } catch (error) {
+                console.error('SMS verification error:', error);
+                showError('An error occurred. Please try again.');
+            } finally {
+                // Re-enable button
+                smsButton.disabled = false;
+                smsButton.textContent = 'Enter';
+            }
+        }
+
+        // Authenticate user after SMS verification
+        async function authenticateUser() {
+            try {
                 // Find user by phone number
-                const user = findUserByPhone(fullPhoneNumber);
+                const user = findUserByPhone(currentPhoneNumber);
                 
                 if (user) {
                     // User found - authenticate
@@ -551,13 +695,71 @@
                     showError('No account found for this phone number');
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                showError('An error occurred. Please try again.');
-            } finally {
-                // Re-enable button
-                loginButton.disabled = false;
-                loginButton.textContent = 'Access Network';
+                console.error('Authentication error:', error);
+                showError('An error occurred during authentication.');
             }
+        }
+
+        // Show SMS entry state
+        function showSMSEntryState() {
+            document.getElementById('phoneEntryState').style.display = 'none';
+            document.getElementById('smsEntryState').style.display = 'block';
+            
+            // Focus on SMS input
+            setTimeout(() => {
+                document.getElementById('smsInput').focus();
+            }, 100);
+            
+            // Start resend cooldown
+            startResendCooldown();
+        }
+
+        // Resend SMS
+        async function resendSMS() {
+            if (resendCooldown > 0) return;
+            
+            const resendText = document.getElementById('resendText');
+            resendText.classList.add('disabled');
+            resendText.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/api/auth/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: currentPhoneNumber })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.ok) {
+                    showSuccess('SMS resent! Check your phone.');
+                    startResendCooldown();
+                } else {
+                    showError('Failed to resend SMS. Please try again.');
+                }
+            } catch (error) {
+                console.error('Resend SMS error:', error);
+                showError('Failed to resend SMS. Please try again.');
+            }
+        }
+
+        // Start resend cooldown timer
+        function startResendCooldown() {
+            resendCooldown = 30; // 30 seconds
+            const resendText = document.getElementById('resendText');
+            
+            const timer = setInterval(() => {
+                if (resendCooldown > 0) {
+                    resendText.textContent = `Resend SMS (${resendCooldown}s)`;
+                    resendCooldown--;
+                } else {
+                    resendText.textContent = 'Resend SMS';
+                    resendText.classList.remove('disabled');
+                    clearInterval(timer);
+                }
+            }, 1000);
         }
 
         // Hide login overlay
@@ -670,6 +872,9 @@
             
             // Setup phone input formatting
             setupPhoneInput();
+            
+            // Setup SMS input
+            setupSMSInput();
             
             // Load user data
             await loadUserData();
@@ -812,3 +1017,4 @@
 </body>
 </html>
 <!-- Develop branch test -->
+<!-- Force Vercel deployment -->
