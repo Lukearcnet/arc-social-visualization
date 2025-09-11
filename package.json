@@ -1,0 +1,20 @@
+{
+  "name": "arc-social-visualization",
+  "version": "1.0.0",
+  "description": "ARC Social Network Visualization with SMS Authentication",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "echo 'No start script required'"
+  },
+  "dependencies": {
+    "twilio": "^4.19.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
