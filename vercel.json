@@ -2,6 +2,24 @@
   "version": 2,
   "buildCommand": "echo 'No build step required'",
   "outputDirectory": ".",
+  "functions": {
+    "api/auth/start.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/auth/check.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
