@@ -39,3 +39,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'send_failed' });
   }
 };
+// Force redeploy Wed Sep 10 23:48:11 CDT 2025
