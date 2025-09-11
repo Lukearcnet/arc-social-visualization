@@ -72,11 +72,15 @@
 
         .phone-input-container {
             margin-bottom: 24px;
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
         .phone-input, .sms-input {
             width: 100%;
             padding: 16px;
+            padding-left: 40px;
             font-size: 1.1rem;
             background: #000000;
             border: 1px solid var(--stroke);
@@ -97,11 +101,14 @@
         }
 
         .phone-prefix {
-            display: inline-block;
-            margin-right: 8px;
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
             color: var(--fg-secondary);
             font-size: 1.1rem;
-            vertical-align: middle;
+            pointer-events: none;
+            z-index: 1;
         }
 
         .resend-text {
