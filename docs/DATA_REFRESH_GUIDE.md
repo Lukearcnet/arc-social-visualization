@@ -4,10 +4,10 @@
 
 **When user says "Refresh the data" or "Update the data":**
 
-1. **Run the data export script**: `python3 src/SQL-based/data_export_for_visualizations.py`
-2. **Copy to Git repo**: `cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
-3. **Commit and push**: `git add data/comprehensive_data.json && git commit -m "Update data" && git push origin main`
-4. **Test the unified bedrock**: Open `https://arc-social-visualization.vercel.app`
+1. **Run the data export script**: `cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py`
+2. **Copy files to Git repo**: `cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
+3. **Commit and push**: `cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push`
+4. **Test the app**: Open `http://localhost:3063/lib/unified_bedrock_user.html?view=map`
 
 ---
 
@@ -21,49 +21,60 @@ python3 src/SQL-based/data_export_for_visualizations.py
 
 **What this does:**
 - ✅ Connects to PostgreSQL database
-- ✅ Fetches latest tap data (currently ~1037 taps)
+- ✅ **INCREMENTAL UPDATES**: Only fetches new taps since last export
 - ✅ Processes coordinates through Google Geocoding API
 - ✅ Converts coordinates to city names (e.g., "Nashville, TN, US")
 - ✅ Caches results to avoid repeated API calls
+- ✅ Merges new data with existing data
 - ✅ Exports to `output/SQL-based/data/comprehensive_data.json`
 
-**Expected output:**
+**Expected output (Incremental):**
 ```
-Comprehensive data ready: 1037 taps, 280 users
-   📍 Geocoded locations: 1021
-   🏪 Venue lookups: 1021
+🔄 Incremental mode: Fetching taps newer than 2025-09-12T18:20:42
+🔄 Processing 5 taps with reverse geocoding...
+✅ Incremental update complete: 5 new taps added
+   📊 Total taps: 1091 (was 1086)
 ✅ Data exported successfully!
-   📁 Output directory: output/SQL-based/data
-   📄 Comprehensive data: output/SQL-based/data/comprehensive_data.json
+   ⏰ Export timestamp saved: 2025-09-12T19:30:15
+```
+
+**Expected output (Full refresh):**
+```
+🔄 No previous export found, fetching all taps
+🔄 Processing 1091 taps with reverse geocoding...
+✅ Data exported successfully!
+   ⏰ Export timestamp saved: 2025-09-12T19:30:15
 ```
 
 ### **Step 2: Copy to Git Repository**
 ```bash
-cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
+cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 ```
 
 **What this does:**
-- ✅ Copies fresh data to Git repository
-- ✅ **Root-level unified bedrock** loads from `./data/comprehensive_data.json`
-- ✅ **Active files** are in the root directory, not subdirectories
+- ✅ Copies the latest data from the export location to the Git repository
+- ✅ Updates the data file that the unified bedrock user app loads from
+- ✅ Ensures the app has access to the most current data
 
-### **Step 3: Commit and Push to Deploy**
+### **Step 3: Commit and Push to Git**
 ```bash
 cd /Users/lukeblanton/Documents/arc_unified_graph_map
 git add data/comprehensive_data.json
-git commit -m "Update data with latest taps and users"
-git push origin main
+git commit -m "data: refresh with X new taps"
+git push origin develop
 ```
 
 **What this does:**
 - ✅ Commits the updated data to Git
-- ✅ Vercel automatically redeploys with fresh data
-- ✅ Unified bedrock gets updated data
+- ✅ Triggers Vercel deployment (if configured)
+- ✅ Updates the live visualization
+- ✅ Preserves data history in version control
 
 ### **Step 4: Test the Results**
-1. **Open the unified bedrock**: `https://arc-social-visualization.vercel.app`
-2. **Check console**: Should show `✅ User data loaded: 1037 taps` (or current count)
-3. **Test both map and network views** with fresh data
+1. **Open the unified app**: `http://localhost:3063/lib/unified_bedrock_user.html?view=map`
+2. **Check console**: Should show current tap count (e.g., 1037 taps)
+3. **Click a tap marker**: Should show city names like "Nashville, TN, US" instead of coordinates
+4. **Test graph view**: Switch to graph view to verify data consistency
 
 ---
 
@@ -80,19 +91,19 @@ echo "📊 Exporting data from database..."
 cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
 python3 src/SQL-based/data_export_for_visualizations.py
 
-# Copy to Git repo
+# Copy to Git repository
 echo "📁 Copying to Git repository..."
-cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
+cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 
 # Commit and push
-echo "📤 Committing and pushing to deploy..."
+echo "📝 Committing to Git..."
 cd /Users/lukeblanton/Documents/arc_unified_graph_map
 git add data/comprehensive_data.json
-git commit -m "Update data with latest taps and users"
-git push origin main
+git commit -m "data: refresh $(date)"
+git push origin develop
 
 echo "✅ Data refresh complete!"
-echo "🌐 Test at: https://arc-social-visualization.vercel.app"
+echo "🌐 Test at: http://localhost:3063/lib/unified_bedrock_user.html?view=map"
 ```
 
 **Make it executable:**
@@ -110,28 +121,24 @@ chmod +x update_data.sh
 ## 📊 **WHAT GETS UPDATED**
 
 ### **Data Files Updated:**
-- `output/SQL-based/data/comprehensive_data.json` - Source file with geocoded data
-- `arc_unified_graph_map/data/comprehensive_data.json` - **Root-level Git repository data**
-- **Vercel deployment** - Automatically updated via Git push
-
-### **Active Files (Root Level):**
-- `unified_bedrock_user.html` - Main entry point
-- `8th_bedrock_map_user.html` - Map visualization  
-- `10th_bedrock_network_user.html` - Network visualization
-- `data/comprehensive_data.json` - Data file
+- `/Users/lukeblanton/Documents/Force Direct Graph/data/SQL-based/comprehensive_data_with_geocoding.json` - Source file with geocoded data
+- `/Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json` - Git repository data file
+- **Git version control** - Data changes are tracked and versioned
 
 ### **Data Includes:**
-- **1037 taps** (current count, may increase)
-- **280 users** (current count, may increase)
+- **1037+ taps** (current count, increases with new taps)
+- **278+ users** (current count, may increase)
 - **Geocoded locations** (coordinates → city names)
 - **User profiles** with home locations
 - **Timeline data** for slider functionality
 - **Venue context** from Google Places API
+- **Incremental updates** - Only processes new data since last export
 
-### **Unified Bedrock Changes:**
-- **Map view** shows updated tap data
-- **Network view** shows updated user connections
-- **Search functionality** works with latest data
+### **Application Changes:**
+- **Unified bedrock user app** gets updated data
+- **Map view** shows latest tap locations with city names
+- **Graph view** reflects current user connections
+- **Search functionality** works with updated user profiles
 - **All existing functionality** preserved
 
 ---
@@ -153,15 +160,20 @@ pip install psycopg2-binary
 - Check PostgreSQL is running
 - Verify database credentials in `config/database_config.py`
 
-#### **4. "Unified bedrock still shows old data"**
+#### **4. "App still shows old data"**
 - Clear browser cache (Ctrl+F5 or Cmd+Shift+R)
-- Check Vercel deployment status
-- Verify Git push was successful
+- Check that the data file was copied to the correct Git repository location
+- Verify the Git commit and push completed successfully
 
-#### **5. "Wrong file copied"**
-- **Correct source:** `output/SQL-based/data/comprehensive_data.json`
-- **Wrong source:** `data/SQL-based/comprehensive_data_with_geocoding.json`
-- Always copy from the `output/` directory, not `data/` directory
+#### **5. "Coordinates still showing instead of city names"**
+- Verify the data export completed successfully
+- Check console shows: `🔍 Sample formatted_location: Nashville, TN, US`
+- Ensure files were copied to the Git repository: `/Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
+
+#### **6. "No new taps appearing after refresh"**
+- Check the incremental export is working by looking for "Incremental mode" in the export output
+- Verify new taps exist in the database after the last export timestamp
+- Run the verification script to check for new taps since last export
 
 ---
 
@@ -173,14 +185,15 @@ pip install psycopg2-binary
 - **Google Geocoding API**: Very affordable (<$1 for 1000 requests)
 
 ### **Processing Time:**
-- **Data export**: ~2-3 minutes for 1037 taps
+- **Data export**: ~2-3 minutes for full refresh, ~30 seconds for incremental
 - **File copying**: <1 second
-- **Git push and Vercel deploy**: ~1-2 minutes
+- **Git operations**: <5 seconds
+- **App update**: Immediate (with cache-busting)
 
 ### **Data Size:**
-- **Source file**: ~1.3MB (comprehensive_data.json)
-- **Git repo file**: ~1.3MB (comprehensive_data.json)
-- **Memory usage**: Minimal impact on unified bedrock
+- **Source file**: ~1.4MB (comprehensive_data_with_geocoding.json)
+- **Git repo file**: ~1.4MB (comprehensive_data.json)
+- **Memory usage**: Minimal impact on the unified app
 
 ---
 
@@ -202,32 +215,75 @@ pip install psycopg2-binary
 
 ---
 
+## 🔍 **VERIFICATION PROCESS**
+
+### **Check for New Taps Since Last Export:**
+```bash
+cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 -c "
+import psycopg2
+from config.database_config import POSTGRES_CONFIG
+
+# Connect to database
+conn = psycopg2.connect(
+    host=POSTGRES_CONFIG['host'],
+    port=POSTGRES_CONFIG['port'],
+    database=POSTGRES_CONFIG['database'],
+    user=POSTGRES_CONFIG['username'],
+    password=POSTGRES_CONFIG['password']
+)
+
+cursor = conn.cursor()
+
+# Check the timestamp file
+try:
+    with open('output/SQL-based/data/last_export_timestamp.txt', 'r') as f:
+        timestamp = f.read().strip()
+    print(f'📅 Last export timestamp: {timestamp}')
+except:
+    print('❌ No timestamp file found')
+
+# Check what taps exist after that timestamp
+cursor.execute('''
+    SELECT COUNT(*) as count
+    FROM taps t
+    WHERE t.time > %s
+''', (timestamp,))
+count_after = cursor.fetchone()[0]
+print(f'🔍 Taps after last export: {count_after}')
+
+cursor.close()
+conn.close()
+"
+```
+
+**Expected output:**
+- If 0: No new taps since last export
+- If >0: New taps available for refresh
+
+---
+
 ## 📝 **FOR FUTURE AGENTS**
 
 ### **Quick Commands:**
 ```bash
 # Full refresh
-cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
-python3 src/SQL-based/data_export_for_visualizations.py
-cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
-cd /Users/lukeblanton/Documents/arc_unified_graph_map
-git add data/comprehensive_data.json && git commit -m "Update data" && git push origin main
+cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py && cp data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json && cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push
 
 # Test results
-open https://arc-social-visualization.vercel.app
+open http://localhost:3063/lib/unified_bedrock_user.html?view=map
 ```
 
 ### **Key Files:**
-- **Export script**: `src/SQL-based/data_export_for_visualizations.py`
-- **Unified bedrock**: `https://arc-social-visualization.vercel.app`
-- **Root-level data**: `arc_unified_graph_map/data/comprehensive_data.json`
-- **Active HTML files**: All in root directory (not in subdirectories)
+- **Export script**: `/Users/lukeblanton/Documents/Force Direct Graph/src/SQL-based/data_export_for_visualizations.py`
+- **Unified app**: `/Users/lukeblanton/Documents/arc_unified_graph_map/lib/unified_bedrock_user.html`
+- **Data file**: `/Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
 
 ### **Success Indicators:**
-- ✅ Console shows: `✅ User data loaded: 1037 taps` (or current count)
-- ✅ Map view shows updated tap data
-- ✅ Network view shows updated user connections
-- ✅ Both views load with fresh data
+- ✅ Console shows current tap count (e.g., 1037 taps)
+- ✅ Popup cards show: `Location: Nashville, TN, US` (not coordinates)
+- ✅ Both map and graph views work with updated data
+- ✅ Search results show home locations
+- ✅ Git shows the data file was updated
 
 ---
 
