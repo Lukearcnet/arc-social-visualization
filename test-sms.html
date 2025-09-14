@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test SMS API</title>
+</head>
+<body>
+    <h1>Test SMS API</h1>
+    <input type="tel" id="phone" placeholder="+1234567890" value="+14693877860">
+    <button onclick="testSMS()">Send SMS</button>
+    <div id="result"></div>
+
+    <script>
+        async function testSMS() {
+            const phone = document.getElementById('phone').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('https://arc-social-visualization-8oq9d8umn-luke-blantons-projects.vercel.app/api/auth/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: phone })
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<p>Status: ${response.status}</p><p>Response: ${JSON.stringify(data)}</p>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

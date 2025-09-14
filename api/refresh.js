@@ -1,5 +1,3 @@
-const { Client } = require('pg');
-
 export default async function handler(req, res) {
   // Auth guard - only allow requests with the correct secret
   if (req.headers['x-refresh-secret'] !== process.env.REFRESH_SECRET) {
@@ -7,32 +5,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🔄 Vercel Cron Job triggered: Data refresh initiated at', new Date().toISOString());
+    console.log('🔄 Vercel Cron Job triggered: Calling local webhook at', new Date().toISOString());
 
-    // Connect to PostgreSQL database
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
+    // Call your local webhook server
+    const webhookUrl = process.env.LOCAL_WEBHOOK_URL || 'http://localhost:8080/webhook';
+    
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Secret': process.env.REFRESH_SECRET
+      },
+      body: JSON.stringify({
+        trigger: 'vercel-cron',
+        timestamp: new Date().toISOString()
+      })
     });
-    
-    await client.connect();
-    console.log('✅ Connected to PostgreSQL database');
 
-    // Get current tap count
-    const result = await client.query('SELECT COUNT(*) as tap_count FROM taps');
-    const tapCount = result.rows[0].tap_count;
-    
-    console.log(`📊 Current tap count in database: ${tapCount}`);
-    
-    await client.end();
-    console.log('✅ Database connection closed');
+    if (!response.ok) {
+      throw new Error(`Webhook call failed: ${response.status} ${response.statusText}`);
+    }
 
-    // Return success response
+    const result = await response.json();
+    console.log('✅ Local webhook response:', result);
+
     return res.status(200).json({ 
       ok: true, 
-      message: 'Database connection successful!',
+      message: 'Cron job triggered local data refresh',
       timestamp: new Date().toISOString(),
-      tapCount: tapCount,
-      next_step: 'Ready to implement full data refresh logic'
+      webhook_result: result
     });
 
   } catch (error) {
