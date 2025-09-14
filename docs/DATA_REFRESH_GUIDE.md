@@ -4,10 +4,12 @@
 
 **When user says "Refresh the data" or "Update the data":**
 
-1. **Run the data export script**: `cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py`
-2. **Copy files to Git repo**: `cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
-3. **Commit and push**: `cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push`
-4. **Test the app**: Open `http://localhost:3063/lib/unified_bedrock_user.html?view=map`
+1. **Switch to develop branch**: `git checkout develop && git pull origin develop`
+2. **Run the data export script**: `cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py`
+3. **Copy files to Git repo**: `cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
+4. **Commit to develop**: `cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push origin develop`
+5. **Merge to main**: `git checkout main && git pull origin main && git merge develop && git push origin main`
+6. **Test the app**: Open `http://localhost:3063/lib/unified_bedrock_user.html?view=map`
 
 ---
 
@@ -95,14 +97,26 @@ python3 src/SQL-based/data_export_for_visualizations.py
 echo "📁 Copying to Git repository..."
 cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 
-# Commit and push
-echo "📝 Committing to Git..."
+# Switch to develop branch
+echo "🔄 Switching to develop branch..."
 cd /Users/lukeblanton/Documents/arc_unified_graph_map
+git checkout develop
+git pull origin develop
+
+# Commit to develop
+echo "📝 Committing to develop..."
 git add data/comprehensive_data.json
 git commit -m "data: refresh $(date)"
 git push origin develop
 
-echo "✅ Data refresh complete!"
+# Merge to main
+echo "🔄 Merging to main branch..."
+git checkout main
+git pull origin main
+git merge develop
+git push origin main
+
+echo "✅ Data refresh complete on both branches!"
 echo "🌐 Test at: http://localhost:3063/lib/unified_bedrock_user.html?view=map"
 ```
 
@@ -143,6 +157,48 @@ chmod +x update_data.sh
 
 ---
 
+## 🔄 **CROSS-BRANCH DATA SYNC**
+
+### **The Problem:**
+Data refreshes sometimes don't appear in the develop branch because:
+- Data updates are branch-specific (only update the current branch)
+- No automatic sync between `main` and `develop` branches
+- Manual merging required to keep both branches in sync
+
+### **The Solution:**
+**Always refresh data on develop first, then merge to main:**
+
+```bash
+# 1. Start on develop branch
+git checkout develop
+git pull origin develop
+
+# 2. Run data refresh (as usual)
+cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
+python3 src/SQL-based/data_export_for_visualizations.py
+cp data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
+
+# 3. Commit to develop
+cd /Users/lukeblanton/Documents/arc_unified_graph_map
+git add data/comprehensive_data.json
+git commit -m "data: refresh with X new taps"
+git push origin develop
+
+# 4. Merge to main
+git checkout main
+git pull origin main
+git merge develop
+git push origin main
+```
+
+### **Why This Works:**
+- ✅ **Develop gets fresh data first** (preview environment updated)
+- ✅ **Main gets fresh data via merge** (production environment updated)
+- ✅ **Both branches stay in sync** automatically
+- ✅ **No stale data issues** between branches
+
+---
+
 ## ⚠️ **TROUBLESHOOTING**
 
 ### **Common Issues:**
@@ -174,6 +230,19 @@ pip install psycopg2-binary
 - Check the incremental export is working by looking for "Incremental mode" in the export output
 - Verify new taps exist in the database after the last export timestamp
 - Run the verification script to check for new taps since last export
+
+#### **7. "Data refresh not showing in develop branch"**
+- **Root cause**: Data was refreshed on wrong branch (main instead of develop)
+- **Solution**: Follow the cross-branch sync process above
+- **Quick fix**: 
+  ```bash
+  # If data was refreshed on main, sync to develop
+  git checkout develop
+  git pull origin develop
+  git merge main
+  git push origin develop
+  ```
+- **Prevention**: Always start data refresh on develop branch first
 
 ---
 
