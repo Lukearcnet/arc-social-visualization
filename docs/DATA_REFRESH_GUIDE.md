@@ -1,12 +1,14 @@
 # 🔄 DATA REFRESH GUIDE
 
+> ⚠️ **CRITICAL**: Always start on develop branch first! This ensures both main and develop branches stay in sync. Starting on main branch will cause stale data issues.
+
 ## 🎯 **QUICK REFERENCE**
 
 **When user says "Refresh the data" or "Update the data":**
 
 1. **Switch to develop branch**: `git checkout develop && git pull origin develop`
 2. **Run the data export script**: `cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py`
-3. **Copy files to Git repo**: `cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
+3. **Copy files to Git repo**: `cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json`
 4. **Commit to develop**: `cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push origin develop`
 5. **Merge to main**: `git checkout main && git pull origin main && git merge develop && git push origin main`
 6. **Test the app**: Open `http://localhost:3063/lib/unified_bedrock_user.html?view=map`
@@ -15,7 +17,13 @@
 
 ## 📋 **DETAILED INSTRUCTIONS**
 
-### **Step 1: Run Data Export Script**
+### **Step 1: Switch to Develop Branch**
+```bash
+git checkout develop
+git pull origin develop
+```
+
+### **Step 2: Run Data Export Script**
 ```bash
 cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
 python3 src/SQL-based/data_export_for_visualizations.py
@@ -32,33 +40,35 @@ python3 src/SQL-based/data_export_for_visualizations.py
 
 **Expected output (Incremental):**
 ```
-🔄 Incremental mode: Fetching taps newer than 2025-09-12T18:20:42
-🔄 Processing 5 taps with reverse geocoding...
-✅ Incremental update complete: 5 new taps added
-   📊 Total taps: 1091 (was 1086)
+🔄 Incremental mode: Fetching taps newer than 2025-09-13T22:55:42.717704
+🔄 Processing 9 taps with reverse geocoding...
+✅ Incremental update complete: 9 new taps added
+   📊 Total taps: 1111 (was 1102)
 ✅ Data exported successfully!
-   ⏰ Export timestamp saved: 2025-09-12T19:30:15
+   ⏰ Export timestamp saved: 2025-09-14T00:15:56.054922
 ```
 
 **Expected output (Full refresh):**
 ```
 🔄 No previous export found, fetching all taps
-🔄 Processing 1091 taps with reverse geocoding...
+🔄 Processing 1111 taps with reverse geocoding...
 ✅ Data exported successfully!
-   ⏰ Export timestamp saved: 2025-09-12T19:30:15
+   ⏰ Export timestamp saved: 2025-09-14T00:15:56.054922
 ```
 
-### **Step 2: Copy to Git Repository**
+### **Step 3: Copy to Git Repository**
 ```bash
-cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
+cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 ```
+
+> 📝 **Note**: The data export script creates files in `output/SQL-based/data/`, not `data/SQL-based/`. Always use the `output/` path.
 
 **What this does:**
 - ✅ Copies the latest data from the export location to the Git repository
 - ✅ Updates the data file that the unified bedrock user app loads from
 - ✅ Ensures the app has access to the most current data
 
-### **Step 3: Commit and Push to Git**
+### **Step 4: Commit to Develop Branch**
 ```bash
 cd /Users/lukeblanton/Documents/arc_unified_graph_map
 git add data/comprehensive_data.json
@@ -72,7 +82,15 @@ git push origin develop
 - ✅ Updates the live visualization
 - ✅ Preserves data history in version control
 
-### **Step 4: Test the Results**
+### **Step 5: Merge to Main Branch**
+```bash
+git checkout main
+git pull origin main
+git merge develop
+git push origin main
+```
+
+### **Step 6: Test the Results**
 1. **Open the unified app**: `http://localhost:3063/lib/unified_bedrock_user.html?view=map`
 2. **Check console**: Should show current tap count (e.g., 1037 taps)
 3. **Click a tap marker**: Should show city names like "Nashville, TN, US" instead of coordinates
@@ -95,7 +113,7 @@ python3 src/SQL-based/data_export_for_visualizations.py
 
 # Copy to Git repository
 echo "📁 Copying to Git repository..."
-cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
+cp /Users/lukeblanton/Documents/Force\ Direct\ Graph/output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
 
 # Switch to develop branch
 echo "🔄 Switching to develop branch..."
@@ -135,13 +153,13 @@ chmod +x update_data.sh
 ## 📊 **WHAT GETS UPDATED**
 
 ### **Data Files Updated:**
-- `/Users/lukeblanton/Documents/Force Direct Graph/data/SQL-based/comprehensive_data_with_geocoding.json` - Source file with geocoded data
+- `/Users/lukeblanton/Documents/Force Direct Graph/output/SQL-based/data/comprehensive_data.json` - Source file with geocoded data
 - `/Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json` - Git repository data file
 - **Git version control** - Data changes are tracked and versioned
 
 ### **Data Includes:**
-- **1037+ taps** (current count, increases with new taps)
-- **278+ users** (current count, may increase)
+- **1111+ taps** (current count, increases with new taps)
+- **297+ users** (current count, may increase)
 - **Geocoded locations** (coordinates → city names)
 - **User profiles** with home locations
 - **Timeline data** for slider functionality
@@ -166,36 +184,14 @@ Data refreshes sometimes don't appear in the develop branch because:
 - Manual merging required to keep both branches in sync
 
 ### **The Solution:**
-**Always refresh data on develop first, then merge to main:**
-
-```bash
-# 1. Start on develop branch
-git checkout develop
-git pull origin develop
-
-# 2. Run data refresh (as usual)
-cd /Users/lukeblanton/Documents/Force\ Direct\ Graph
-python3 src/SQL-based/data_export_for_visualizations.py
-cp data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json
-
-# 3. Commit to develop
-cd /Users/lukeblanton/Documents/arc_unified_graph_map
-git add data/comprehensive_data.json
-git commit -m "data: refresh with X new taps"
-git push origin develop
-
-# 4. Merge to main
-git checkout main
-git pull origin main
-git merge develop
-git push origin main
-```
-
-### **Why This Works:**
+**Follow the process above (Quick Reference steps 1-6) which ensures:**
 - ✅ **Develop gets fresh data first** (preview environment updated)
 - ✅ **Main gets fresh data via merge** (production environment updated)
 - ✅ **Both branches stay in sync** automatically
 - ✅ **No stale data issues** between branches
+
+### **Why This Works:**
+The process above always starts on develop branch, commits there first, then merges to main. This ensures both branches get the same data and stay synchronized.
 
 ---
 
@@ -260,7 +256,7 @@ pip install psycopg2-binary
 - **App update**: Immediate (with cache-busting)
 
 ### **Data Size:**
-- **Source file**: ~1.4MB (comprehensive_data_with_geocoding.json)
+- **Source file**: ~1.4MB (comprehensive_data.json)
 - **Git repo file**: ~1.4MB (comprehensive_data.json)
 - **Memory usage**: Minimal impact on the unified app
 
@@ -336,7 +332,7 @@ conn.close()
 ### **Quick Commands:**
 ```bash
 # Full refresh
-cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py && cp data/SQL-based/comprehensive_data_with_geocoding.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json && cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push
+cd /Users/lukeblanton/Documents/Force\ Direct\ Graph && python3 src/SQL-based/data_export_for_visualizations.py && cp output/SQL-based/data/comprehensive_data.json /Users/lukeblanton/Documents/arc_unified_graph_map/data/comprehensive_data.json && cd /Users/lukeblanton/Documents/arc_unified_graph_map && git add data/comprehensive_data.json && git commit -m "data: refresh" && git push
 
 # Test results
 open http://localhost:3063/lib/unified_bedrock_user.html?view=map
