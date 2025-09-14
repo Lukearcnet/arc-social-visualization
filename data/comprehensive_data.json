@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2025-09-13T23:57:53.826821",
+    "generated_at": "2025-09-13T23:59:42.832380",
     "total_taps": 1111,
     "total_users": 297,
     "data_version": "2.0",
@@ -9,7 +9,7 @@
     "incremental_update": {
       "new_taps": 0,
       "existing_taps": 1111,
-      "previous_export": "2025-09-13T23:56:54.511727"
+      "previous_export": "2025-09-13T23:57:53.826821"
     }
   },
   "tap_data": [
