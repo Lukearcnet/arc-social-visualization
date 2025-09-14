@@ -1,18 +1,306 @@
 {
   "metadata": {
-    "generated_at": "2025-09-13T18:08:33.488912",
-    "total_taps": 1102,
-    "total_users": 295,
+    "generated_at": "2025-09-13T20:06:52.953695",
+    "total_taps": 1111,
+    "total_users": 297,
     "data_version": "2.0",
     "update_frequency": "incremental",
     "description": "ARC Social Graph enriched data for visualizations",
     "incremental_update": {
-      "new_taps": 0,
+      "new_taps": 9,
       "existing_taps": 1102,
-      "previous_export": "2025-09-13T17:57:27.411574"
+      "previous_export": "2025-09-13T18:08:33.488912"
     }
   },
   "tap_data": [
+    {
+      "tap_id": "76995828-e044-4935-a5d0-fcb8c5181bbf",
+      "user1_id": "def0f3ea-b035-42e6-868a-505f663357e1",
+      "user1_name": "Chloe Manasco",
+      "user1_username": "chloegrace",
+      "user1_bio": "",
+      "user1_home": "Hendersonville ",
+      "user1_age": "18-25",
+      "user1_tap_count": 1,
+      "user1_connections_count": 1,
+      "user1_phone_number": "+16155748210",
+      "user2_id": "173df5d0-8946-4f17-b5fe-15333c6e86a1",
+      "user2_name": "Grace Brown",
+      "user2_username": "grace",
+      "user2_bio": null,
+      "user2_home": "Nashville ",
+      "user2_age": "18-25",
+      "user2_tap_count": 114,
+      "user2_connections_count": 47,
+      "user2_phone_number": "+19257868522",
+      "latitude": 36.13620984403624,
+      "longitude": -86.80071510104504,
+      "location": "36.13620984403624,-86.80071510104504",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T00:15:56.054922",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Fido",
+        "venue_category": "restaurant",
+        "venue_context": "Fido (restaurant)"
+      }
+    },
+    {
+      "tap_id": "425bee7a-d174-450c-a04e-d9ea389f6a85",
+      "user1_id": "87db25c8-a8a4-475b-a8a8-3a369732641a",
+      "user1_name": "Jonathan Thomson",
+      "user1_username": "jonathan",
+      "user1_bio": "",
+      "user1_home": "Dallas",
+      "user1_age": "26-44",
+      "user1_tap_count": 12,
+      "user1_connections_count": 6,
+      "user1_phone_number": "+19729784049",
+      "user2_id": "a792f386-348f-4697-88b1-ca9b0ea67f1c",
+      "user2_name": "Matthew Guo",
+      "user2_username": "matt",
+      "user2_bio": "EMPACT Engineering | Texas A&M Alumni",
+      "user2_home": "Dallas, TX",
+      "user2_age": "18-25",
+      "user2_tap_count": 7,
+      "user2_connections_count": 3,
+      "user2_phone_number": "+13475585889",
+      "latitude": 32.79952628882663,
+      "longitude": -96.80258973538088,
+      "location": "32.79952628882663,-96.80258973538088",
+      "formatted_location": "Dallas, TX, US",
+      "time": "2025-09-14T00:13:59.471969",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "AMLI Quadrangle",
+        "venue_category": "establishment",
+        "venue_context": "AMLI Quadrangle (establishment)"
+      }
+    },
+    {
+      "tap_id": "b1b649f0-b369-4d98-83e5-d02aaa861bdc",
+      "user1_id": "d8bd9333-fc9b-4262-8686-484afa2a1eff",
+      "user1_name": "Steve Ratliff",
+      "user1_username": "steveratliff",
+      "user1_bio": "",
+      "user1_home": "Boston",
+      "user1_age": "26-44",
+      "user1_tap_count": 1,
+      "user1_connections_count": 1,
+      "user1_phone_number": "+16072678354",
+      "user2_id": "173df5d0-8946-4f17-b5fe-15333c6e86a1",
+      "user2_name": "Grace Brown",
+      "user2_username": "grace",
+      "user2_bio": null,
+      "user2_home": "Nashville ",
+      "user2_age": "18-25",
+      "user2_tap_count": 114,
+      "user2_connections_count": 47,
+      "user2_phone_number": "+19257868522",
+      "latitude": 36.136046127488996,
+      "longitude": -86.80093336713117,
+      "location": "36.136046127488996,-86.80093336713117",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T00:13:40.674325",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Double Dogs",
+        "venue_category": "restaurant",
+        "venue_context": "Double Dogs (restaurant)"
+      }
+    },
+    {
+      "tap_id": "8e005da3-8fa6-45ff-961d-07d147c5be1c",
+      "user1_id": "38e5fd2b-1350-47a0-9c68-fe66adca3f03",
+      "user1_name": "Daniel Gaw",
+      "user1_username": "danielgaw",
+      "user1_bio": "",
+      "user1_home": "Nashville",
+      "user1_age": "18-25",
+      "user1_tap_count": 34,
+      "user1_connections_count": 16,
+      "user1_phone_number": "+16159759725",
+      "user2_id": "28db1ce9-e205-4c3a-ae8d-618e62c740c8",
+      "user2_name": "Hayden Johnson",
+      "user2_username": "haydenrjohnson",
+      "user2_bio": "Goofy guy",
+      "user2_home": "Nashville",
+      "user2_age": "18-25",
+      "user2_tap_count": 4,
+      "user2_connections_count": 3,
+      "user2_phone_number": "+16157628183",
+      "latitude": 36.08275090275668,
+      "longitude": -86.79788094632544,
+      "location": "36.08275090275668,-86.79788094632544",
+      "formatted_location": "Oak Hill, TN, US",
+      "time": "2025-09-14T00:13:16.528218",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "N/A",
+        "venue_category": "unknown",
+        "venue_context": "N/A"
+      }
+    },
+    {
+      "tap_id": "7779ecfc-1d8d-41e7-8b3f-00bd5242884c",
+      "user1_id": "bffc2615-bfb7-432f-84ae-a64e8e873a0b",
+      "user1_name": "Zane Sun",
+      "user1_username": "zane",
+      "user1_bio": "",
+      "user1_home": "Nashville",
+      "user1_age": "18-25",
+      "user1_tap_count": 20,
+      "user1_connections_count": 10,
+      "user1_phone_number": "+16157053990",
+      "user2_id": "a965d513-66e9-40ee-a4a7-0c256258683c",
+      "user2_name": "Arjun Gupta",
+      "user2_username": "arjun",
+      "user2_bio": "",
+      "user2_home": "Nashville",
+      "user2_age": "18-25",
+      "user2_tap_count": 23,
+      "user2_connections_count": 8,
+      "user2_phone_number": "+15167246504",
+      "latitude": 36.136091392650556,
+      "longitude": -86.8009882185226,
+      "location": "36.136091392650556,-86.8009882185226",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T00:13:12.347459",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Double Dogs",
+        "venue_category": "restaurant",
+        "venue_context": "Double Dogs (restaurant)"
+      }
+    },
+    {
+      "tap_id": "4803c423-8eac-4fbc-b954-623591b56998",
+      "user1_id": "bffc2615-bfb7-432f-84ae-a64e8e873a0b",
+      "user1_name": "Zane Sun",
+      "user1_username": "zane",
+      "user1_bio": "",
+      "user1_home": "Nashville",
+      "user1_age": "18-25",
+      "user1_tap_count": 20,
+      "user1_connections_count": 10,
+      "user1_phone_number": "+16157053990",
+      "user2_id": "173df5d0-8946-4f17-b5fe-15333c6e86a1",
+      "user2_name": "Grace Brown",
+      "user2_username": "grace",
+      "user2_bio": null,
+      "user2_home": "Nashville ",
+      "user2_age": "18-25",
+      "user2_tap_count": 114,
+      "user2_connections_count": 47,
+      "user2_phone_number": "+19257868522",
+      "latitude": 36.13609661134933,
+      "longitude": -86.8009857693035,
+      "location": "36.13609661134933,-86.8009857693035",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T00:13:08.942215",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Double Dogs",
+        "venue_category": "restaurant",
+        "venue_context": "Double Dogs (restaurant)"
+      }
+    },
+    {
+      "tap_id": "60df4130-b838-4660-8b6f-379aa0bae173",
+      "user1_id": "c41459e6-fa66-49bb-b25f-8ec6927b93d6",
+      "user1_name": "Dirkson Brinkerhoff",
+      "user1_username": "dirkson",
+      "user1_bio": "Cool guy looking for friends :)))",
+      "user1_home": "Nashville ",
+      "user1_age": "18-25",
+      "user1_tap_count": 97,
+      "user1_connections_count": 24,
+      "user1_phone_number": "+17203939281",
+      "user2_id": "38e5fd2b-1350-47a0-9c68-fe66adca3f03",
+      "user2_name": "Daniel Gaw",
+      "user2_username": "danielgaw",
+      "user2_bio": "",
+      "user2_home": "Nashville",
+      "user2_age": "18-25",
+      "user2_tap_count": 34,
+      "user2_connections_count": 16,
+      "user2_phone_number": "+16159759725",
+      "latitude": 36.08272592653923,
+      "longitude": -86.79796838597933,
+      "location": "36.08272592653923,-86.79796838597933",
+      "formatted_location": "Oak Hill, TN, US",
+      "time": "2025-09-14T00:12:51.095546",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "N/A",
+        "venue_category": "unknown",
+        "venue_context": "N/A"
+      }
+    },
+    {
+      "tap_id": "dd6f373a-59ac-4d46-8a4f-3bbba6cb89a1",
+      "user1_id": "a965d513-66e9-40ee-a4a7-0c256258683c",
+      "user1_name": "Arjun Gupta",
+      "user1_username": "arjun",
+      "user1_bio": "",
+      "user1_home": "Nashville",
+      "user1_age": "18-25",
+      "user1_tap_count": 23,
+      "user1_connections_count": 8,
+      "user1_phone_number": "+15167246504",
+      "user2_id": "173df5d0-8946-4f17-b5fe-15333c6e86a1",
+      "user2_name": "Grace Brown",
+      "user2_username": "grace",
+      "user2_bio": null,
+      "user2_home": "Nashville ",
+      "user2_age": "18-25",
+      "user2_tap_count": 114,
+      "user2_connections_count": 47,
+      "user2_phone_number": "+19257868522",
+      "latitude": 36.136113037092485,
+      "longitude": -86.80097991579217,
+      "location": "36.136113037092485,-86.80097991579217",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T00:12:35.507137",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Double Dogs",
+        "venue_category": "restaurant",
+        "venue_context": "Double Dogs (restaurant)"
+      }
+    },
+    {
+      "tap_id": "ab8b2a30-054d-4203-97c6-d2a99215ea24",
+      "user1_id": "39dc61fd-2044-4d77-bb0f-3a8144a56591",
+      "user1_name": "Owen ",
+      "user1_username": "owen",
+      "user1_bio": "\n",
+      "user1_home": "Nashville",
+      "user1_age": "18-25",
+      "user1_tap_count": 61,
+      "user1_connections_count": 20,
+      "user1_phone_number": "+16156492462",
+      "user2_id": "173df5d0-8946-4f17-b5fe-15333c6e86a1",
+      "user2_name": "Grace Brown",
+      "user2_username": "grace",
+      "user2_bio": null,
+      "user2_home": "Nashville ",
+      "user2_age": "18-25",
+      "user2_tap_count": 114,
+      "user2_connections_count": 47,
+      "user2_phone_number": "+19257868522",
+      "latitude": 36.136049306263416,
+      "longitude": -86.80097967321036,
+      "location": "36.136049306263416,-86.80097967321036",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T00:11:46.347203",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Double Dogs",
+        "venue_category": "restaurant",
+        "venue_context": "Double Dogs (restaurant)"
+      }
+    },
     {
       "tap_id": "9fa20cd8-6249-4786-8aaa-232640d00d98",
       "user1_id": "a815e693-e351-406f-a7e0-7ef73039dd4e",
@@ -36726,6 +37014,43 @@
       }
     },
     {
+      "user_id": "def0f3ea-b035-42e6-868a-505f663357e1",
+      "basic_info": {
+        "first_name": "Chloe",
+        "last_name": "Manasco",
+        "username": "chloegrace",
+        "age": "18-25",
+        "active": true
+      },
+      "profile_stats": {
+        "tap_count": 1,
+        "connections_count": 1,
+        "pfp_url": null
+      },
+      "home_location": {
+        "home_location": "Hendersonville",
+        "city": "",
+        "state": "",
+        "country": "",
+        "geographic_context": "Hendersonville"
+      },
+      "bio_analysis": {
+        "bio_text": "No bio provided",
+        "bio_length": 15,
+        "has_emoji": false,
+        "word_count": 3,
+        "contextual_info": {
+          "age_group": "Unknown"
+        },
+        "bio_summary": "No bio provided"
+      },
+      "social_urls": {
+        "x": null,
+        "linkedin": null,
+        "instagram": null
+      }
+    },
+    {
       "user_id": "ddee2215-3134-4b06-b7c5-4820debbad6b",
       "basic_info": {
         "first_name": "Kyle",
@@ -36819,6 +37144,43 @@
         "state": "",
         "country": "",
         "geographic_context": "San Francisco"
+      },
+      "bio_analysis": {
+        "bio_text": "No bio provided",
+        "bio_length": 15,
+        "has_emoji": false,
+        "word_count": 3,
+        "contextual_info": {
+          "age_group": "Unknown"
+        },
+        "bio_summary": "No bio provided"
+      },
+      "social_urls": {
+        "x": null,
+        "linkedin": null,
+        "instagram": null
+      }
+    },
+    {
+      "user_id": "d8bd9333-fc9b-4262-8686-484afa2a1eff",
+      "basic_info": {
+        "first_name": "Steve",
+        "last_name": "Ratliff",
+        "username": "steveratliff",
+        "age": "26-44",
+        "active": true
+      },
+      "profile_stats": {
+        "tap_count": 1,
+        "connections_count": 1,
+        "pfp_url": null
+      },
+      "home_location": {
+        "home_location": "Boston",
+        "city": "",
+        "state": "",
+        "country": "",
+        "geographic_context": "Boston"
       },
       "bio_analysis": {
         "bio_text": "No bio provided",
@@ -37481,7 +37843,7 @@
       "profile_stats": {
         "tap_count": 2,
         "connections_count": 2,
-        "pfp_url": null
+        "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/christinaxing-1757809780115.jpg"
       },
       "home_location": {
         "home_location": "Pasadena",
@@ -37491,14 +37853,14 @@
         "geographic_context": "Pasadena"
       },
       "bio_analysis": {
-        "bio_text": "No bio provided",
-        "bio_length": 15,
-        "has_emoji": false,
-        "word_count": 3,
+        "bio_text": "Caltech Investment Analyst | Master of engineering\u2014Fintech @ Duke",
+        "bio_length": 65,
+        "has_emoji": true,
+        "word_count": 9,
         "contextual_info": {
           "age_group": "Unknown"
         },
-        "bio_summary": "No bio provided"
+        "bio_summary": "No patterns detected"
       },
       "social_urls": {
         "x": null,
@@ -37739,7 +38101,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 96,
+        "tap_count": 97,
         "connections_count": 24,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/dirkson-1755311390996.jpg"
       },
@@ -37888,7 +38250,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 18,
+        "tap_count": 20,
         "connections_count": 10,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/zane-1750207381718.jpg"
       },
@@ -38964,7 +39326,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 21,
+        "tap_count": 23,
         "connections_count": 8,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/arjun-1757364195756.jpg"
       },
@@ -39077,7 +39439,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 6,
+        "tap_count": 7,
         "connections_count": 3,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/matt-1754008335973.jpg"
       },
@@ -40342,7 +40704,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 11,
+        "tap_count": 12,
         "connections_count": 6,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/jonathan-1751638790950.jpg"
       },
@@ -43237,7 +43599,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 60,
+        "tap_count": 61,
         "connections_count": 20,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/Owen-1747263843829.jpg"
       },
@@ -43349,7 +43711,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 32,
+        "tap_count": 34,
         "connections_count": 16,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/danielgaw-1754532182012.jpg"
       },
@@ -44278,7 +44640,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 3,
+        "tap_count": 4,
         "connections_count": 3,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/haydenrjohnson-1755311610411.jpg"
       },
@@ -45058,8 +45420,8 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 109,
-        "connections_count": 45,
+        "tap_count": 114,
+        "connections_count": 47,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/grace-1756482846074.jpg"
       },
       "home_location": {
@@ -46263,7 +46625,9 @@
       "Dallas Texas": 2,
       "Santa Monica, CA, United States": 1,
       "New York": 10,
+      "Hendersonville": 1,
       "1327 E Foothill Blvd": 1,
+      "Boston": 3,
       "dallas": 1,
       "Corsicana": 4,
       "Jackson Wyoming": 1,
@@ -46284,7 +46648,6 @@
       "11728 W Olympic Blvd, Los Angeles, CA 90064": 1,
       "Cali": 1,
       "Franklin, TN, United States": 1,
-      "Boston": 2,
       "Fort Worth": 3,
       "Nashville TN": 1,
       "Newport Beach": 1,
@@ -46350,8 +46713,8 @@
       "Jackson Hole, Wyoming, United States": 1
     },
     "age_distribution": {
-      "18-25": 141,
-      "26-44": 133,
+      "18-25": 142,
+      "26-44": 134,
       "45-59": 17,
       "60+": 3,
       "<18": 1
