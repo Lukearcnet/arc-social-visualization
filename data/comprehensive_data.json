@@ -1,15 +1,15 @@
 {
   "metadata": {
-    "generated_at": "2025-09-13T20:06:52.953695",
+    "generated_at": "2025-09-13T23:56:54.511727",
     "total_taps": 1111,
     "total_users": 297,
     "data_version": "2.0",
     "update_frequency": "incremental",
     "description": "ARC Social Graph enriched data for visualizations",
     "incremental_update": {
-      "new_taps": 9,
-      "existing_taps": 1102,
-      "previous_export": "2025-09-13T18:08:33.488912"
+      "new_taps": 0,
+      "existing_taps": 1111,
+      "previous_export": "2025-09-13T23:56:13.598786"
     }
   },
   "tap_data": [
@@ -40308,14 +40308,14 @@
         "geographic_context": "Mars"
       },
       "bio_analysis": {
-        "bio_text": "founder",
-        "bio_length": 7,
+        "bio_text": "Bio here",
+        "bio_length": 8,
         "has_emoji": false,
-        "word_count": 1,
+        "word_count": 2,
         "contextual_info": {
-          "age_group": "26-44"
+          "age_group": "Unknown"
         },
-        "bio_summary": "age_group: 26-44"
+        "bio_summary": "No patterns detected"
       },
       "social_urls": {
         "x": "https://x.com/jesus",
