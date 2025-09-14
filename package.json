@@ -9,6 +9,7 @@
     "start": "echo 'No start script required'"
   },
   "dependencies": {
+    "pg": "^8.16.3",
     "twilio": "^4.19.0"
   },
   "devDependencies": {
@@ -16,5 +17,20 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukearcnet/arc-social-visualization.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lukearcnet/arc-social-visualization/issues"
+  },
+  "homepage": "https://github.com/lukearcnet/arc-social-visualization#readme"
 }
