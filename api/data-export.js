@@ -1,11 +1,15 @@
+import { Pool } from 'pg';
+import axios from 'axios';
+
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-async function getGeocodedLocation(latitude, longitude) {
-  const cacheKey = `${latitude},${longitude}`;
-  // In a real scenario, you'd use a persistent cache (e.g., Redis, another Blob)
-  // For now, we'll simulate or re-fetch.
-  // For Vercel Blob, you might store a JSON object of cached locations.
+// Create a connection pool for reuse across function invocations
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
+async function getGeocodedLocation(latitude, longitude) {
   try {
     const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
       params: {
@@ -41,15 +45,15 @@ async function getGeocodedLocation(latitude, longitude) {
 }
 
 export async function handleDataExport() {
+  const client = await pool.connect();
   try {
     console.log('📊 Running cloud data export script...');
 
-    // Import modules dynamically
-    const { sql } = await import('@vercel/postgres');
-    const axios = (await import('axios')).default;
+    await client.query('BEGIN');
 
     // Fetch taps from PostgreSQL
-    const { rows: taps } = await sql`SELECT * FROM taps ORDER BY time ASC;`;
+    const result = await client.query('SELECT * FROM taps ORDER BY time ASC');
+    const taps = result.rows;
 
     // Process taps for geocoding
     const processedTaps = [];
@@ -74,11 +78,17 @@ export async function handleDataExport() {
       last_refresh: new Date().toISOString(),
     };
 
+    await client.query('COMMIT');
     console.log('✅ Cloud data export completed.');
     return comprehensiveData;
 
   } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {}
     console.error('❌ Cloud data export failed:', error);
     throw error;
+  } finally {
+    client.release();
   }
 }
