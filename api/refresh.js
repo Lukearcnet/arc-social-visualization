@@ -1,3 +1,6 @@
+import { handleDataExport } from './data-export';
+import { put } from '@vercel/blob';
+
 export default async function handler(req, res) {
   // Auth guard - only allow requests with the correct secret
   if (req.headers['x-refresh-secret'] !== process.env.REFRESH_SECRET) {
@@ -5,43 +8,31 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🔄 Vercel Cron Job triggered: Calling local webhook at', new Date().toISOString());
-    
-    // Call the local webhook
-    const webhookUrl = process.env.LOCAL_WEBHOOK_URL || 'http://localhost:8081/webhook';
-    console.log(`📡 Calling webhook: ${webhookUrl}`);
-    
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Webhook-Secret': process.env.REFRESH_SECRET
-      },
-      body: JSON.stringify({
-        trigger: 'vercel-cron',
-        timestamp: new Date().toISOString()
-      })
+    console.log('🔄 Vercel Cron Job triggered: Starting data refresh at', new Date().toISOString());
+
+    // Perform data export
+    const exportedData = await handleDataExport();
+
+    // Store data in Vercel Blob
+    const blob = await put('comprehensive_data.json', JSON.stringify(exportedData), {
+      access: 'public',
+      contentType: 'application/json',
     });
 
-    if (!response.ok) {
-      throw new Error(`Webhook call failed: ${response.status} ${response.statusText}`);
-    }
+    console.log('✅ Data refresh complete and stored in Vercel Blob:', blob.url);
 
-    const result = await response.json();
-    console.log('✅ Local webhook response:', result);
-
-    return res.status(200).json({ 
-      ok: true, 
-      message: 'Cron job triggered local data refresh',
+    return res.status(200).json({
+      ok: true,
+      message: 'Cron job triggered cloud data refresh',
       timestamp: new Date().toISOString(),
-      webhook_result: result
+      blob_url: blob.url,
     });
 
   } catch (error) {
     console.error('❌ Vercel Cron Job failed:', error);
-    return res.status(500).json({ 
-      error: 'refresh_failed', 
-      detail: error.message 
+    return res.status(500).json({
+      error: 'refresh_failed',
+      detail: error.message,
     });
   }
 }
