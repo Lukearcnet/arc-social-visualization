@@ -1,18 +1,114 @@
 {
   "metadata": {
-    "generated_at": "2025-09-13T23:59:42.832380",
-    "total_taps": 1111,
+    "generated_at": "2025-09-14T21:36:18.481193",
+    "total_taps": 1114,
     "total_users": 297,
     "data_version": "2.0",
     "update_frequency": "incremental",
     "description": "ARC Social Graph enriched data for visualizations",
     "incremental_update": {
-      "new_taps": 0,
+      "new_taps": 3,
       "existing_taps": 1111,
-      "previous_export": "2025-09-13T23:57:53.826821"
+      "previous_export": "2025-09-13T23:59:42.832380"
     }
   },
   "tap_data": [
+    {
+      "tap_id": "2f8500f1-34d7-49b6-9265-634608684133",
+      "user1_id": "c41459e6-fa66-49bb-b25f-8ec6927b93d6",
+      "user1_name": "Dirkson Brinkerhoff",
+      "user1_username": "dirkson",
+      "user1_bio": "Cool guy looking for friends :)))",
+      "user1_home": "Nashville ",
+      "user1_age": "18-25",
+      "user1_tap_count": 99,
+      "user1_connections_count": 24,
+      "user1_phone_number": "+17203939281",
+      "user2_id": "bf526c8d-7286-4997-a58f-7cc0549b04c6",
+      "user2_name": "Manna Lindman",
+      "user2_username": "mannalindman",
+      "user2_bio": "",
+      "user2_home": "Nashville",
+      "user2_age": "18-25",
+      "user2_tap_count": 62,
+      "user2_connections_count": 19,
+      "user2_phone_number": "+16156278501",
+      "latitude": 36.12556990148269,
+      "longitude": -86.78967052621925,
+      "location": "36.12556990148269,-86.78967052621925",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T15:15:08.025387",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Midtown Fellowship - 12 South",
+        "venue_category": "establishment",
+        "venue_context": "Midtown Fellowship - 12 South (establishment)"
+      }
+    },
+    {
+      "tap_id": "9ed8ab27-0ec9-46be-87f2-0000529ce2fe",
+      "user1_id": "0b2ca8b5-4760-4abf-aec3-c5d204e97ba4",
+      "user1_name": "Anna Simottel",
+      "user1_username": "annasimottel",
+      "user1_bio": "",
+      "user1_home": "Houston",
+      "user1_age": "18-25",
+      "user1_tap_count": 54,
+      "user1_connections_count": 17,
+      "user1_phone_number": "+18324839839",
+      "user2_id": "c41459e6-fa66-49bb-b25f-8ec6927b93d6",
+      "user2_name": "Dirkson Brinkerhoff",
+      "user2_username": "dirkson",
+      "user2_bio": "Cool guy looking for friends :)))",
+      "user2_home": "Nashville ",
+      "user2_age": "18-25",
+      "user2_tap_count": 99,
+      "user2_connections_count": 24,
+      "user2_phone_number": "+17203939281",
+      "latitude": 36.12542584498438,
+      "longitude": -86.7895367988223,
+      "location": "36.12542584498438,-86.7895367988223",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T15:15:06.029159",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "Shongoane 1",
+        "venue_category": "education",
+        "venue_context": "Shongoane 1 (education)"
+      }
+    },
+    {
+      "tap_id": "4b9bddff-f9b2-4af3-b903-582bfdf9bbc0",
+      "user1_id": "bf526c8d-7286-4997-a58f-7cc0549b04c6",
+      "user1_name": "Manna Lindman",
+      "user1_username": "mannalindman",
+      "user1_bio": "",
+      "user1_home": "Nashville",
+      "user1_age": "18-25",
+      "user1_tap_count": 62,
+      "user1_connections_count": 19,
+      "user1_phone_number": "+16156278501",
+      "user2_id": "0b2ca8b5-4760-4abf-aec3-c5d204e97ba4",
+      "user2_name": "Anna Simottel",
+      "user2_username": "annasimottel",
+      "user2_bio": "",
+      "user2_home": "Houston",
+      "user2_age": "18-25",
+      "user2_tap_count": 54,
+      "user2_connections_count": 17,
+      "user2_phone_number": "+18324839839",
+      "latitude": 36.12551998893957,
+      "longitude": -86.78963953126012,
+      "location": "36.12551998893957,-86.78963953126012",
+      "formatted_location": "Nashville, TN, US",
+      "time": "2025-09-14T15:15:05.310836",
+      "formatted_time": "Sep 14, 2025",
+      "venue_context": {
+        "venue_name": "2411-2483 12th Ave S",
+        "venue_category": "establishment",
+        "venue_context": "2411-2483 12th Ave S (establishment)"
+      }
+    },
     {
       "tap_id": "76995828-e044-4935-a5d0-fcb8c5181bbf",
       "user1_id": "def0f3ea-b035-42e6-868a-505f663357e1",
@@ -38101,7 +38197,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 97,
+        "tap_count": 99,
         "connections_count": 24,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/dirkson-1755311390996.jpg"
       },
@@ -38287,7 +38383,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 60,
+        "tap_count": 62,
         "connections_count": 19,
         "pfp_url": null
       },
@@ -46088,7 +46184,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 52,
+        "tap_count": 54,
         "connections_count": 17,
         "pfp_url": null
       },
