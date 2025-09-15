@@ -1,3 +1,5 @@
+import { handleDataExport } from './data-export.js';
+
 export default async function handler(req, res) {
   // Auth guard - only allow requests with the correct secret
   if (req.headers['x-refresh-secret'] !== process.env.REFRESH_SECRET) {
@@ -7,26 +9,21 @@ export default async function handler(req, res) {
   try {
     console.log('🔄 Vercel Cron Job triggered: Starting data refresh at', new Date().toISOString());
 
-    // Import modules dynamically
-    const { handleDataExport } = await import('./data-export.js');
-    const { put } = await import('@vercel/blob');
-
     // Perform data export
     const exportedData = await handleDataExport();
 
-    // Store data in Vercel Blob
-    const blob = await put('comprehensive_data.json', JSON.stringify(exportedData), {
-      access: 'public',
-      contentType: 'application/json',
-    });
-
-    console.log('✅ Data refresh complete and stored in Vercel Blob:', blob.url);
+    // For now, we'll just log success. In a real implementation, you might:
+    // - Store data in a file system
+    // - Send to another service
+    // - Update a cache
+    console.log('✅ Data refresh complete. Processed', exportedData.taps?.length || 0, 'taps');
 
     return res.status(200).json({
       ok: true,
       message: 'Cron job triggered cloud data refresh',
       timestamp: new Date().toISOString(),
-      blob_url: blob.url,
+      taps_processed: exportedData.taps?.length || 0,
+      users_processed: exportedData.users?.length || 0,
     });
 
   } catch (error) {

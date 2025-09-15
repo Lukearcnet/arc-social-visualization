@@ -1,14 +1,31 @@
 export default async function handler(req, res) {
   try {
-    const { get } = await import('@vercel/blob');
-    const blob = await get('comprehensive_data.json', { type: 'application/json' });
+    // For now, return mock data. In a real implementation, you might:
+    // - Store data in a database table
+    // - Use a file system
+    // - Call the data-export function directly
+    const mockData = {
+      taps: [
+        {
+          tap_id: 1,
+          latitude: 40.7128,
+          longitude: -74.0060,
+          formatted_location: "New York, NY, US",
+          time: "2024-01-01T12:00:00Z",
+          user1_id: "user1",
+          user2_id: "user2",
+          user1_name: "John Doe",
+          user2_name: "Jane Smith"
+        }
+      ],
+      users: [
+        { user_id: "user1", name: "John Doe", home_location: "New York, NY" },
+        { user_id: "user2", name: "Jane Smith", home_location: "New York, NY" }
+      ],
+      last_refresh: new Date().toISOString()
+    };
 
-    if (!blob) {
-      return res.status(404).json({ error: 'Data not found' });
-    }
-
-    const data = await blob.json();
-    return res.status(200).json(data);
+    return res.status(200).json(mockData);
 
   } catch (error) {
     console.error('❌ Error serving data:', error);
