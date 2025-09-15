@@ -1,5 +1,5 @@
-const { handleDataExport } = require('./data-export');
-const { put } = require('@vercel/blob');
+import { handleDataExport } from './data-export';
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
   // Auth guard - only allow requests with the correct secret
