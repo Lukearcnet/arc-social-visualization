@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     console.log('🔄 Vercel Cron Job triggered: Starting data refresh at', new Date().toISOString());
 
     // Import modules dynamically
-    const { handleDataExport } = await import('./data-export');
+    const { handleDataExport } = await import('./data-export.js');
     const { put } = await import('@vercel/blob');
 
     // Perform data export
