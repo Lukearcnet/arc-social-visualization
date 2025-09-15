@@ -6,9 +6,10 @@ export default async function handler(req, res) {
 
   try {
     console.log('🔄 Vercel Cron Job triggered: Calling local webhook at', new Date().toISOString());
-
-    // Call your local webhook server
-    const webhookUrl = process.env.LOCAL_WEBHOOK_URL || 'http://localhost:8080/webhook';
+    
+    // Call the local webhook
+    const webhookUrl = process.env.LOCAL_WEBHOOK_URL || 'http://localhost:8081/webhook';
+    console.log(`📡 Calling webhook: ${webhookUrl}`);
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
