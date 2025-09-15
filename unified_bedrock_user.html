@@ -474,14 +474,15 @@
             });
         }
 
-        // Load user data from comprehensive_data.json
+        // Load user data from API endpoint
         async function loadUserData() {
             try {
-                const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                const response = await fetch('/api/data?t=' + Date.now());
                 if (!response.ok) {
                     throw new Error('Failed to load user data');
                 }
                 userData = await response.json();
+                console.log(`📊 Loaded data: ${userData.taps?.length || 0} taps, ${userData.users?.length || 0} users`);
             } catch (error) {
                 console.error('❌ Error loading user data:', error);
                 showError('Failed to load user data. Please refresh the page.');
@@ -490,7 +491,7 @@
 
         // Find user by phone number
         function findUserByPhone(phoneNumber) {
-            if (!userData || !userData.tap_data) {
+            if (!userData || !userData.taps) {
                 return null;
             }
 
@@ -498,7 +499,7 @@
             const cleanPhone = phoneNumber.replace(/\D/g, '');
             
             // Search for user with matching phone number in tap_data
-            for (const tap of userData.tap_data) {
+            for (const tap of userData.taps) {
                 // Check user1
                 if (tap.user1_phone_number) {
                     const user1Phone = tap.user1_phone_number.replace(/\D/g, '');
