@@ -1,6 +1,3 @@
-import { sql } from '@vercel/postgres';
-import axios from 'axios';
-
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 async function getGeocodedLocation(latitude, longitude) {
@@ -46,6 +43,10 @@ async function getGeocodedLocation(latitude, longitude) {
 export async function handleDataExport() {
   try {
     console.log('📊 Running cloud data export script...');
+
+    // Import modules dynamically
+    const { sql } = await import('@vercel/postgres');
+    const axios = (await import('axios')).default;
 
     // Fetch taps from PostgreSQL
     const { rows: taps } = await sql`SELECT * FROM taps ORDER BY time ASC;`;

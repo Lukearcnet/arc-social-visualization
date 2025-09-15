@@ -1,6 +1,3 @@
-import { handleDataExport } from './data-export';
-import { put } from '@vercel/blob';
-
 export default async function handler(req, res) {
   // Auth guard - only allow requests with the correct secret
   if (req.headers['x-refresh-secret'] !== process.env.REFRESH_SECRET) {
@@ -9,6 +6,10 @@ export default async function handler(req, res) {
 
   try {
     console.log('🔄 Vercel Cron Job triggered: Starting data refresh at', new Date().toISOString());
+
+    // Import modules dynamically
+    const { handleDataExport } = await import('./data-export');
+    const { put } = await import('@vercel/blob');
 
     // Perform data export
     const exportedData = await handleDataExport();

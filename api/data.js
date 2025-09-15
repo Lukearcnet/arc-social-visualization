@@ -1,7 +1,6 @@
-import { get } from '@vercel/blob';
-
 export default async function handler(req, res) {
   try {
+    const { get } = await import('@vercel/blob');
     const blob = await get('comprehensive_data.json', { type: 'application/json' });
 
     if (!blob) {
