@@ -1,5 +1,5 @@
-import { sql } from '@vercel/postgres';
-import axios from 'axios';
+const { sql } = require('@vercel/postgres');
+const axios = require('axios');
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
