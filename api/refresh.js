@@ -1,5 +1,8 @@
 import { handleDataExport } from './data-export.js';
 
+// Force Node.js runtime (not Edge)
+export const runtime = 'nodejs';
+
 export default async function handler(req, res) {
   // Auth guard - only allow requests with the correct secret
   if (req.headers['x-refresh-secret'] !== process.env.REFRESH_SECRET) {

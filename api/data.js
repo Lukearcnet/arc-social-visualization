@@ -1,3 +1,6 @@
+// Force Node.js runtime (not Edge)
+export const runtime = 'nodejs';
+
 export default async function handler(req, res) {
   try {
     // For now, return mock data. In a real implementation, you might:

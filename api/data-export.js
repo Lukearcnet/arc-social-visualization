@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
-import axios from 'axios';
+
+// Force Node.js runtime (not Edge)
+export const runtime = 'nodejs';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -11,15 +13,17 @@ const pool = new Pool({
 
 async function getGeocodedLocation(latitude, longitude) {
   try {
-    const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-      params: {
-        latlng: `${latitude},${longitude}`,
-        key: GOOGLE_API_KEY,
-      },
-    });
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`;
+    const response = await fetch(url);
 
-    if (response.data.status === 'OK' && response.data.results.length > 0) {
-      const addressComponents = response.data.results[0].address_components;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      const addressComponents = data.results[0].address_components;
       let city = '';
       let state = '';
       let country = '';
