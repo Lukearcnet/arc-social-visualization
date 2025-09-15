@@ -1,18 +1,50 @@
 {
   "metadata": {
-    "generated_at": "2025-09-14T21:36:18.481193",
-    "total_taps": 1114,
+    "generated_at": "2025-09-14T21:50:01.537405",
+    "total_taps": 1115,
     "total_users": 297,
     "data_version": "2.0",
     "update_frequency": "incremental",
     "description": "ARC Social Graph enriched data for visualizations",
     "incremental_update": {
-      "new_taps": 3,
-      "existing_taps": 1111,
-      "previous_export": "2025-09-13T23:59:42.832380"
+      "new_taps": 1,
+      "existing_taps": 1114,
+      "previous_export": "2025-09-14T21:36:18.481193"
     }
   },
   "tap_data": [
+    {
+      "tap_id": "0859aecd-f6fe-409e-9376-b568149c99ac",
+      "user1_id": "2a227da2-b09a-402f-81e8-1976633cf682",
+      "user1_name": "Luke Blanton",
+      "user1_username": "luke",
+      "user1_bio": "arc | EAA | ex-Vandy\n\n\n",
+      "user1_home": "Dallas",
+      "user1_age": "18-25",
+      "user1_tap_count": 209,
+      "user1_connections_count": 90,
+      "user1_phone_number": "+14693877860",
+      "user2_id": "938657e3-1c26-4b57-89f2-bf8b4b3695f6",
+      "user2_name": "Marshall Hammack",
+      "user2_username": "marshm100",
+      "user2_bio": "Engineering by day, Startup by night.\n\nSeeking pre-seed capital for my stealth mode startup.",
+      "user2_home": "Dallas, TX",
+      "user2_age": "18-25",
+      "user2_tap_count": 52,
+      "user2_connections_count": 20,
+      "user2_phone_number": "+12148508815",
+      "latitude": 32.81624192113982,
+      "longitude": -96.78626812185797,
+      "location": "32.81624192113982,-96.78626812185797",
+      "formatted_location": "Dallas, TX, US",
+      "time": "2025-09-15T02:40:53.001218",
+      "formatted_time": "Sep 15, 2025",
+      "venue_context": {
+        "venue_name": "N/A",
+        "venue_category": "unknown",
+        "venue_context": "N/A"
+      }
+    },
     {
       "tap_id": "2f8500f1-34d7-49b6-9265-634608684133",
       "user1_id": "c41459e6-fa66-49bb-b25f-8ec6927b93d6",
@@ -40279,7 +40311,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 51,
+        "tap_count": 52,
         "connections_count": 20,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/user_name-1749157300819.jpg"
       },
@@ -44624,7 +44656,7 @@
         "active": true
       },
       "profile_stats": {
-        "tap_count": 208,
+        "tap_count": 209,
         "connections_count": 90,
         "pfp_url": "https://storage.googleapis.com/arc-user-storage/profile_pictures/luke-1748902583121.jpg"
       },
