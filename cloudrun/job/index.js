@@ -1,4 +1,4 @@
-// Cloud Run Job for ARC data refresh - Preview Build
+// Cloud Run Job for ARC data refresh - Hybrid Cache Enrichment
 import { Pool } from 'pg';
 import { Storage } from '@google-cloud/storage';
 
@@ -23,35 +23,159 @@ const pool = new Pool({
   // No SSL params needed with Cloud SQL connector
 });
 
-async function getGeocodedLocation(latitude, longitude) {
-  try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`;
-    const response = await fetch(url);
+// Cache structures
+let tapCache = new Map(); // tap_id -> {formatted_location, venue_context}
+let coordCache = new Map(); // normalized_lat_lng -> {formatted_location, venue_context}
+let prevSnapshot = { taps: [], users: [] };
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+// Metrics tracking
+let metrics = {
+  prevSnapshotFound: false,
+  tapsTotal: 0,
+  usersTotal: 0,
+  reusedByTapId: 0,
+  reusedByCoord: 0,
+  geocodeCalls: 0,
+  placesCalls: 0,
+  startTime: Date.now()
+};
+
+// Rate limiting with promise pool
+class PromisePool {
+  constructor(concurrency = 5) {
+    this.concurrency = concurrency;
+    this.running = 0;
+    this.queue = [];
+  }
+
+  async add(fn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ fn, resolve, reject });
+      this.process();
+    });
+  }
+
+  async process() {
+    if (this.running >= this.concurrency || this.queue.length === 0) {
+      return;
     }
 
-    const data = await response.json();
+    this.running++;
+    const { fn, resolve, reject } = this.queue.shift();
 
-    if (data.status === 'OK' && data.results.length > 0) {
-      const addressComponents = data.results[0].address_components;
-      let city = '';
-      let state = '';
-      let country = '';
+    try {
+      const result = await fn();
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    } finally {
+      this.running--;
+      this.process();
+    }
+  }
+}
 
-      for (const component of addressComponents) {
-        if (component.types.includes('locality')) {
-          city = component.long_name;
-        }
-        if (component.types.includes('administrative_area_level_1')) {
-          state = component.short_name;
-        }
-        if (component.types.includes('country')) {
-          country = component.short_name;
-        }
+const promisePool = new PromisePool(5);
+
+// Retry wrapper with exponential backoff
+async function withRetry(fn, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      
+      // Exponential backoff with jitter
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+      const jitter = Math.random() * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay + jitter));
+      
+      console.log(`⚠️ Retry attempt ${attempt}/${maxRetries} after ${delay + jitter}ms delay`);
+    }
+  }
+}
+
+// Read previous snapshot from GCS
+async function readPreviousSnapshot() {
+  try {
+    console.log('📖 Reading previous snapshot from GCS...');
+    const bucket = storage.bucket(bucketName);
+    const file = bucket.file('visualization/latest.json');
+    
+    const [data] = await file.download();
+    const snapshot = JSON.parse(data.toString());
+    
+    prevSnapshot = {
+      taps: snapshot.taps || snapshot.tap_data || [],
+      users: snapshot.users || snapshot.user_profiles || []
+    };
+    
+    metrics.prevSnapshotFound = true;
+    console.log(`✅ Previous snapshot loaded: ${prevSnapshot.taps.length} taps, ${prevSnapshot.users.length} users`);
+    
+    // Build caches from previous snapshot
+    buildCaches();
+    
+  } catch (error) {
+    console.log(`⚠️ Could not read previous snapshot: ${error.message}`);
+    console.log('🔄 Proceeding with empty caches (first run behavior)');
+    metrics.prevSnapshotFound = false;
+  }
+}
+
+// Build caches from previous snapshot
+function buildCaches() {
+  console.log('🏗️ Building caches from previous snapshot...');
+  
+  for (const tap of prevSnapshot.taps) {
+    if (tap.tap_id && (tap.formatted_location || tap.venue_context)) {
+      // Tap-level cache
+      tapCache.set(tap.tap_id, {
+        formatted_location: tap.formatted_location,
+        venue_context: tap.venue_context
+      });
+      
+      // Coordinate-level cache
+      if (tap.latitude && tap.longitude) {
+        const coordKey = `${Math.round(tap.latitude * 1000000) / 1000000},${Math.round(tap.longitude * 1000000) / 1000000}`;
+        coordCache.set(coordKey, {
+          formatted_location: tap.formatted_location,
+          venue_context: tap.venue_context
+        });
       }
-      return `${city}, ${state}, ${country}`;
+    }
+  }
+  
+  console.log(`📊 Cache built: ${tapCache.size} tap entries, ${coordCache.size} coordinate entries`);
+}
+
+// Normalize coordinates for cache key
+function normalizeCoords(lat, lng) {
+  return `${Math.round(lat * 1000000) / 1000000},${Math.round(lng * 1000000) / 1000000}`;
+}
+
+// Geocoding function
+async function getGeocodedLocation(latitude, longitude) {
+  try {
+    const response = await withRetry(async () => {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json`;
+      const params = new URLSearchParams({
+        latlng: `${latitude},${longitude}`,
+        key: GOOGLE_API_KEY
+      });
+      
+      const res = await fetch(`${url}?${params}`, { 
+        timeout: 10000,
+        headers: { 'User-Agent': 'ARC-Data-Refresh/1.0' }
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      return res.json();
+    });
+    
+    if (response.status === 'OK' && response.results && response.results.length > 0) {
+      const result = response.results[0];
+      return result.formatted_address || 'Unknown Location';
     }
     return null;
   } catch (error) {
@@ -60,11 +184,8 @@ async function getGeocodedLocation(latitude, longitude) {
   }
 }
 
+// Google Places API function
 async function getVenueInfo(latitude, longitude) {
-  /**
-   * Get venue information using Google Places API with caching.
-   * Based on the original Python implementation.
-   */
   if (!latitude || !longitude || latitude === 0.0 || longitude === 0.0) {
     return {
       venue_name: 'N/A',
@@ -74,36 +195,28 @@ async function getVenueInfo(latitude, longitude) {
   }
 
   try {
-    // Use Google Places Nearby Search API
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json`;
-    const params = new URLSearchParams({
-      location: `${latitude},${longitude}`,
-      radius: '25', // 25 meters for venue matching
-      key: GOOGLE_API_KEY,
-      type: 'establishment' // Focus on businesses/venues
-    });
-
-    console.log(`🔍 Making Google Places API call for ${latitude},${longitude}`);
-    const response = await fetch(`${url}?${params}`, { 
-      timeout: 15000, // Increased timeout
-      headers: {
-        'User-Agent': 'ARC-Data-Refresh/1.0'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`📡 Google Places API response status: ${data.status}`);
-
-    if (data.status === 'OK' && data.results && data.results.length > 0) {
-      console.log(`🏪 Found ${data.results.length} potential venues`);
+    const response = await withRetry(async () => {
+      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json`;
+      const params = new URLSearchParams({
+        location: `${latitude},${longitude}`,
+        radius: '25',
+        key: GOOGLE_API_KEY,
+        type: 'establishment'
+      });
       
-      // Find the most specific venue (prefer businesses over generic locations)
+      const res = await fetch(`${url}?${params}`, { 
+        timeout: 15000,
+        headers: { 'User-Agent': 'ARC-Data-Refresh/1.0' }
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      return res.json();
+    });
+    
+    if (response.status === 'OK' && response.results && response.results.length > 0) {
+      // Find the best venue (same logic as before)
       let bestVenue = null;
-      for (const venue of data.results) {
+      for (const venue of response.results) {
         const venueName = venue.name || 'Unknown Venue';
         const venueTypes = venue.types || [];
         
@@ -120,60 +233,42 @@ async function getVenueInfo(latitude, longitude) {
           break;
         }
         
-        // If no specific business found, use the first non-generic result
         if (bestVenue === null) {
           bestVenue = venue;
         }
       }
       
-      // Fallback to first result if no good venue found
       if (bestVenue === null) {
-        bestVenue = data.results[0];
+        bestVenue = response.results[0];
       }
       
       const venueName = bestVenue.name || 'Unknown Venue';
       const venueTypes = bestVenue.types || [];
       
-      // Check if venue name is just an address or generic location
+      // Check if venue name is generic
       function isGenericLocation(name) {
-        if (!name || name === 'Unknown Venue') {
-          return true;
-        }
+        if (!name || name === 'Unknown Venue') return true;
         
-        // Check for address patterns (numbers followed by street names)
         const addressPattern = /^\d+[-\d]*\s+[A-Za-z\s]+(?:St|Ave|Blvd|Rd|Dr|Ln|Way|Pl|Cir|Ct)$/;
-        if (addressPattern.test(name.trim())) {
-          return true;
-        }
+        if (addressPattern.test(name.trim())) return true;
         
-        // Check for generic establishment names
-        const genericNames = [
-          'establishment', 'location', 'place', 'area', 'district',
-          'neighborhood', 'community', 'region', 'zone', 'section'
-        ];
-        if (genericNames.some(generic => name.toLowerCase().includes(generic))) {
-          return true;
-        }
+        const genericNames = ['establishment', 'location', 'place', 'area', 'district', 'neighborhood', 'community', 'region', 'zone', 'section'];
+        if (genericNames.some(generic => name.toLowerCase().includes(generic))) return true;
         
-        // Check if it's just a city name or administrative area
         const adminTypes = ['locality', 'administrative_area_level_1', 'administrative_area_level_2', 'country', 'political'];
-        if (adminTypes.some(type => venueTypes.includes(type))) {
-          return true;
-        }
+        if (adminTypes.some(type => venueTypes.includes(type))) return true;
         
         return false;
       }
       
-      // If it's a generic location, return N/A
       if (isGenericLocation(venueName)) {
-        console.log(`🏪 Generic location detected: ${venueName} -> N/A`);
         return {
           venue_name: 'N/A',
           venue_category: 'unknown',
           venue_context: 'N/A'
         };
       } else {
-        // Determine category from types
+        // Determine category
         let category = 'unknown';
         if (venueTypes.includes('restaurant') || venueTypes.includes('food')) {
           category = 'restaurant';
@@ -195,7 +290,6 @@ async function getVenueInfo(latitude, longitude) {
           category = 'establishment';
         }
         
-        console.log(`🏪 Found venue: ${venueName} (${category})`);
         return {
           venue_name: venueName,
           venue_category: category,
@@ -203,8 +297,6 @@ async function getVenueInfo(latitude, longitude) {
         };
       }
     } else {
-      // No venue found, return N/A
-      console.log(`🏪 No venues found for ${latitude},${longitude}`);
       return {
         venue_name: 'N/A',
         venue_category: 'unknown',
@@ -212,7 +304,7 @@ async function getVenueInfo(latitude, longitude) {
       };
     }
   } catch (error) {
-    console.error(`❌ Error getting venue info for ${latitude},${longitude}:`, error.message);
+    console.error(`Error getting venue info for ${latitude},${longitude}:`, error.message);
     return {
       venue_name: 'N/A',
       venue_category: 'unknown',
@@ -221,57 +313,43 @@ async function getVenueInfo(latitude, longitude) {
   }
 }
 
+// Write to GCS
 async function writeToGCS(data, filename) {
   try {
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(`visualization/${filename}`);
     
-    const jsonData = JSON.stringify(data, null, 2);
-    await file.save(jsonData, {
+    const jsonString = JSON.stringify(data, null, 2);
+    await file.save(jsonString, {
       metadata: {
         contentType: 'application/json',
-        cacheControl: 'public, max-age=300', // 5 minutes cache
-      },
+        cacheControl: 'public, max-age=3600'
+      }
     });
     
     console.log(`✅ Successfully wrote ${filename} to GCS`);
-    return true;
   } catch (error) {
-    console.error(`❌ Error writing ${filename} to GCS:`, error);
+    console.error(`❌ Error writing to GCS:`, error);
     throw error;
   }
 }
 
+// Log refresh run
 async function logRefreshRun(startedAt, endedAt, status, rowsProcessed) {
-  const client = await pool.connect();
   try {
-    // Create refresh_runs table if it doesn't exist
+    const client = await pool.connect();
     await client.query(`
-      CREATE TABLE IF NOT EXISTS refresh_runs (
-        id SERIAL PRIMARY KEY,
-        started_at TIMESTAMP NOT NULL,
-        ended_at TIMESTAMP NOT NULL,
-        status VARCHAR(20) NOT NULL,
-        rows_processed INTEGER NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Insert the refresh run record
-    await client.query(
-      'INSERT INTO refresh_runs (started_at, ended_at, status, rows_processed) VALUES ($1, $2, $3, $4)',
-      [startedAt, endedAt, status, rowsProcessed]
-    );
-
-    console.log(`✅ Logged refresh run: ${status}, ${rowsProcessed} rows processed`);
+      INSERT INTO refresh_runs (started_at, ended_at, status, rows_processed)
+      VALUES ($1, $2, $3, $4)
+    `, [startedAt, endedAt, status, rowsProcessed]);
+    client.release();
+    console.log('✅ Logged refresh run:', status, rowsProcessed, 'rows processed');
   } catch (error) {
     console.error('❌ Error logging refresh run:', error);
-    // Don't throw - this is just logging
-  } finally {
-    client.release();
   }
 }
 
+// Main processing function
 async function processData() {
   const startedAt = new Date();
   let status = 'success';
@@ -279,189 +357,56 @@ async function processData() {
 
   const client = await pool.connect();
   try {
-    console.log('📊 Starting ARC data refresh...');
+    console.log('📊 Starting ARC data refresh with hybrid cache enrichment...');
 
     await client.query('BEGIN');
 
-            // Check if venue_context column exists
-            let hasVenueContextColumn = false;
-            try {
-              const columnCheck = await client.query(`
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'taps' AND column_name = 'venue_context'
-              `);
-              hasVenueContextColumn = columnCheck.rows.length > 0;
-              console.log(`🔍 Venue context column exists: ${hasVenueContextColumn}`);
-            } catch (error) {
-              console.log(`⚠️ Could not check for venue_context column: ${error.message}`);
-            }
+    // 1. Read previous snapshot from GCS
+    await readPreviousSnapshot();
 
-            // Query taps with user joins for enriched data
-            const venueContextSelect = hasVenueContextColumn ? 't.venue_context,' : 'NULL as venue_context,';
-            const query = `
-              SELECT 
-                  t.tap_id,
-                  t.id1 as user1_id,
-                  t.id2 as user2_id,
-                  split_part(t.location, ',', 1)::float AS latitude,
-                  split_part(t.location, ',', 2)::float AS longitude,
-                  t.location,
-                  t.time,
-                  t.formatted_location,
-                  ${venueContextSelect}
-                  u1.first_name as user1_first_name,
-                  u1.last_name as user1_last_name,
-                  u1.username as user1_username,
-                  u1.bio as user1_bio,
-                  u1.home as user1_home,
-                  u1.age as user1_age,
-                  u1.tap_count as user1_tap_count,
-                  u1.connections_count as user1_connections_count,
-                  u1.phone_number as user1_phone_number,
-                  u2.first_name as user2_first_name,
-                  u2.last_name as user2_last_name,
-                  u2.username as user2_username,
-                  u2.bio as user2_bio,
-                  u2.home as user2_home,
-                  u2.age as user2_age,
-                  u2.tap_count as user2_tap_count,
-                  u2.connections_count as user2_connections_count,
-                  u2.phone_number as user2_phone_number
-              FROM taps t
-              JOIN users u1 ON t.id1 = u1.id
-              JOIN users u2 ON t.id2 = u2.id
-              WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
-              ORDER BY t.time DESC
-            `;
-            
-            const tapResult = await client.query(query);
+    // 2. Query fresh data from database (READ-ONLY)
+    console.log('📊 Querying fresh data from database...');
+    
+    // Query taps with user joins
+    const tapResult = await client.query(`
+      SELECT 
+          t.tap_id,
+          t.id1 as user1_id,
+          t.id2 as user2_id,
+          split_part(t.location, ',', 1)::float AS latitude,
+          split_part(t.location, ',', 2)::float AS longitude,
+          t.location,
+          t.time,
+          u1.first_name as user1_first_name,
+          u1.last_name as user1_last_name,
+          u1.username as user1_username,
+          u1.bio as user1_bio,
+          u1.home as user1_home,
+          u1.age as user1_age,
+          u1.tap_count as user1_tap_count,
+          u1.connections_count as user1_connections_count,
+          u1.phone_number as user1_phone_number,
+          u2.first_name as user2_first_name,
+          u2.last_name as user2_last_name,
+          u2.username as user2_username,
+          u2.bio as user2_bio,
+          u2.home as user2_home,
+          u2.age as user2_age,
+          u2.tap_count as user2_tap_count,
+          u2.connections_count as user2_connections_count,
+          u2.phone_number as user2_phone_number
+      FROM taps t
+      JOIN users u1 ON t.id1 = u1.id
+      JOIN users u2 ON t.id2 = u2.id
+      WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
+      ORDER BY t.time DESC
+    `);
+    
     const taps = tapResult.rows;
     rowsProcessed = taps.length;
+    metrics.tapsTotal = taps.length;
 
-            console.log(`📊 Fetched ${taps.length} enriched taps from database`);
-
-            // Process taps for geocoding and venue processing (only if needed)
-            const processedTaps = [];
-            let tapsNeedingProcessing = 0;
-            let tapsProcessed = 0;
-            
-            console.log(`🚀 Starting optimized processing - will only process taps that need geocoding or venue lookup`);
-            
-            for (let i = 0; i < taps.length; i++) {
-              const tap = taps[i];
-              let formattedLocation = tap.formatted_location;
-              let venueContext = {
-                venue_name: "N/A",
-                venue_category: "unknown",
-                venue_context: "N/A"
-              };
-              
-              // Check if this tap needs processing
-              const needsGeocoding = !formattedLocation && tap.latitude && tap.longitude;
-              const needsVenueProcessing = !hasVenueContextColumn || !tap.venue_context || 
-                (tap.venue_context && tap.venue_context.venue_name === 'N/A');
-              
-              if (needsGeocoding || needsVenueProcessing) {
-                tapsNeedingProcessing++;
-                
-                // Geocoding (if needed)
-                if (needsGeocoding) {
-                  console.log(`🌍 Geocoding tap ${i + 1}/${taps.length}...`);
-                  formattedLocation = await getGeocodedLocation(tap.latitude, tap.longitude);
-                  
-                  // Update the database with the new formatted_location
-                  if (formattedLocation) {
-                    await client.query(
-                      'UPDATE taps SET formatted_location = $1 WHERE tap_id = $2',
-                      [formattedLocation, tap.tap_id]
-                    );
-                  }
-                }
-                
-                // Venue processing (if needed)
-                if (needsVenueProcessing && tap.latitude && tap.longitude) {
-                  console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
-                  venueContext = await getVenueInfo(tap.latitude, tap.longitude);
-                  
-                  // Update the database with the new venue_context (only if column exists)
-                  if (hasVenueContextColumn) {
-                    await client.query(
-                      'UPDATE taps SET venue_context = $1 WHERE tap_id = $2',
-                      [JSON.stringify(venueContext), tap.tap_id]
-                    );
-                  }
-                  
-                  // Add small delay to avoid rate limiting
-                  if (tapsProcessed % 10 === 0) {
-                    console.log(`⏳ Rate limiting pause after ${tapsProcessed + 1} processed taps...`);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                  }
-                  
-                  tapsProcessed++;
-                }
-              } else {
-                // Use existing venue_context from database
-                if (tap.venue_context) {
-                  try {
-                    venueContext = typeof tap.venue_context === 'string' 
-                      ? JSON.parse(tap.venue_context) 
-                      : tap.venue_context;
-                  } catch (e) {
-                    console.log(`⚠️ Could not parse venue_context for tap ${tap.tap_id}`);
-                  }
-                }
-              }
-              
-              // Create enriched tap object matching the expected structure
-              const enrichedTap = {
-                tap_id: tap.tap_id,
-                user1_id: tap.user1_id,
-                user1_name: `${tap.user1_first_name || ''} ${tap.user1_last_name || ''}`.trim(),
-                user1_username: tap.user1_username || '',
-                user1_bio: tap.user1_bio || '',
-                user1_home: tap.user1_home || '',
-                user1_age: tap.user1_age || '',
-                user1_tap_count: tap.user1_tap_count || 0,
-                user1_connections_count: tap.user1_connections_count || 0,
-                user1_phone_number: tap.user1_phone_number || '',
-                user2_id: tap.user2_id,
-                user2_name: `${tap.user2_first_name || ''} ${tap.user2_last_name || ''}`.trim(),
-                user2_username: tap.user2_username || '',
-                user2_bio: tap.user2_bio || '',
-                user2_home: tap.user2_home || '',
-                user2_age: tap.user2_age || '',
-                user2_tap_count: tap.user2_tap_count || 0,
-                user2_connections_count: tap.user2_connections_count || 0,
-                user2_phone_number: tap.user2_phone_number || '',
-                latitude: tap.latitude,
-                longitude: tap.longitude,
-                location: tap.location || `${tap.latitude},${tap.longitude}`,
-                formatted_location: formattedLocation || 'Unknown',
-                time: tap.time,
-                formatted_time: new Date(tap.time).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
-                }),
-                venue_context: venueContext
-              };
-      
-              processedTaps.push(enrichedTap);
-            }
-            
-            console.log(`✅ Processing complete!`);
-            console.log(`   📊 Total taps: ${taps.length}`);
-            console.log(`   🔄 Taps needing processing: ${tapsNeedingProcessing}`);
-            console.log(`   🏪 Venue API calls made: ${tapsProcessed}`);
-            console.log(`   💰 API calls saved: ${taps.length - tapsProcessed}`);
-            
-            if (!hasVenueContextColumn) {
-              console.log(`💡 OPTIMIZATION TIP: Add 'venue_context' column to taps table for future optimization`);
-              console.log(`   ALTER TABLE taps ADD COLUMN venue_context JSONB;`);
-            }
-
-    // Query all users from database
+    // Query all users
     const userResult = await client.query(`
       SELECT 
           id,
@@ -479,66 +424,219 @@ async function processData() {
       FROM public.users
       ORDER BY id
     `);
-    const users = userResult.rows.map(u => ({
+    
+    const users = userResult.rows;
+    metrics.usersTotal = users.length;
+
+    console.log(`📊 Fetched ${taps.length} taps and ${users.length} users from database`);
+
+    // 3. Enrich taps using hybrid cache approach
+    console.log('🔄 Starting hybrid cache enrichment...');
+    
+    const enrichedTaps = [];
+    const enrichmentPromises = [];
+
+    for (let i = 0; i < taps.length; i++) {
+      const tap = taps[i];
+      const coordKey = normalizeCoords(tap.latitude, tap.longitude);
+      
+      // Check caches in order
+      let formattedLocation = null;
+      let venueContext = null;
+      let needsGeocoding = false;
+      let needsVenueProcessing = false;
+      
+      // Try tap cache first
+      if (tapCache.has(tap.tap_id)) {
+        const cached = tapCache.get(tap.tap_id);
+        formattedLocation = cached.formatted_location;
+        venueContext = cached.venue_context;
+        metrics.reusedByTapId++;
+        console.log(`♻️ Reused by tap_id: ${tap.tap_id}`);
+      }
+      // Try coord cache second
+      else if (coordCache.has(coordKey)) {
+        const cached = coordCache.get(coordKey);
+        formattedLocation = cached.formatted_location;
+        venueContext = cached.venue_context;
+        metrics.reusedByCoord++;
+        console.log(`♻️ Reused by coordinates: ${coordKey}`);
+      }
+      // Need to enrich
+      else {
+        needsGeocoding = true;
+        needsVenueProcessing = true;
+      }
+      
+      // Create enrichment promise if needed
+      if (needsGeocoding || needsVenueProcessing) {
+        const enrichmentPromise = promisePool.add(async () => {
+          let finalFormattedLocation = formattedLocation;
+          let finalVenueContext = venueContext;
+          
+          // Geocoding
+          if (needsGeocoding) {
+            console.log(`🌍 Geocoding tap ${i + 1}/${taps.length}...`);
+            finalFormattedLocation = await getGeocodedLocation(tap.latitude, tap.longitude);
+            metrics.geocodeCalls++;
+          }
+          
+          // Venue processing
+          if (needsVenueProcessing) {
+            console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
+            finalVenueContext = await getVenueInfo(tap.latitude, tap.longitude);
+            metrics.placesCalls++;
+          }
+          
+          // Update caches
+          if (finalFormattedLocation || finalVenueContext) {
+            tapCache.set(tap.tap_id, {
+              formatted_location: finalFormattedLocation,
+              venue_context: finalVenueContext
+            });
+            
+            coordCache.set(coordKey, {
+              formatted_location: finalFormattedLocation,
+              venue_context: finalVenueContext
+            });
+          }
+          
+          return {
+            tap,
+            formattedLocation: finalFormattedLocation,
+            venueContext: finalVenueContext
+          };
+        });
+        
+        enrichmentPromises.push(enrichmentPromise);
+      } else {
+        // Use cached data
+        enrichmentPromises.push(Promise.resolve({
+          tap,
+          formattedLocation,
+          venueContext
+        }));
+      }
+    }
+    
+    // Wait for all enrichments to complete
+    console.log(`⏳ Waiting for ${enrichmentPromises.length} enrichment operations...`);
+    const enrichmentResults = await Promise.all(enrichmentPromises);
+    
+    // Build enriched tap objects
+    for (const result of enrichmentResults) {
+      const { tap, formattedLocation, venueContext } = result;
+      
+      const enrichedTap = {
+        tap_id: tap.tap_id,
+        user1_id: tap.user1_id,
+        user1_name: `${tap.user1_first_name || ''} ${tap.user1_last_name || ''}`.trim(),
+        user1_username: tap.user1_username || '',
+        user1_bio: tap.user1_bio || '',
+        user1_home: tap.user1_home || '',
+        user1_age: tap.user1_age || '',
+        user1_tap_count: tap.user1_tap_count || 0,
+        user1_connections_count: tap.user1_connections_count || 0,
+        user1_phone_number: tap.user1_phone_number || '',
+        user2_id: tap.user2_id,
+        user2_name: `${tap.user2_first_name || ''} ${tap.user2_last_name || ''}`.trim(),
+        user2_username: tap.user2_username || '',
+        user2_bio: tap.user2_bio || '',
+        user2_home: tap.user2_home || '',
+        user2_age: tap.user2_age || '',
+        user2_tap_count: tap.user2_tap_count || 0,
+        user2_connections_count: tap.user2_connections_count || 0,
+        user2_phone_number: tap.user2_phone_number || '',
+        latitude: tap.latitude,
+        longitude: tap.longitude,
+        location: tap.location || `${tap.latitude},${tap.longitude}`,
+        formatted_location: formattedLocation || 'Unknown',
+        time: tap.time,
+        formatted_time: new Date(tap.time).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        venue_context: venueContext || {
+          venue_name: 'N/A',
+          venue_category: 'unknown',
+          venue_context: 'N/A'
+        }
+      };
+      
+      enrichedTaps.push(enrichedTap);
+    }
+
+    // Process users (same as before)
+    const processedUsers = users.map(u => ({
       user_id: u.id,
       basic_info: {
         first_name: u.first_name || "",
-        last_name:  u.last_name  || "",
-        username:   u.username   || "",
-        age:        u.age        || "",
-        active:     !!u.active
+        last_name: u.last_name || "",
+        username: u.username || "",
+        age: u.age || "",
+        active: !!u.active
       },
       profile_stats: {
-        tap_count:          Number.isFinite(u.tap_count) ? u.tap_count : 0,
-        connections_count:  Number.isFinite(u.connections_count) ? u.connections_count : 0,
-        pfp_url:            u.pfp_url || null
+        tap_count: Number.isFinite(u.tap_count) ? u.tap_count : 0,
+        connections_count: Number.isFinite(u.connections_count) ? u.connections_count : 0,
+        pfp_url: u.pfp_url || null
       },
       home_location: {
-        home_location:     u.home || "",
-        city:              "",
-        state:             "",
-        country:           "",
+        home_location: u.home || "",
+        city: "",
+        state: "",
+        country: "",
         geographic_context: u.home || ""
       },
       bio_analysis: {
-        bio_text:        u.bio || "No bio provided",
-        bio_length:      (u.bio || "No bio provided").length,
-        has_emoji:       false,
-        word_count:      (u.bio || "No bio provided").trim().split(/\s+/).filter(Boolean).length,
+        bio_text: u.bio || "No bio provided",
+        bio_length: (u.bio || "No bio provided").length,
+        has_emoji: false,
+        word_count: (u.bio || "No bio provided").trim().split(/\s+/).filter(Boolean).length,
         contextual_info: { age_group: "Unknown" },
-        bio_summary:     u.bio ? "No patterns detected" : "No bio provided"
+        bio_summary: u.bio ? "No patterns detected" : "No bio provided"
       },
       social_urls: {
-        x:         u.social_urls?.x ?? null,
-        linkedin:  u.social_urls?.linkedin ?? null,
+        x: u.social_urls?.x ?? null,
+        linkedin: u.social_urls?.linkedin ?? null,
         instagram: u.social_urls?.instagram ?? null
       }
     }));
-    
-    console.log(`📊 Fetched ${users.length} users from database`);
 
+    // 4. Build final output
     const comprehensiveData = {
       // New canonical format
-      taps: processedTaps,
-      users: users,
+      taps: enrichedTaps,
+      users: processedUsers,
       last_refresh: new Date().toISOString(),
       
-      // Back-compatibility aliases for existing frontend code
-      tap_data: processedTaps,
-      user_profiles: users,
+      // Back-compatibility aliases
+      tap_data: enrichedTaps,
+      user_profiles: processedUsers,
       
       // Metadata
       metadata: {
         generated_at: new Date().toISOString(),
-        total_taps: processedTaps.length,
-        total_users: users.length,
-        data_version: "3.0",
+        total_taps: enrichedTaps.length,
+        total_users: processedUsers.length,
+        data_version: "2.0",
         update_frequency: "automated",
-        description: "ARC Social Graph enriched data for visualizations"
+        description: "ARC Social Graph enriched data for visualizations",
+        cache_stats: {
+          prev_snapshot_found: metrics.prevSnapshotFound,
+          taps_total: metrics.tapsTotal,
+          users_total: metrics.usersTotal,
+          reused_by_tap_id: metrics.reusedByTapId,
+          reused_by_coord: metrics.reusedByCoord,
+          geocode_calls: metrics.geocodeCalls,
+          places_calls: metrics.placesCalls,
+          duration_ms: Date.now() - metrics.startTime
+        }
       }
     };
 
-    // Write to GCS
+    // 5. Write to GCS
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const versionedFilename = `${timestamp}.json`;
     
@@ -546,7 +644,18 @@ async function processData() {
     await writeToGCS(comprehensiveData, versionedFilename);
 
     await client.query('COMMIT');
-    console.log('✅ Data refresh completed successfully');
+    
+    // 6. Log metrics
+    const duration = Date.now() - metrics.startTime;
+    console.log('✅ Processing complete!');
+    console.log(`   📊 Total taps: ${metrics.tapsTotal}`);
+    console.log(`   👥 Total users: ${metrics.usersTotal}`);
+    console.log(`   ♻️ Reused by tap_id: ${metrics.reusedByTapId}`);
+    console.log(`   ♻️ Reused by coordinates: ${metrics.reusedByCoord}`);
+    console.log(`   🌍 Geocode calls: ${metrics.geocodeCalls}`);
+    console.log(`   🏪 Places calls: ${metrics.placesCalls}`);
+    console.log(`   ⏱️ Duration: ${duration}ms`);
+    console.log(`   💰 API calls saved: ${metrics.tapsTotal - metrics.geocodeCalls - metrics.placesCalls}`);
 
   } catch (error) {
     try {
@@ -565,7 +674,7 @@ async function processData() {
 // Main execution
 async function main() {
   try {
-    console.log('🚀 Starting ARC Refresh Job...');
+    console.log('🚀 Starting ARC Refresh Job with Hybrid Cache Enrichment...');
     await processData();
     console.log('✅ ARC Refresh Job completed successfully');
     process.exit(0);
@@ -577,4 +686,3 @@ async function main() {
 
 // Run the job
 main();
-
