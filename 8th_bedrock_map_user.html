@@ -836,13 +836,33 @@
                 }
                 const api = await comprehensiveResponse.json();
                 
-                // ✅ Back-compat shim so the rest of the code keeps working
-                const comprehensiveData = {
-                    tap_data: api.taps ?? [],
-                    user_profiles: api.users ?? [],
-                    last_refresh: api.last_refresh ?? null,
+                // ---- Back-compat + null-safety shim (do not edit) ----
+                const taps =
+                  Array.isArray(api.taps) ? api.taps :
+                  Array.isArray(api.tap_data) ? api.tap_data : [];
+
+                const users =
+                  Array.isArray(api.users) ? api.users :
+                  Array.isArray(api.user_profiles) ? api.user_profiles : [];
+
+                // normalize both shapes so downstream code can use either
+                const data = {
+                  ...api,
+                  taps,
+                  tap_data: taps,
+                  users,
+                  user_profiles: users,
                 };
-                const tapData = comprehensiveData.tap_data;
+
+                // common short names; always safe
+                const TAPS  = data.taps;          // []
+                const USERS = data.users;         // []
+                // -------------------------------------------------------
+                
+                console.log('[DATA SHIM]', { taps: TAPS.length, users: USERS.length, last_refresh: data.last_refresh });
+                
+                const comprehensiveData = data;
+                const tapData = TAPS;
                 
                 
                 // Filter out taps without valid lat/lng coordinates
@@ -1595,12 +1615,12 @@
                 const seenUsers = new Set();
                 
                 // Safety guard for undefined values
-                const safeLower = v => (v ?? '').toString().toLowerCase();
+                const lower = v => (v ?? '').toString().toLowerCase();
                 
                 // Search through all users in tap data (which has home locations)
                 completeLocationData.forEach(tap => {
                     // Check user1
-                    if (safeLower(tap.user1_name).includes(query) && !seenUsers.has(tap.user1_id)) {
+                    if (lower(tap.user1_name).includes(query) && !seenUsers.has(tap.user1_id)) {
                         matches.push({
                             id: tap.user1_id,
                             name: tap.user1_name,
@@ -1610,7 +1630,7 @@
                     }
                     
                     // Check user2
-                    if (safeLower(tap.user2_name).includes(query) && !seenUsers.has(tap.user2_id)) {
+                    if (lower(tap.user2_name).includes(query) && !seenUsers.has(tap.user2_id)) {
                         matches.push({
                             id: tap.user2_id,
                             name: tap.user2_name,

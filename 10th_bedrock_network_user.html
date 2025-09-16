@@ -1296,6 +1296,9 @@ DO NOT use file:// URLs with this version
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let searchIndex = []; // Will be populated dynamically
             
+            // Safety helper for string operations
+            const lower = v => (v ?? '').toString().toLowerCase();
+            
             // Dynamic data loading functions
             async function loadData() {
                 try {
@@ -1306,17 +1309,35 @@ DO NOT use file:// URLs with this version
                     }
                     const api = await response.json();
                     
-                    // ✅ Back-compat shim so the rest of the code keeps working
+                    // ---- Back-compat + null-safety shim (do not edit) ----
+                    const taps =
+                      Array.isArray(api.taps) ? api.taps :
+                      Array.isArray(api.tap_data) ? api.tap_data : [];
+
+                    const users =
+                      Array.isArray(api.users) ? api.users :
+                      Array.isArray(api.user_profiles) ? api.user_profiles : [];
+
+                    // normalize both shapes so downstream code can use either
                     const data = {
-                        tap_data: api.taps ?? [],
-                        user_profiles: api.users ?? [],
-                        last_refresh: api.last_refresh ?? null,
+                      ...api,
+                      taps,
+                      tap_data: taps,
+                      users,
+                      user_profiles: users,
                     };
+
+                    // common short names; always safe
+                    const TAPS  = data.taps;          // []
+                    const USERS = data.users;         // []
+                    // -------------------------------------------------------
+                    
+                    console.log('[DATA SHIM]', { taps: TAPS.length, users: USERS.length, last_refresh: data.last_refresh });
                     
                     // Create all data structures
-                    createSearchIndex(data);
-                    createTimelineData(data);
-                    createNetworkData(data);
+                    createSearchIndex(TAPS, USERS);
+                    createTimelineData(TAPS);
+                    createNetworkData(TAPS, USERS);
                     
                     return data;
                 } catch (error) {
@@ -1325,10 +1346,10 @@ DO NOT use file:// URLs with this version
                 }
             }
             
-            function createSearchIndex(data) {
-                // Safety guard for undefined user_profiles
-                const users = Array.isArray(data.user_profiles) ? data.user_profiles : [];
-                searchIndex = users.map(user => ({
+            function createSearchIndex(taps, users) {
+                // Safety guard for undefined users
+                const safeUsers = Array.isArray(users) ? users : [];
+                searchIndex = safeUsers.map(user => ({
                     id: user.user_id,
                     name: `${user.basic_info.first_name} ${user.basic_info.last_name}`,
                     username: user.basic_info.username,
@@ -1338,17 +1359,17 @@ DO NOT use file:// URLs with this version
                 }));
             }
             
-            function createTimelineData(data) {
+            function createTimelineData(taps) {
                 // Use taps for timeline events
-                timeSequence = data.taps || [];
+                timeSequence = Array.isArray(taps) ? taps : [];
                 
                 // Sort timeSequence by time to ensure chronological order
                 timeSequence.sort((a, b) => new Date(a.time) - new Date(b.time));
                 
                 // Create user first taps from taps - find earliest timestamp for each user
                 userFirstTaps = {};
-                if (data.taps) {
-                    data.taps.forEach(tap => {
+                if (Array.isArray(taps)) {
+                    taps.forEach(tap => {
                         // Check user1
                         if (!userFirstTaps[tap.user1_id] || tap.time < userFirstTaps[tap.user1_id]) {
                             userFirstTaps[tap.user1_id] = tap.time;
@@ -1364,9 +1385,12 @@ DO NOT use file:// URLs with this version
             function createDegreeConnections(tapData) {
                 const degreeConnections = {};
                 
+                // Safety guard for undefined tapData
+                const safeTapData = Array.isArray(tapData) ? tapData : [];
+                
                 // Create adjacency map from tap data
                 const adjacencyMap = {};
-                tapData.forEach(tap => {
+                safeTapData.forEach(tap => {
                     if (!adjacencyMap[tap.user1_id]) adjacencyMap[tap.user1_id] = new Set();
                     if (!adjacencyMap[tap.user2_id]) adjacencyMap[tap.user2_id] = new Set();
                     adjacencyMap[tap.user1_id].add(tap.user2_id);
@@ -1411,13 +1435,14 @@ DO NOT use file:// URLs with this version
                 return degreeConnections;
             }
             
-            function createNetworkData(data) {
+            function createNetworkData(taps, users) {
                 
                 // Create degree connections data for each user
-                const degreeConnections = createDegreeConnections(data.taps);
+                const degreeConnections = createDegreeConnections(taps);
                 
                 // Create nodes from users
-                const nodeData = data.users.map(user => {
+                const safeUsers = Array.isArray(users) ? users : [];
+                const nodeData = safeUsers.map(user => {
                     const name = `${user.basic_info.first_name} ${user.basic_info.last_name}`;
                     const taps = user.profile_stats.tap_count;
                     const connections = user.profile_stats.connections_count;
@@ -1452,7 +1477,8 @@ DO NOT use file:// URLs with this version
                 });
                 
                 // Create edges from taps
-                const edgeData = data.taps.map((tap, index) => ({
+                const safeTaps = Array.isArray(taps) ? taps : [];
+                const edgeData = safeTaps.map((tap, index) => ({
                     id: index,
                     from: tap.user1_id,
                     to: tap.user2_id,
