@@ -825,17 +825,17 @@
             }
         }
         
-        // Load data from JSON files
+        // Load data from API
         async function loadData() {
             try {
                 
-                // Load comprehensive data from JSON file
-                const comprehensiveResponse = await fetch(`./data/comprehensive_data.json?t=${Date.now()}`);
+                // Load comprehensive data from API
+                const comprehensiveResponse = await fetch(`/api/data?t=${Date.now()}`);
                 if (!comprehensiveResponse.ok) {
                     throw new Error(`Failed to load comprehensive data: ${comprehensiveResponse.status}`);
                 }
                 const comprehensiveData = await comprehensiveResponse.json();
-                const tapData = comprehensiveData.tap_data;
+                const tapData = comprehensiveData.taps;
                 
                 
                 // Transform tap data to match expected format
@@ -861,7 +861,11 @@
                 // User location data is included in comprehensive data
                 
                 // Metadata is included in comprehensive data
-                const metadata = comprehensiveData.metadata;
+                const metadata = {
+                    last_refresh: comprehensiveData.last_refresh,
+                    total_taps: comprehensiveData.taps.length,
+                    total_users: comprehensiveData.users.length
+                };
                 
                 // Generate edges data from tap data
                 const edgeMap = new Map();

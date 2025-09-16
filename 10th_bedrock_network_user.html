@@ -1299,8 +1299,8 @@ DO NOT use file:// URLs with this version
             // Dynamic data loading functions
             async function loadData() {
                 try {
-                    console.log('🔄 Loading dynamic data...');
-                    const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                    console.log('🔄 Loading dynamic data from API...');
+                    const response = await fetch('/api/data?t=' + Date.now());
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
@@ -1330,16 +1330,16 @@ DO NOT use file:// URLs with this version
             }
             
             function createTimelineData(data) {
-                // Use tap_data for timeline events
-                timeSequence = data.tap_data || [];
+                // Use taps for timeline events
+                timeSequence = data.taps || [];
                 
                 // Sort timeSequence by time to ensure chronological order
                 timeSequence.sort((a, b) => new Date(a.time) - new Date(b.time));
                 
-                // Create user first taps from tap_data - find earliest timestamp for each user
+                // Create user first taps from taps - find earliest timestamp for each user
                 userFirstTaps = {};
-                if (data.tap_data) {
-                    data.tap_data.forEach(tap => {
+                if (data.taps) {
+                    data.taps.forEach(tap => {
                         // Check user1
                         if (!userFirstTaps[tap.user1_id] || tap.time < userFirstTaps[tap.user1_id]) {
                             userFirstTaps[tap.user1_id] = tap.time;
@@ -1405,10 +1405,10 @@ DO NOT use file:// URLs with this version
             function createNetworkData(data) {
                 
                 // Create degree connections data for each user
-                const degreeConnections = createDegreeConnections(data.tap_data);
+                const degreeConnections = createDegreeConnections(data.taps);
                 
-                // Create nodes from user_profiles
-                const nodeData = data.user_profiles.map(user => {
+                // Create nodes from users
+                const nodeData = data.users.map(user => {
                     const name = `${user.basic_info.first_name} ${user.basic_info.last_name}`;
                     const taps = user.profile_stats.tap_count;
                     const connections = user.profile_stats.connections_count;
@@ -1442,8 +1442,8 @@ DO NOT use file:// URLs with this version
                     };
                 });
                 
-                // Create edges from tap_data
-                const edgeData = data.tap_data.map((tap, index) => ({
+                // Create edges from taps
+                const edgeData = data.taps.map((tap, index) => ({
                     id: index,
                     from: tap.user1_id,
                     to: tap.user2_id,
