@@ -859,7 +859,7 @@
                 const USERS = data.users;         // []
                 // -------------------------------------------------------
                 
-                console.log('[DATA SHIM]', { taps: TAPS.length, users: USERS.length, last_refresh: data.last_refresh });
+                // Data loaded successfully
                 
                 const comprehensiveData = data;
                 const tapData = TAPS;
@@ -1011,9 +1011,7 @@
         function initMap() {
             // Check map container
             const mapContainer = document.getElementById('map');
-            console.log('Map container:', mapContainer);
-            console.log('Map container dimensions:', mapContainer.offsetWidth, 'x', mapContainer.offsetHeight);
-            console.log('Map container style:', mapContainer.style.cssText);
+            // Map container initialized
             
                     // Create map with dark theme
         map = L.map('map', {

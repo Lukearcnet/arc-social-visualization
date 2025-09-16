@@ -8,7 +8,7 @@ This file is the new bedrock version with dynamic data loading:
 - AI chatbot interface with draggable chatbox
 - Minimize/expand functionality
 - Proper network zoom and layout
-- Dynamic data loading from comprehensive_data.json
+- Dynamic data loading from API
 - All degree filtering and search features
 - Timeline slider functionality
 - LOCALHOST URL OPTIMIZATIONS for localhost:3003 format
@@ -1332,7 +1332,7 @@ DO NOT use file:// URLs with this version
                     const USERS = data.users;         // []
                     // -------------------------------------------------------
                     
-                    console.log('[DATA SHIM]', { taps: TAPS.length, users: USERS.length, last_refresh: data.last_refresh });
+                    // Data loaded successfully
                     
                     // Create all data structures
                     createSearchIndex(TAPS, USERS);
@@ -2198,30 +2198,7 @@ Remember: You're helping someone explore and understand their social network dat
             
 
             
-            // Function to load enriched data
-            async function loadEnrichedData() {
-                try {
-                    const [comprehensiveResponse, userProfilesResponse, tapDataResponse] = await Promise.all([
-                        fetch('./data/enriched/comprehensive_data.json'),
-                        fetch('./data/enriched/user_profiles.json'),
-                        fetch('./data/enriched/tap_data.json')
-                    ]);
-                    
-                    const comprehensive = await comprehensiveResponse.json();
-                    const userProfiles = await userProfilesResponse.json();
-                    const tapData = await tapDataResponse.json();
-                    
-                    window.enrichedData = {
-                        comprehensive,
-                        userProfiles,
-                        tapData
-                    };
-                    
-                } catch (error) {
-                    console.warn('⚠️ Could not load enriched data:', error);
-                    window.enrichedData = null;
-                }
-            }
+            // Enriched data is now loaded via the main loadData() function
             
             function prepareNetworkContext() {
                 // Extract and format network data for AI context
@@ -3901,7 +3878,7 @@ Remember: You're helping someone explore and understand their social network dat
                     setTimeout(() => {
                         const rect = minimizeButton.getBoundingClientRect();
                         const style = window.getComputedStyle(minimizeButton);
-                        console.log('📍 Minimize button position:', {
+                        // Minimize button positioned
                             top: rect.top,
                             left: rect.left,
                             width: rect.width,
