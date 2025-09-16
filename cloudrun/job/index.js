@@ -299,7 +299,7 @@ async function processData() {
 
             // Query taps with user joins for enriched data
             const venueContextSelect = hasVenueContextColumn ? 't.venue_context,' : 'NULL as venue_context,';
-            const tapResult = await client.query(`
+            const query = `
               SELECT 
                   t.tap_id,
                   t.id1 as user1_id,
@@ -333,7 +333,9 @@ async function processData() {
               JOIN users u2 ON t.id2 = u2.id
               WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
               ORDER BY t.time DESC
-            `);
+            `;
+            
+            const tapResult = await client.query(query);
     const taps = tapResult.rows;
     rowsProcessed = taps.length;
 
