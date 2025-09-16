@@ -283,7 +283,22 @@ async function processData() {
 
     await client.query('BEGIN');
 
+            // Check if venue_context column exists
+            let hasVenueContextColumn = false;
+            try {
+              const columnCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'taps' AND column_name = 'venue_context'
+              `);
+              hasVenueContextColumn = columnCheck.rows.length > 0;
+              console.log(`🔍 Venue context column exists: ${hasVenueContextColumn}`);
+            } catch (error) {
+              console.log(`⚠️ Could not check for venue_context column: ${error.message}`);
+            }
+
             // Query taps with user joins for enriched data
+            const venueContextSelect = hasVenueContextColumn ? 't.venue_context,' : 'NULL as venue_context,';
             const tapResult = await client.query(`
               SELECT 
                   t.tap_id,
@@ -294,7 +309,7 @@ async function processData() {
                   t.location,
                   t.time,
                   t.formatted_location,
-                  t.venue_context,
+                  ${venueContextSelect}
                   u1.first_name as user1_first_name,
                   u1.last_name as user1_last_name,
                   u1.username as user1_username,
@@ -342,7 +357,7 @@ async function processData() {
               
               // Check if this tap needs processing
               const needsGeocoding = !formattedLocation && tap.latitude && tap.longitude;
-              const needsVenueProcessing = !tap.venue_context || 
+              const needsVenueProcessing = !hasVenueContextColumn || !tap.venue_context || 
                 (tap.venue_context && tap.venue_context.venue_name === 'N/A');
               
               if (needsGeocoding || needsVenueProcessing) {
@@ -367,11 +382,13 @@ async function processData() {
                   console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
                   venueContext = await getVenueInfo(tap.latitude, tap.longitude);
                   
-                  // Update the database with the new venue_context
-                  await client.query(
-                    'UPDATE taps SET venue_context = $1 WHERE tap_id = $2',
-                    [JSON.stringify(venueContext), tap.tap_id]
-                  );
+                  // Update the database with the new venue_context (only if column exists)
+                  if (hasVenueContextColumn) {
+                    await client.query(
+                      'UPDATE taps SET venue_context = $1 WHERE tap_id = $2',
+                      [JSON.stringify(venueContext), tap.tap_id]
+                    );
+                  }
                   
                   // Add small delay to avoid rate limiting
                   if (tapsProcessed % 10 === 0) {
@@ -436,6 +453,11 @@ async function processData() {
             console.log(`   🔄 Taps needing processing: ${tapsNeedingProcessing}`);
             console.log(`   🏪 Venue API calls made: ${tapsProcessed}`);
             console.log(`   💰 API calls saved: ${taps.length - tapsProcessed}`);
+            
+            if (!hasVenueContextColumn) {
+              console.log(`💡 OPTIMIZATION TIP: Add 'venue_context' column to taps table for future optimization`);
+              console.log(`   ALTER TABLE taps ADD COLUMN venue_context JSONB;`);
+            }
 
     // Query all users from database
     const userResult = await client.query(`
