@@ -1,0 +1,16 @@
+{
+  "name": "arc-refresh-job",
+  "version": "1.0.0",
+  "description": "Cloud Run job to refresh ARC data from Cloud SQL",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "@google-cloud/storage": "^7.7.0"
+  },
+  "engines": {
+    "node": "20"
+  }
+}
