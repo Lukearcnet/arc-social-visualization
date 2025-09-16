@@ -128,8 +128,8 @@ async function processData() {
           t.tap_id,
           t.id1 as user1_id,
           t.id2 as user2_id,
-          t.latitude,
-          t.longitude,
+          split_part(t.location, ',', 1)::float AS latitude,
+          split_part(t.location, ',', 2)::float AS longitude,
           t.location,
           t.time,
           t.formatted_location,
@@ -154,7 +154,7 @@ async function processData() {
       FROM taps t
       JOIN users u1 ON t.id1 = u1.id
       JOIN users u2 ON t.id2 = u2.id
-      WHERE t.latitude IS NOT NULL AND t.longitude IS NOT NULL
+      WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
       ORDER BY t.time DESC
     `);
     const taps = tapResult.rows;
