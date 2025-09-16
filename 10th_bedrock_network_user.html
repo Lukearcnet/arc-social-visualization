@@ -1224,6 +1224,7 @@ DO NOT use file:// URLs with this version
                 <div class="network-controls-floating">
                     <button class="control-btn" onclick="stabilize()">Stabilize</button>
                     <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
+                    <button class="control-btn" onclick="activateGlobalView()">See full Arc Network</button>
                 </div>
             </div>
             
@@ -1294,6 +1295,7 @@ DO NOT use file:// URLs with this version
             let allNodes;
             let allEdges;
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
+            let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
             
             // Safety helper for string operations
@@ -2852,6 +2854,47 @@ Remember: You're helping someone explore and understand their social network dat
                 const connectionCountElement = document.getElementById('connectionCount');
                 if (connectionCountElement) {
                     connectionCountElement.textContent = `${visibleNodeCount} total users`;
+                }
+            }
+            
+            // Activate Global View functionality
+            function activateGlobalView() {
+                // Toggle global view mode
+                globalViewEnabled = !globalViewEnabled;
+                const globalViewBtn = document.querySelector('button[onclick="activateGlobalView()"]');
+                
+                // Update button appearance
+                if (globalViewEnabled) {
+                    globalViewBtn.classList.add('active');
+                    globalViewBtn.textContent = 'Back to User View';
+                    // Hide user-specific elements
+                    document.getElementById('profileSection').style.display = 'none';
+                } else {
+                    globalViewBtn.classList.remove('active');
+                    globalViewBtn.textContent = 'See full Arc Network';
+                    // Show user-specific elements
+                    document.getElementById('profileSection').style.display = 'block';
+                }
+                
+                // Update network display to show all nodes
+                updateNetworkDisplay();
+            }
+            
+            // Update network display based on current mode
+            function updateNetworkDisplay() {
+                if (globalViewEnabled) {
+                    // Show all nodes and edges in global view
+                    nodes.update(allNodes.get());
+                    edges.update(allEdges.get());
+                } else {
+                    // Return to user-centric view (restore any existing filters)
+                    if (currentFilterUser) {
+                        filterNetworkByUser(currentFilterUser);
+                    } else {
+                        // Show all nodes if no specific user filter
+                        nodes.update(allNodes.get());
+                        edges.update(allEdges.get());
+                    }
                 }
             }
         

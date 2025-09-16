@@ -707,6 +707,13 @@
                     </div>
                 </div>
                 
+                <!-- Global View Toggle -->
+                <div class="control-group">
+                    <label>View Options</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                    </div>
+                </div>
                 
                 <!-- Stats Display -->
                 <div class="stats-display">
@@ -794,6 +801,7 @@
         let clusteringEnabled = true;
         let completeLocationData = []; // Make this global
         let showAllEnabled = false; // Track Show All toggle state
+        let globalViewEnabled = false; // Track Global View toggle state
         let cumulativeEnabled = true; // Track Cumulative toggle state
         let degreeFilters = {
             degree1: true,
@@ -1299,6 +1307,24 @@
                     tap_count: 1, // Each tap represents one connection
                     timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
                 }));
+            } else if (globalViewEnabled) {
+                // Global view mode: display all events as white nodes regardless of user selection
+                // Transform completeLocationData to match expected structure
+                filteredEvents = completeLocationData.map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1, // Each tap represents one connection
+                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
+                }));
             } else {
                 // Normal timeline mode: use complete location data for consistent filtering
                 // Transform completeLocationData to match expected structure
@@ -1424,7 +1450,7 @@
             let markerColor = '#ffffff';
             let fillColor = '#ffffff';
             
-            if (currentMode === 'user' && selectedUserId) {
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
                 const sourceUserId = event.source_id;
                 const targetUserId = event.target_id;
                 
@@ -1593,6 +1619,31 @@
             
             // Update display
             updateTimelineDisplay();
+        }
+        
+        // Activate Global View functionality
+        function activateGlobalView() {
+            // Toggle global view mode
+            globalViewEnabled = !globalViewEnabled;
+            const globalViewBtn = document.getElementById('globalViewBtn');
+            
+            // Update button appearance
+            if (globalViewEnabled) {
+                globalViewBtn.classList.add('active');
+                globalViewBtn.textContent = 'Back to User View';
+                // Hide user-specific elements
+                document.getElementById('profileSection').style.display = 'none';
+                document.getElementById('degreeFiltersGroup').style.display = 'none';
+            } else {
+                globalViewBtn.classList.remove('active');
+                globalViewBtn.textContent = 'See full Arc Network';
+                // Show user-specific elements
+                document.getElementById('profileSection').style.display = 'block';
+                document.getElementById('degreeFiltersGroup').style.display = 'block';
+            }
+            
+            // Update display to show all taps as white nodes
+            updateDisplay();
         }
         
         // Initialize user search functionality
