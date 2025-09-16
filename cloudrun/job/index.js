@@ -83,10 +83,24 @@ async function getVenueInfo(latitude, longitude) {
       type: 'establishment' // Focus on businesses/venues
     });
 
-    const response = await fetch(`${url}?${params}`, { timeout: 10000 });
+    console.log(`🔍 Making Google Places API call for ${latitude},${longitude}`);
+    const response = await fetch(`${url}?${params}`, { 
+      timeout: 15000, // Increased timeout
+      headers: {
+        'User-Agent': 'ARC-Data-Refresh/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
+    console.log(`📡 Google Places API response status: ${data.status}`);
 
     if (data.status === 'OK' && data.results && data.results.length > 0) {
+      console.log(`🏪 Found ${data.results.length} potential venues`);
+      
       // Find the most specific venue (prefer businesses over generic locations)
       let bestVenue = null;
       for (const venue of data.results) {
@@ -152,6 +166,7 @@ async function getVenueInfo(latitude, longitude) {
       
       // If it's a generic location, return N/A
       if (isGenericLocation(venueName)) {
+        console.log(`🏪 Generic location detected: ${venueName} -> N/A`);
         return {
           venue_name: 'N/A',
           venue_category: 'unknown',
@@ -180,6 +195,7 @@ async function getVenueInfo(latitude, longitude) {
           category = 'establishment';
         }
         
+        console.log(`🏪 Found venue: ${venueName} (${category})`);
         return {
           venue_name: venueName,
           venue_category: category,
@@ -188,6 +204,7 @@ async function getVenueInfo(latitude, longitude) {
       }
     } else {
       // No venue found, return N/A
+      console.log(`🏪 No venues found for ${latitude},${longitude}`);
       return {
         venue_name: 'N/A',
         venue_category: 'unknown',
@@ -195,7 +212,7 @@ async function getVenueInfo(latitude, longitude) {
       };
     }
   } catch (error) {
-    console.error('❌ Error getting venue info:', error);
+    console.error(`❌ Error getting venue info for ${latitude},${longitude}:`, error.message);
     return {
       venue_name: 'N/A',
       venue_category: 'unknown',
@@ -325,17 +342,23 @@ async function processData() {
         }
       }
       
-      // Get venue information from Google Places API
-      let venueContext = {
-        venue_name: "N/A",
-        venue_category: "unknown",
-        venue_context: "N/A"
-      };
-      
-      if (tap.latitude && tap.longitude) {
-        console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
-        venueContext = await getVenueInfo(tap.latitude, tap.longitude);
-      }
+            // Get venue information from Google Places API
+            let venueContext = {
+              venue_name: "N/A",
+              venue_category: "unknown",
+              venue_context: "N/A"
+            };
+            
+            if (tap.latitude && tap.longitude) {
+              console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
+              venueContext = await getVenueInfo(tap.latitude, tap.longitude);
+              
+              // Add small delay to avoid rate limiting
+              if (i % 10 === 0) {
+                console.log(`⏳ Rate limiting pause after ${i + 1} taps...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
       
       // Create enriched tap object matching the expected structure
       const enrichedTap = {
