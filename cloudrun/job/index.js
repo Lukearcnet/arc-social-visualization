@@ -283,119 +283,159 @@ async function processData() {
 
     await client.query('BEGIN');
 
-    // Query taps with user joins for enriched data
-    const tapResult = await client.query(`
-      SELECT 
-          t.tap_id,
-          t.id1 as user1_id,
-          t.id2 as user2_id,
-          split_part(t.location, ',', 1)::float AS latitude,
-          split_part(t.location, ',', 2)::float AS longitude,
-          t.location,
-          t.time,
-          t.formatted_location,
-          u1.first_name as user1_first_name,
-          u1.last_name as user1_last_name,
-          u1.username as user1_username,
-          u1.bio as user1_bio,
-          u1.home as user1_home,
-          u1.age as user1_age,
-          u1.tap_count as user1_tap_count,
-          u1.connections_count as user1_connections_count,
-          u1.phone_number as user1_phone_number,
-          u2.first_name as user2_first_name,
-          u2.last_name as user2_last_name,
-          u2.username as user2_username,
-          u2.bio as user2_bio,
-          u2.home as user2_home,
-          u2.age as user2_age,
-          u2.tap_count as user2_tap_count,
-          u2.connections_count as user2_connections_count,
-          u2.phone_number as user2_phone_number
-      FROM taps t
-      JOIN users u1 ON t.id1 = u1.id
-      JOIN users u2 ON t.id2 = u2.id
-      WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
-      ORDER BY t.time DESC
-    `);
+            // Query taps with user joins for enriched data
+            const tapResult = await client.query(`
+              SELECT 
+                  t.tap_id,
+                  t.id1 as user1_id,
+                  t.id2 as user2_id,
+                  split_part(t.location, ',', 1)::float AS latitude,
+                  split_part(t.location, ',', 2)::float AS longitude,
+                  t.location,
+                  t.time,
+                  t.formatted_location,
+                  t.venue_context,
+                  u1.first_name as user1_first_name,
+                  u1.last_name as user1_last_name,
+                  u1.username as user1_username,
+                  u1.bio as user1_bio,
+                  u1.home as user1_home,
+                  u1.age as user1_age,
+                  u1.tap_count as user1_tap_count,
+                  u1.connections_count as user1_connections_count,
+                  u1.phone_number as user1_phone_number,
+                  u2.first_name as user2_first_name,
+                  u2.last_name as user2_last_name,
+                  u2.username as user2_username,
+                  u2.bio as user2_bio,
+                  u2.home as user2_home,
+                  u2.age as user2_age,
+                  u2.tap_count as user2_tap_count,
+                  u2.connections_count as user2_connections_count,
+                  u2.phone_number as user2_phone_number
+              FROM taps t
+              JOIN users u1 ON t.id1 = u1.id
+              JOIN users u2 ON t.id2 = u2.id
+              WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
+              ORDER BY t.time DESC
+            `);
     const taps = tapResult.rows;
     rowsProcessed = taps.length;
 
-    console.log(`📊 Fetched ${taps.length} enriched taps from database`);
+            console.log(`📊 Fetched ${taps.length} enriched taps from database`);
 
-    // Process taps for geocoding and format
-    const processedTaps = [];
-    for (let i = 0; i < taps.length; i++) {
-      const tap = taps[i];
-      let formattedLocation = tap.formatted_location;
-      
-      if (!formattedLocation && tap.latitude && tap.longitude) {
-        console.log(`🌍 Geocoding tap ${i + 1}/${taps.length}...`);
-        formattedLocation = await getGeocodedLocation(tap.latitude, tap.longitude);
-        
-        // Update the database with the new formatted_location
-        if (formattedLocation) {
-          await client.query(
-            'UPDATE taps SET formatted_location = $1 WHERE tap_id = $2',
-            [formattedLocation, tap.tap_id]
-          );
-        }
-      }
-      
-            // Get venue information from Google Places API
-            let venueContext = {
-              venue_name: "N/A",
-              venue_category: "unknown",
-              venue_context: "N/A"
-            };
+            // Process taps for geocoding and venue processing (only if needed)
+            const processedTaps = [];
+            let tapsNeedingProcessing = 0;
+            let tapsProcessed = 0;
             
-            if (tap.latitude && tap.longitude) {
-              console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
-              venueContext = await getVenueInfo(tap.latitude, tap.longitude);
+            console.log(`🚀 Starting optimized processing - will only process taps that need geocoding or venue lookup`);
+            
+            for (let i = 0; i < taps.length; i++) {
+              const tap = taps[i];
+              let formattedLocation = tap.formatted_location;
+              let venueContext = {
+                venue_name: "N/A",
+                venue_category: "unknown",
+                venue_context: "N/A"
+              };
               
-              // Add small delay to avoid rate limiting
-              if (i % 10 === 0) {
-                console.log(`⏳ Rate limiting pause after ${i + 1} taps...`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+              // Check if this tap needs processing
+              const needsGeocoding = !formattedLocation && tap.latitude && tap.longitude;
+              const needsVenueProcessing = !tap.venue_context || 
+                (tap.venue_context && tap.venue_context.venue_name === 'N/A');
+              
+              if (needsGeocoding || needsVenueProcessing) {
+                tapsNeedingProcessing++;
+                
+                // Geocoding (if needed)
+                if (needsGeocoding) {
+                  console.log(`🌍 Geocoding tap ${i + 1}/${taps.length}...`);
+                  formattedLocation = await getGeocodedLocation(tap.latitude, tap.longitude);
+                  
+                  // Update the database with the new formatted_location
+                  if (formattedLocation) {
+                    await client.query(
+                      'UPDATE taps SET formatted_location = $1 WHERE tap_id = $2',
+                      [formattedLocation, tap.tap_id]
+                    );
+                  }
+                }
+                
+                // Venue processing (if needed)
+                if (needsVenueProcessing && tap.latitude && tap.longitude) {
+                  console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
+                  venueContext = await getVenueInfo(tap.latitude, tap.longitude);
+                  
+                  // Update the database with the new venue_context
+                  await client.query(
+                    'UPDATE taps SET venue_context = $1 WHERE tap_id = $2',
+                    [JSON.stringify(venueContext), tap.tap_id]
+                  );
+                  
+                  // Add small delay to avoid rate limiting
+                  if (tapsProcessed % 10 === 0) {
+                    console.log(`⏳ Rate limiting pause after ${tapsProcessed + 1} processed taps...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                  }
+                  
+                  tapsProcessed++;
+                }
+              } else {
+                // Use existing venue_context from database
+                if (tap.venue_context) {
+                  try {
+                    venueContext = typeof tap.venue_context === 'string' 
+                      ? JSON.parse(tap.venue_context) 
+                      : tap.venue_context;
+                  } catch (e) {
+                    console.log(`⚠️ Could not parse venue_context for tap ${tap.tap_id}`);
+                  }
+                }
               }
+              
+              // Create enriched tap object matching the expected structure
+              const enrichedTap = {
+                tap_id: tap.tap_id,
+                user1_id: tap.user1_id,
+                user1_name: `${tap.user1_first_name || ''} ${tap.user1_last_name || ''}`.trim(),
+                user1_username: tap.user1_username || '',
+                user1_bio: tap.user1_bio || '',
+                user1_home: tap.user1_home || '',
+                user1_age: tap.user1_age || '',
+                user1_tap_count: tap.user1_tap_count || 0,
+                user1_connections_count: tap.user1_connections_count || 0,
+                user1_phone_number: tap.user1_phone_number || '',
+                user2_id: tap.user2_id,
+                user2_name: `${tap.user2_first_name || ''} ${tap.user2_last_name || ''}`.trim(),
+                user2_username: tap.user2_username || '',
+                user2_bio: tap.user2_bio || '',
+                user2_home: tap.user2_home || '',
+                user2_age: tap.user2_age || '',
+                user2_tap_count: tap.user2_tap_count || 0,
+                user2_connections_count: tap.user2_connections_count || 0,
+                user2_phone_number: tap.user2_phone_number || '',
+                latitude: tap.latitude,
+                longitude: tap.longitude,
+                location: tap.location || `${tap.latitude},${tap.longitude}`,
+                formatted_location: formattedLocation || 'Unknown',
+                time: tap.time,
+                formatted_time: new Date(tap.time).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                }),
+                venue_context: venueContext
+              };
+      
+              processedTaps.push(enrichedTap);
             }
-      
-      // Create enriched tap object matching the expected structure
-      const enrichedTap = {
-        tap_id: tap.tap_id,
-        user1_id: tap.user1_id,
-        user1_name: `${tap.user1_first_name || ''} ${tap.user1_last_name || ''}`.trim(),
-        user1_username: tap.user1_username || '',
-        user1_bio: tap.user1_bio || '',
-        user1_home: tap.user1_home || '',
-        user1_age: tap.user1_age || '',
-        user1_tap_count: tap.user1_tap_count || 0,
-        user1_connections_count: tap.user1_connections_count || 0,
-        user1_phone_number: tap.user1_phone_number || '',
-        user2_id: tap.user2_id,
-        user2_name: `${tap.user2_first_name || ''} ${tap.user2_last_name || ''}`.trim(),
-        user2_username: tap.user2_username || '',
-        user2_bio: tap.user2_bio || '',
-        user2_home: tap.user2_home || '',
-        user2_age: tap.user2_age || '',
-        user2_tap_count: tap.user2_tap_count || 0,
-        user2_connections_count: tap.user2_connections_count || 0,
-        user2_phone_number: tap.user2_phone_number || '',
-        latitude: tap.latitude,
-        longitude: tap.longitude,
-        location: tap.location || `${tap.latitude},${tap.longitude}`,
-        formatted_location: formattedLocation || 'Unknown',
-        time: tap.time,
-        formatted_time: new Date(tap.time).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        venue_context: venueContext
-      };
-      
-      processedTaps.push(enrichedTap);
-    }
+            
+            console.log(`✅ Processing complete!`);
+            console.log(`   📊 Total taps: ${taps.length}`);
+            console.log(`   🔄 Taps needing processing: ${tapsNeedingProcessing}`);
+            console.log(`   🏪 Venue API calls made: ${tapsProcessed}`);
+            console.log(`   💰 API calls saved: ${taps.length - tapsProcessed}`);
 
     // Query all users from database
     const userResult = await client.query(`
