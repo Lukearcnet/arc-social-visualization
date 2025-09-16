@@ -1,0 +1,15 @@
+{
+  "name": "arc-data-reader",
+  "version": "1.0.0",
+  "description": "Cloud Run service to read data from GCS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.7.0"
+  },
+  "engines": {
+    "node": "20"
+  }
+}

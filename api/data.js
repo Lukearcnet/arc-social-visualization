@@ -1,37 +1,41 @@
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs';
 
+const DATA_READER_URL = process.env.DATA_READER_URL;
+const DATA_READER_SECRET = process.env.DATA_READER_SECRET;
+
 export default async function handler(req, res) {
   try {
-    // For now, return mock data. In a real implementation, you might:
-    // - Store data in a database table
-    // - Use a file system
-    // - Call the data-export function directly
-    const mockData = {
-      taps: [
-        {
-          tap_id: 1,
-          latitude: 40.7128,
-          longitude: -74.0060,
-          formatted_location: "New York, NY, US",
-          time: "2024-01-01T12:00:00Z",
-          user1_id: "user1",
-          user2_id: "user2",
-          user1_name: "John Doe",
-          user2_name: "Jane Smith"
-        }
-      ],
-      users: [
-        { user_id: "user1", name: "John Doe", home_location: "New York, NY" },
-        { user_id: "user2", name: "Jane Smith", home_location: "New York, NY" }
-      ],
-      last_refresh: new Date().toISOString()
-    };
+    console.log('📊 Fetching data from Cloud Run reader...');
+    
+    // Fetch data from Cloud Run reader service
+    const response = await fetch(DATA_READER_URL, {
+      method: 'GET',
+      headers: {
+        'x-data-key': DATA_READER_SECRET,
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
 
-    return res.status(200).json(mockData);
+    if (!response.ok) {
+      throw new Error(`Reader service failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Successfully fetched data from reader service');
+
+    // Set cache headers for Vercel
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
+    res.setHeader('Content-Type', 'application/json');
+    
+    return res.status(200).json(data);
 
   } catch (error) {
-    console.error('❌ Error serving data:', error);
-    return res.status(500).json({ error: 'Failed to retrieve data', detail: error.message });
+    console.error('❌ Error fetching data from reader service:', error);
+    
+    return res.status(503).json({ 
+      error: 'upstream_unavailable'
+    });
   }
 }
