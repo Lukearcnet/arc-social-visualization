@@ -834,12 +834,27 @@
                 if (!comprehensiveResponse.ok) {
                     throw new Error(`Failed to load comprehensive data: ${comprehensiveResponse.status}`);
                 }
-                const comprehensiveData = await comprehensiveResponse.json();
-                const tapData = comprehensiveData.taps;
+                const api = await comprehensiveResponse.json();
                 
+                // ✅ Back-compat shim so the rest of the code keeps working
+                const comprehensiveData = {
+                    tap_data: api.taps ?? [],
+                    user_profiles: api.users ?? [],
+                    last_refresh: api.last_refresh ?? null,
+                };
+                const tapData = comprehensiveData.tap_data;
+                
+                
+                // Filter out taps without valid lat/lng coordinates
+                const cleanTaps = (tapData || []).filter(tap => {
+                    if (!tap.latitude || !tap.longitude) return false;
+                    const lat = Number(tap.latitude);
+                    const lng = Number(tap.longitude);
+                    return Number.isFinite(lat) && Number.isFinite(lng);
+                });
                 
                 // Transform tap data to match expected format
-                completeLocationData = tapData.map(tap => ({
+                completeLocationData = cleanTaps.map(tap => ({
                     tap_id: tap.tap_id,
                     user1_id: tap.user1_id,
                     user1_name: tap.user1_name,
@@ -1579,10 +1594,13 @@
                 const matches = [];
                 const seenUsers = new Set();
                 
+                // Safety guard for undefined values
+                const safeLower = v => (v ?? '').toString().toLowerCase();
+                
                 // Search through all users in tap data (which has home locations)
                 completeLocationData.forEach(tap => {
                     // Check user1
-                    if (tap.user1_name.toLowerCase().includes(query) && !seenUsers.has(tap.user1_id)) {
+                    if (safeLower(tap.user1_name).includes(query) && !seenUsers.has(tap.user1_id)) {
                         matches.push({
                             id: tap.user1_id,
                             name: tap.user1_name,
@@ -1592,7 +1610,7 @@
                     }
                     
                     // Check user2
-                    if (tap.user2_name.toLowerCase().includes(query) && !seenUsers.has(tap.user2_id)) {
+                    if (safeLower(tap.user2_name).includes(query) && !seenUsers.has(tap.user2_id)) {
                         matches.push({
                             id: tap.user2_id,
                             name: tap.user2_name,

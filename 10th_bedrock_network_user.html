@@ -1304,7 +1304,14 @@ DO NOT use file:// URLs with this version
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    const data = await response.json();
+                    const api = await response.json();
+                    
+                    // ✅ Back-compat shim so the rest of the code keeps working
+                    const data = {
+                        tap_data: api.taps ?? [],
+                        user_profiles: api.users ?? [],
+                        last_refresh: api.last_refresh ?? null,
+                    };
                     
                     // Create all data structures
                     createSearchIndex(data);
@@ -1319,7 +1326,9 @@ DO NOT use file:// URLs with this version
             }
             
             function createSearchIndex(data) {
-                searchIndex = data.user_profiles.map(user => ({
+                // Safety guard for undefined user_profiles
+                const users = Array.isArray(data.user_profiles) ? data.user_profiles : [];
+                searchIndex = users.map(user => ({
                     id: user.user_id,
                     name: `${user.basic_info.first_name} ${user.basic_info.last_name}`,
                     username: user.basic_info.username,
