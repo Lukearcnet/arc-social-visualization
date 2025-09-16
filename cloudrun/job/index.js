@@ -1,3 +1,4 @@
+// Cloud Run Job for ARC data refresh - Preview Build
 import { Pool } from 'pg';
 import { Storage } from '@google-cloud/storage';
 
@@ -121,124 +122,96 @@ async function processData() {
 
     await client.query('BEGIN');
 
-    // Query taps with user JOINs (replicating Python script)
-    console.log('🔄 Fetching taps with user data...');
-    const tapsQuery = `
+    // Query taps with user joins for enriched data
+    const tapResult = await client.query(`
       SELECT 
-        t.tap_id,
-        t.id1,
-        t.id2,
-        t.location,
-        t.time,
-        u1.first_name as user1_first_name,
-        u1.last_name as user1_last_name,
-        u1.username as user1_username,
-        u1.bio as user1_bio,
-        u1.home as user1_home,
-        u1.age as user1_age,
-        u1.tap_count as user1_tap_count,
-        u1.connections_count as user1_connections_count,
-        u1.phone_number as user1_phone_number,
-        u2.first_name as user2_first_name,
-        u2.last_name as user2_last_name,
-        u2.username as user2_username,
-        u2.bio as user2_bio,
-        u2.home as user2_home,
-        u2.age as user2_age,
-        u2.tap_count as user2_tap_count,
-        u2.connections_count as user2_connections_count,
-        u2.phone_number as user2_phone_number
+          t.tap_id,
+          t.id1 as user1_id,
+          t.id2 as user2_id,
+          split_part(t.location, ',', 1)::float AS latitude,
+          split_part(t.location, ',', 2)::float AS longitude,
+          t.location,
+          t.time,
+          t.formatted_location,
+          u1.first_name as user1_first_name,
+          u1.last_name as user1_last_name,
+          u1.username as user1_username,
+          u1.bio as user1_bio,
+          u1.home as user1_home,
+          u1.age as user1_age,
+          u1.tap_count as user1_tap_count,
+          u1.connections_count as user1_connections_count,
+          u1.phone_number as user1_phone_number,
+          u2.first_name as user2_first_name,
+          u2.last_name as user2_last_name,
+          u2.username as user2_username,
+          u2.bio as user2_bio,
+          u2.home as user2_home,
+          u2.age as user2_age,
+          u2.tap_count as user2_tap_count,
+          u2.connections_count as user2_connections_count,
+          u2.phone_number as user2_phone_number
       FROM taps t
       JOIN users u1 ON t.id1 = u1.id
       JOIN users u2 ON t.id2 = u2.id
-      WHERE t.location IS NOT NULL AND t.location != ''
-      ORDER BY t.time ASC
-    `;
-    
-    const tapsResult = await client.query(tapsQuery);
-    const taps = tapsResult.rows;
+      WHERE t.location IS NOT NULL AND t.location != '' AND t.location LIKE '%,%'
+      ORDER BY t.time DESC
+    `);
+    const taps = tapResult.rows;
     rowsProcessed = taps.length;
 
-    console.log(`📊 Fetched ${taps.length} taps from database`);
+    console.log(`📊 Fetched ${taps.length} enriched taps from database`);
 
-    // Query all users (replicating Python script)
-    console.log('🔄 Fetching all users...');
-    const usersQuery = `
-      SELECT 
-        u.id,
-        u.first_name,
-        u.last_name,
-        u.username,
-        u.bio,
-        u.home,
-        u.age,
-        u.pfp_url,
-        u.tap_count,
-        u.connections_count,
-        u.social_urls,
-        u.active
-      FROM users u
-      ORDER BY u.id DESC
-    `;
-    
-    const usersResult = await client.query(usersQuery);
-    const users = usersResult.rows;
-
-    console.log(`📊 Fetched ${users.length} users from database`);
-
-    // Process taps for geocoding
+    // Process taps for geocoding and format
     const processedTaps = [];
     for (let i = 0; i < taps.length; i++) {
       const tap = taps[i];
+      let formattedLocation = tap.formatted_location;
       
-      // Parse location string to coordinates
-      let latitude = 0.0;
-      let longitude = 0.0;
-      let formattedLocation = null;
-      
-      try {
-        if (tap.location && tap.location.includes(',')) {
-          const [latStr, lonStr] = tap.location.split(',');
-          latitude = parseFloat(latStr.trim());
-          longitude = parseFloat(lonStr.trim());
-          
-          // Get formatted location using reverse geocoding
-          if (latitude !== 0.0 && longitude !== 0.0) {
-            console.log(`🌍 Geocoding tap ${i + 1}/${taps.length}...`);
-            formattedLocation = await getGeocodedLocation(latitude, longitude);
-          }
+      if (!formattedLocation && tap.latitude && tap.longitude) {
+        console.log(`🌍 Geocoding tap ${i + 1}/${taps.length}...`);
+        formattedLocation = await getGeocodedLocation(tap.latitude, tap.longitude);
+        
+        // Update the database with the new formatted_location
+        if (formattedLocation) {
+          await client.query(
+            'UPDATE taps SET formatted_location = $1 WHERE tap_id = $2',
+            [formattedLocation, tap.tap_id]
+          );
         }
-      } catch (error) {
-        console.error(`Error processing location for tap ${tap.tap_id}:`, error);
       }
       
-      // Create tap object with embedded user data (matching Python script structure)
-      const processedTap = {
+      // Create enriched tap object matching the expected structure
+      const enrichedTap = {
         tap_id: tap.tap_id,
-        user1_id: tap.id1,
-        user1_name: `${tap.user1_first_name} ${tap.user1_last_name}`,
-        user1_username: tap.user1_username,
-        user1_bio: tap.user1_bio,
-        user1_home: tap.user1_home,
-        user1_age: tap.user1_age,
-        user1_tap_count: tap.user1_tap_count,
-        user1_connections_count: tap.user1_connections_count,
-        user1_phone_number: tap.user1_phone_number,
-        user2_id: tap.id2,
-        user2_name: `${tap.user2_first_name} ${tap.user2_last_name}`,
-        user2_username: tap.user2_username,
-        user2_bio: tap.user2_bio,
-        user2_home: tap.user2_home,
-        user2_age: tap.user2_age,
-        user2_tap_count: tap.user2_tap_count,
-        user2_connections_count: tap.user2_connections_count,
-        user2_phone_number: tap.user2_phone_number,
-        latitude: latitude,
-        longitude: longitude,
-        location: tap.location,
-        formatted_location: formattedLocation || "Unknown location",
+        user1_id: tap.user1_id,
+        user1_name: `${tap.user1_first_name || ''} ${tap.user1_last_name || ''}`.trim(),
+        user1_username: tap.user1_username || '',
+        user1_bio: tap.user1_bio || '',
+        user1_home: tap.user1_home || '',
+        user1_age: tap.user1_age || '',
+        user1_tap_count: tap.user1_tap_count || 0,
+        user1_connections_count: tap.user1_connections_count || 0,
+        user1_phone_number: tap.user1_phone_number || '',
+        user2_id: tap.user2_id,
+        user2_name: `${tap.user2_first_name || ''} ${tap.user2_last_name || ''}`.trim(),
+        user2_username: tap.user2_username || '',
+        user2_bio: tap.user2_bio || '',
+        user2_home: tap.user2_home || '',
+        user2_age: tap.user2_age || '',
+        user2_tap_count: tap.user2_tap_count || 0,
+        user2_connections_count: tap.user2_connections_count || 0,
+        user2_phone_number: tap.user2_phone_number || '',
+        latitude: tap.latitude,
+        longitude: tap.longitude,
+        location: tap.location || `${tap.latitude},${tap.longitude}`,
+        formatted_location: formattedLocation || 'Unknown',
         time: tap.time,
-        formatted_time: new Date(tap.time).toLocaleDateString(),
+        formatted_time: new Date(tap.time).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
         venue_context: {
           venue_name: "N/A",
           venue_category: "unknown",
@@ -246,60 +219,85 @@ async function processData() {
         }
       };
       
-      processedTaps.push(processedTap);
+      processedTaps.push(enrichedTap);
     }
 
-    // Process users (matching Python script structure)
-    const processedUsers = users.map(user => {
-      // Simple home location processing (no complex enrichment for now)
-      const homeLocation = {
-        home_location: user.home || "Unknown",
-        city: "",
-        state: "",
-        country: "",
-        geographic_context: user.home || "Unknown"
-      };
+    // Query all users from database
+    const userResult = await client.query(`
+      SELECT 
+          id,
+          first_name,
+          last_name,
+          username,
+          age,
+          active,
+          pfp_url,
+          tap_count,
+          connections_count,
+          home,
+          bio,
+          social_urls
+      FROM public.users
+      ORDER BY id
+    `);
+    const users = userResult.rows.map(u => ({
+      user_id: u.id,
+      basic_info: {
+        first_name: u.first_name || "",
+        last_name:  u.last_name  || "",
+        username:   u.username   || "",
+        age:        u.age        || "",
+        active:     !!u.active
+      },
+      profile_stats: {
+        tap_count:          Number.isFinite(u.tap_count) ? u.tap_count : 0,
+        connections_count:  Number.isFinite(u.connections_count) ? u.connections_count : 0,
+        pfp_url:            u.pfp_url || null
+      },
+      home_location: {
+        home_location:     u.home || "",
+        city:              "",
+        state:             "",
+        country:           "",
+        geographic_context: u.home || ""
+      },
+      bio_analysis: {
+        bio_text:        u.bio || "No bio provided",
+        bio_length:      (u.bio || "No bio provided").length,
+        has_emoji:       false,
+        word_count:      (u.bio || "No bio provided").trim().split(/\s+/).filter(Boolean).length,
+        contextual_info: { age_group: "Unknown" },
+        bio_summary:     u.bio ? "No patterns detected" : "No bio provided"
+      },
+      social_urls: {
+        x:         u.social_urls?.x ?? null,
+        linkedin:  u.social_urls?.linkedin ?? null,
+        instagram: u.social_urls?.instagram ?? null
+      }
+    }));
+    
+    console.log(`📊 Fetched ${users.length} users from database`);
 
-      // Simple bio analysis (no complex processing for now)
-      const bioAnalysis = {
-        bio_text: user.bio || "No bio provided",
-        bio_length: (user.bio || "").length,
-        has_emoji: /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(user.bio || ""),
-        word_count: (user.bio || "").split(/\s+/).filter(word => word.length > 0).length,
-        contextual_info: {
-          age_group: user.age || "Unknown"
-        },
-        bio_summary: user.bio || "No bio provided"
-      };
-
-      return {
-        user_id: user.id,
-        basic_info: {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          username: user.username,
-          age: user.age,
-          active: user.active
-        },
-        profile_stats: {
-          tap_count: user.tap_count,
-          connections_count: user.connections_count,
-          pfp_url: user.pfp_url
-        },
-        home_location: homeLocation,
-        bio_analysis: bioAnalysis,
-        social_urls: user.social_urls || {}
-      };
-    });
-
-    // Create comprehensive data structure
     const comprehensiveData = {
+      // New canonical format
       taps: processedTaps,
-      users: processedUsers,
+      users: users,
       last_refresh: new Date().toISOString(),
+      
+      // Back-compatibility aliases for existing frontend code
+      tap_data: processedTaps,
+      user_profiles: users,
+      
+      // Metadata
+      metadata: {
+        generated_at: new Date().toISOString(),
+        total_taps: processedTaps.length,
+        total_users: users.length,
+        data_version: "3.0",
+        update_frequency: "automated",
+        description: "ARC Social Graph enriched data for visualizations"
+      }
     };
-
-    console.log(`✅ Processed ${processedTaps.length} taps and ${processedUsers.length} users`);
 
     // Write to GCS
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -340,3 +338,4 @@ async function main() {
 
 // Run the job
 main();
+

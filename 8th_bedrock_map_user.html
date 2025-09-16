@@ -825,21 +825,56 @@
             }
         }
         
-        // Load data from JSON files
+        // Load data from API
         async function loadData() {
             try {
                 
-                // Load comprehensive data from JSON file
-                const comprehensiveResponse = await fetch(`./data/comprehensive_data.json?t=${Date.now()}`);
+                // Load comprehensive data from API
+                const comprehensiveResponse = await fetch(`/api/data?t=${Date.now()}`);
                 if (!comprehensiveResponse.ok) {
                     throw new Error(`Failed to load comprehensive data: ${comprehensiveResponse.status}`);
                 }
-                const comprehensiveData = await comprehensiveResponse.json();
-                const tapData = comprehensiveData.tap_data;
+                const api = await comprehensiveResponse.json();
                 
+                // ---- Back-compat + null-safety shim (do not edit) ----
+                const taps =
+                  Array.isArray(api.taps) ? api.taps :
+                  Array.isArray(api.tap_data) ? api.tap_data : [];
+
+                const users =
+                  Array.isArray(api.users) ? api.users :
+                  Array.isArray(api.user_profiles) ? api.user_profiles : [];
+
+                // normalize both shapes so downstream code can use either
+                const data = {
+                  ...api,
+                  taps,
+                  tap_data: taps,
+                  users,
+                  user_profiles: users,
+                };
+
+                // common short names; always safe
+                const TAPS  = data.taps;          // []
+                const USERS = data.users;         // []
+                // -------------------------------------------------------
+                
+                // Data loaded successfully
+                
+                const comprehensiveData = data;
+                const tapData = TAPS;
+                
+                
+                // Filter out taps without valid lat/lng coordinates
+                const cleanTaps = (tapData || []).filter(tap => {
+                    if (!tap.latitude || !tap.longitude) return false;
+                    const lat = Number(tap.latitude);
+                    const lng = Number(tap.longitude);
+                    return Number.isFinite(lat) && Number.isFinite(lng);
+                });
                 
                 // Transform tap data to match expected format
-                completeLocationData = tapData.map(tap => ({
+                completeLocationData = cleanTaps.map(tap => ({
                     tap_id: tap.tap_id,
                     user1_id: tap.user1_id,
                     user1_name: tap.user1_name,
@@ -861,7 +896,11 @@
                 // User location data is included in comprehensive data
                 
                 // Metadata is included in comprehensive data
-                const metadata = comprehensiveData.metadata;
+                const metadata = {
+                    last_refresh: comprehensiveData.last_refresh,
+                    total_taps: comprehensiveData.taps.length,
+                    total_users: comprehensiveData.users.length
+                };
                 
                 // Generate edges data from tap data
                 const edgeMap = new Map();
@@ -972,9 +1011,7 @@
         function initMap() {
             // Check map container
             const mapContainer = document.getElementById('map');
-            console.log('Map container:', mapContainer);
-            console.log('Map container dimensions:', mapContainer.offsetWidth, 'x', mapContainer.offsetHeight);
-            console.log('Map container style:', mapContainer.style.cssText);
+            // Map container initialized
             
                     // Create map with dark theme
         map = L.map('map', {
@@ -1575,10 +1612,13 @@
                 const matches = [];
                 const seenUsers = new Set();
                 
+                // Safety guard for undefined values
+                const lower = v => (v ?? '').toString().toLowerCase();
+                
                 // Search through all users in tap data (which has home locations)
                 completeLocationData.forEach(tap => {
                     // Check user1
-                    if (tap.user1_name.toLowerCase().includes(query) && !seenUsers.has(tap.user1_id)) {
+                    if (lower(tap.user1_name).includes(query) && !seenUsers.has(tap.user1_id)) {
                         matches.push({
                             id: tap.user1_id,
                             name: tap.user1_name,
@@ -1588,7 +1628,7 @@
                     }
                     
                     // Check user2
-                    if (tap.user2_name.toLowerCase().includes(query) && !seenUsers.has(tap.user2_id)) {
+                    if (lower(tap.user2_name).includes(query) && !seenUsers.has(tap.user2_id)) {
                         matches.push({
                             id: tap.user2_id,
                             name: tap.user2_name,

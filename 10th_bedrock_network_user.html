@@ -8,7 +8,7 @@ This file is the new bedrock version with dynamic data loading:
 - AI chatbot interface with draggable chatbox
 - Minimize/expand functionality
 - Proper network zoom and layout
-- Dynamic data loading from comprehensive_data.json
+- Dynamic data loading from API
 - All degree filtering and search features
 - Timeline slider functionality
 - LOCALHOST URL OPTIMIZATIONS for localhost:3003 format
@@ -1296,20 +1296,48 @@ DO NOT use file:// URLs with this version
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let searchIndex = []; // Will be populated dynamically
             
+            // Safety helper for string operations
+            const lower = v => (v ?? '').toString().toLowerCase();
+            
             // Dynamic data loading functions
             async function loadData() {
                 try {
-                    console.log('🔄 Loading dynamic data...');
-                    const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                    console.log('🔄 Loading dynamic data from API...');
+                    const response = await fetch('/api/data?t=' + Date.now());
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    const data = await response.json();
+                    const api = await response.json();
+                    
+                    // ---- Back-compat + null-safety shim (do not edit) ----
+                    const taps =
+                      Array.isArray(api.taps) ? api.taps :
+                      Array.isArray(api.tap_data) ? api.tap_data : [];
+
+                    const users =
+                      Array.isArray(api.users) ? api.users :
+                      Array.isArray(api.user_profiles) ? api.user_profiles : [];
+
+                    // normalize both shapes so downstream code can use either
+                    const data = {
+                      ...api,
+                      taps,
+                      tap_data: taps,
+                      users,
+                      user_profiles: users,
+                    };
+
+                    // common short names; always safe
+                    const TAPS  = data.taps;          // []
+                    const USERS = data.users;         // []
+                    // -------------------------------------------------------
+                    
+                    // Data loaded successfully
                     
                     // Create all data structures
-                    createSearchIndex(data);
-                    createTimelineData(data);
-                    createNetworkData(data);
+                    createSearchIndex(TAPS, USERS);
+                    createTimelineData(TAPS);
+                    createNetworkData(TAPS, USERS);
                     
                     return data;
                 } catch (error) {
@@ -1318,8 +1346,10 @@ DO NOT use file:// URLs with this version
                 }
             }
             
-            function createSearchIndex(data) {
-                searchIndex = data.user_profiles.map(user => ({
+            function createSearchIndex(taps, users) {
+                // Safety guard for undefined users
+                const safeUsers = Array.isArray(users) ? users : [];
+                searchIndex = safeUsers.map(user => ({
                     id: user.user_id,
                     name: `${user.basic_info.first_name} ${user.basic_info.last_name}`,
                     username: user.basic_info.username,
@@ -1329,17 +1359,17 @@ DO NOT use file:// URLs with this version
                 }));
             }
             
-            function createTimelineData(data) {
-                // Use tap_data for timeline events
-                timeSequence = data.tap_data || [];
+            function createTimelineData(taps) {
+                // Use taps for timeline events
+                timeSequence = Array.isArray(taps) ? taps : [];
                 
                 // Sort timeSequence by time to ensure chronological order
                 timeSequence.sort((a, b) => new Date(a.time) - new Date(b.time));
                 
-                // Create user first taps from tap_data - find earliest timestamp for each user
+                // Create user first taps from taps - find earliest timestamp for each user
                 userFirstTaps = {};
-                if (data.tap_data) {
-                    data.tap_data.forEach(tap => {
+                if (Array.isArray(taps)) {
+                    taps.forEach(tap => {
                         // Check user1
                         if (!userFirstTaps[tap.user1_id] || tap.time < userFirstTaps[tap.user1_id]) {
                             userFirstTaps[tap.user1_id] = tap.time;
@@ -1355,9 +1385,12 @@ DO NOT use file:// URLs with this version
             function createDegreeConnections(tapData) {
                 const degreeConnections = {};
                 
+                // Safety guard for undefined tapData
+                const safeTapData = Array.isArray(tapData) ? tapData : [];
+                
                 // Create adjacency map from tap data
                 const adjacencyMap = {};
-                tapData.forEach(tap => {
+                safeTapData.forEach(tap => {
                     if (!adjacencyMap[tap.user1_id]) adjacencyMap[tap.user1_id] = new Set();
                     if (!adjacencyMap[tap.user2_id]) adjacencyMap[tap.user2_id] = new Set();
                     adjacencyMap[tap.user1_id].add(tap.user2_id);
@@ -1402,13 +1435,14 @@ DO NOT use file:// URLs with this version
                 return degreeConnections;
             }
             
-            function createNetworkData(data) {
+            function createNetworkData(taps, users) {
                 
                 // Create degree connections data for each user
-                const degreeConnections = createDegreeConnections(data.tap_data);
+                const degreeConnections = createDegreeConnections(taps);
                 
-                // Create nodes from user_profiles
-                const nodeData = data.user_profiles.map(user => {
+                // Create nodes from users
+                const safeUsers = Array.isArray(users) ? users : [];
+                const nodeData = safeUsers.map(user => {
                     const name = `${user.basic_info.first_name} ${user.basic_info.last_name}`;
                     const taps = user.profile_stats.tap_count;
                     const connections = user.profile_stats.connections_count;
@@ -1442,8 +1476,9 @@ DO NOT use file:// URLs with this version
                     };
                 });
                 
-                // Create edges from tap_data
-                const edgeData = data.tap_data.map((tap, index) => ({
+                // Create edges from taps
+                const safeTaps = Array.isArray(taps) ? taps : [];
+                const edgeData = safeTaps.map((tap, index) => ({
                     id: index,
                     from: tap.user1_id,
                     to: tap.user2_id,
@@ -2163,30 +2198,7 @@ Remember: You're helping someone explore and understand their social network dat
             
 
             
-            // Function to load enriched data
-            async function loadEnrichedData() {
-                try {
-                    const [comprehensiveResponse, userProfilesResponse, tapDataResponse] = await Promise.all([
-                        fetch('./data/enriched/comprehensive_data.json'),
-                        fetch('./data/enriched/user_profiles.json'),
-                        fetch('./data/enriched/tap_data.json')
-                    ]);
-                    
-                    const comprehensive = await comprehensiveResponse.json();
-                    const userProfiles = await userProfilesResponse.json();
-                    const tapData = await tapDataResponse.json();
-                    
-                    window.enrichedData = {
-                        comprehensive,
-                        userProfiles,
-                        tapData
-                    };
-                    
-                } catch (error) {
-                    console.warn('⚠️ Could not load enriched data:', error);
-                    window.enrichedData = null;
-                }
-            }
+            // Enriched data is now loaded via the main loadData() function
             
             function prepareNetworkContext() {
                 // Extract and format network data for AI context
@@ -3866,6 +3878,7 @@ Remember: You're helping someone explore and understand their social network dat
                     setTimeout(() => {
                         const rect = minimizeButton.getBoundingClientRect();
                         const style = window.getComputedStyle(minimizeButton);
+                        
                         console.log('📍 Minimize button position:', {
                             top: rect.top,
                             left: rect.left,

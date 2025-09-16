@@ -2,7 +2,34 @@
 
 > ⚠️ **CRITICAL**: Always start on develop branch first! This ensures both main and develop branches stay in sync. Starting on main branch will cause stale data issues.
 
-## 🎯 **QUICK REFERENCE**
+## 🤖 **AUTOMATED DATA REFRESH (CURRENT)**
+
+**Data is now automatically refreshed every 30 minutes via Google Cloud Run Jobs and Cloud Scheduler.**
+
+### **Automated Process:**
+- **Cloud Scheduler**: Runs every 30 minutes (`*/30 * * * *`)
+- **Cloud Run Job**: `arc-refresh-job` queries database and processes data
+- **Data Output**: Enriched JSON with 1121+ taps and 299+ users
+- **Storage**: Google Cloud Storage (`gs://arc-data-arcsocial/visualization/latest.json`)
+- **Frontend**: Vercel API (`/api/data`) serves data from Cloud Run reader service
+
+### **Data Contract:**
+- **Canonical fields**: `taps`, `users`, `last_refresh`
+- **Back-compatibility**: `tap_data` (alias for taps), `user_profiles` (alias for users)
+- **Enriched taps**: Include `user1_name`, `user2_name`, `formatted_location`, etc.
+
+### **Manual Execution:**
+```bash
+# Force run the refresh job
+gcloud run jobs execute arc-refresh-job --region=us-central1
+
+# Check latest data
+gsutil cat gs://arc-data-arcsocial/visualization/latest.json | jq '.last_refresh'
+```
+
+---
+
+## 🎯 **MANUAL REFRESH (LEGACY)**
 
 **When user says "Refresh the data" or "Update the data":**
 

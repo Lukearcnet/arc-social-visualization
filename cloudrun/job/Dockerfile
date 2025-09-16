@@ -5,14 +5,20 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies
+# Install dependencies (use npm install instead of npm ci)
 RUN npm install --only=production
 
-# Copy the rest of the application
+# Copy application code
 COPY . .
 
-# Expose port
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Expose port (Cloud Run will set PORT env var)
 EXPOSE 8080
 
 # Start the application
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
+
