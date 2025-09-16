@@ -122,14 +122,47 @@ async function processData() {
 
     await client.query('BEGIN');
 
-    // Fetch taps from PostgreSQL
-    const result = await client.query('SELECT * FROM taps ORDER BY time ASC');
-    const taps = result.rows;
+    // Query taps with user joins for enriched data
+    const tapResult = await client.query(`
+      SELECT 
+          t.tap_id,
+          t.id1 as user1_id,
+          t.id2 as user2_id,
+          t.latitude,
+          t.longitude,
+          t.location,
+          t.time,
+          t.formatted_location,
+          u1.first_name as user1_first_name,
+          u1.last_name as user1_last_name,
+          u1.username as user1_username,
+          u1.bio as user1_bio,
+          u1.home as user1_home,
+          u1.age as user1_age,
+          u1.tap_count as user1_tap_count,
+          u1.connections_count as user1_connections_count,
+          u1.phone_number as user1_phone_number,
+          u2.first_name as user2_first_name,
+          u2.last_name as user2_last_name,
+          u2.username as user2_username,
+          u2.bio as user2_bio,
+          u2.home as user2_home,
+          u2.age as user2_age,
+          u2.tap_count as user2_tap_count,
+          u2.connections_count as user2_connections_count,
+          u2.phone_number as user2_phone_number
+      FROM taps t
+      JOIN users u1 ON t.id1 = u1.id
+      JOIN users u2 ON t.id2 = u2.id
+      WHERE t.latitude IS NOT NULL AND t.longitude IS NOT NULL
+      ORDER BY t.time DESC
+    `);
+    const taps = tapResult.rows;
     rowsProcessed = taps.length;
 
-    console.log(`📊 Fetched ${taps.length} taps from database`);
+    console.log(`📊 Fetched ${taps.length} enriched taps from database`);
 
-    // Process taps for geocoding
+    // Process taps for geocoding and format
     const processedTaps = [];
     for (let i = 0; i < taps.length; i++) {
       const tap = taps[i];
@@ -148,7 +181,45 @@ async function processData() {
         }
       }
       
-      processedTaps.push({ ...tap, formatted_location: formattedLocation });
+      // Create enriched tap object matching the expected structure
+      const enrichedTap = {
+        tap_id: tap.tap_id,
+        user1_id: tap.user1_id,
+        user1_name: `${tap.user1_first_name || ''} ${tap.user1_last_name || ''}`.trim(),
+        user1_username: tap.user1_username || '',
+        user1_bio: tap.user1_bio || '',
+        user1_home: tap.user1_home || '',
+        user1_age: tap.user1_age || '',
+        user1_tap_count: tap.user1_tap_count || 0,
+        user1_connections_count: tap.user1_connections_count || 0,
+        user1_phone_number: tap.user1_phone_number || '',
+        user2_id: tap.user2_id,
+        user2_name: `${tap.user2_first_name || ''} ${tap.user2_last_name || ''}`.trim(),
+        user2_username: tap.user2_username || '',
+        user2_bio: tap.user2_bio || '',
+        user2_home: tap.user2_home || '',
+        user2_age: tap.user2_age || '',
+        user2_tap_count: tap.user2_tap_count || 0,
+        user2_connections_count: tap.user2_connections_count || 0,
+        user2_phone_number: tap.user2_phone_number || '',
+        latitude: tap.latitude,
+        longitude: tap.longitude,
+        location: tap.location || `${tap.latitude},${tap.longitude}`,
+        formatted_location: formattedLocation || 'Unknown',
+        time: tap.time,
+        formatted_time: new Date(tap.time).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        venue_context: {
+          venue_name: "N/A",
+          venue_category: "unknown",
+          venue_context: "N/A"
+        }
+      };
+      
+      processedTaps.push(enrichedTap);
     }
 
     // Query all users from database
@@ -208,9 +279,24 @@ async function processData() {
     console.log(`📊 Fetched ${users.length} users from database`);
 
     const comprehensiveData = {
+      // New canonical format
       taps: processedTaps,
       users: users,
       last_refresh: new Date().toISOString(),
+      
+      // Back-compatibility aliases for existing frontend code
+      tap_data: processedTaps,
+      user_profiles: users,
+      
+      // Metadata
+      metadata: {
+        generated_at: new Date().toISOString(),
+        total_taps: processedTaps.length,
+        total_users: users.length,
+        data_version: "3.0",
+        update_frequency: "automated",
+        description: "ARC Social Graph enriched data for visualizations"
+      }
     };
 
     // Write to GCS
