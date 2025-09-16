@@ -3878,7 +3878,16 @@ Remember: You're helping someone explore and understand their social network dat
                     setTimeout(() => {
                         const rect = minimizeButton.getBoundingClientRect();
                         const style = window.getComputedStyle(minimizeButton);
-                        // Minimize button positioned
+                        
+                        console.log('📍 Minimize button position:', {
+                            top: rect.top,
+                            left: rect.left,
+                            width: rect.width,
+                            height: rect.height,
+                            visible: rect.width > 0 && rect.height > 0,
+                            display: style.display,
+                            zIndex: style.zIndex,
+                            pointerEvents: style.pointerEvents
                         });
                         
                         // Test if we can detect mouse events on the button area
