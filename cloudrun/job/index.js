@@ -151,10 +151,61 @@ async function processData() {
       processedTaps.push({ ...tap, formatted_location: formattedLocation });
     }
 
-    // Generate users from taps
-    const users = [...new Set(processedTaps.flatMap(tap => [tap.user1_id, tap.user2_id]))]
-      .filter(Boolean)
-      .map(id => ({ user_id: id, name: `User ${id}`, home_location: 'Unknown' }));
+    // Query all users from database
+    const userResult = await client.query(`
+      SELECT 
+          id,
+          first_name,
+          last_name,
+          username,
+          age,
+          active,
+          pfp_url,
+          tap_count,
+          connections_count,
+          home,
+          bio,
+          social_urls
+      FROM public.users
+      ORDER BY id
+    `);
+    const users = userResult.rows.map(u => ({
+      user_id: u.id,
+      basic_info: {
+        first_name: u.first_name || "",
+        last_name:  u.last_name  || "",
+        username:   u.username   || "",
+        age:        u.age        || "",
+        active:     !!u.active
+      },
+      profile_stats: {
+        tap_count:          Number.isFinite(u.tap_count) ? u.tap_count : 0,
+        connections_count:  Number.isFinite(u.connections_count) ? u.connections_count : 0,
+        pfp_url:            u.pfp_url || null
+      },
+      home_location: {
+        home_location:     u.home || "",
+        city:              "",
+        state:             "",
+        country:           "",
+        geographic_context: u.home || ""
+      },
+      bio_analysis: {
+        bio_text:        u.bio || "No bio provided",
+        bio_length:      (u.bio || "No bio provided").length,
+        has_emoji:       false,
+        word_count:      (u.bio || "No bio provided").trim().split(/\s+/).filter(Boolean).length,
+        contextual_info: { age_group: "Unknown" },
+        bio_summary:     u.bio ? "No patterns detected" : "No bio provided"
+      },
+      social_urls: {
+        x:         u.social_urls?.x ?? null,
+        linkedin:  u.social_urls?.linkedin ?? null,
+        instagram: u.social_urls?.instagram ?? null
+      }
+    }));
+    
+    console.log(`📊 Fetched ${users.length} users from database`);
 
     const comprehensiveData = {
       taps: processedTaps,
