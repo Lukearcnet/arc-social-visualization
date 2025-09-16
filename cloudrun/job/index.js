@@ -60,6 +60,150 @@ async function getGeocodedLocation(latitude, longitude) {
   }
 }
 
+async function getVenueInfo(latitude, longitude) {
+  /**
+   * Get venue information using Google Places API with caching.
+   * Based on the original Python implementation.
+   */
+  if (!latitude || !longitude || latitude === 0.0 || longitude === 0.0) {
+    return {
+      venue_name: 'N/A',
+      venue_category: 'unknown',
+      venue_context: 'N/A'
+    };
+  }
+
+  try {
+    // Use Google Places Nearby Search API
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json`;
+    const params = new URLSearchParams({
+      location: `${latitude},${longitude}`,
+      radius: '25', // 25 meters for venue matching
+      key: GOOGLE_API_KEY,
+      type: 'establishment' // Focus on businesses/venues
+    });
+
+    const response = await fetch(`${url}?${params}`, { timeout: 10000 });
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      // Find the most specific venue (prefer businesses over generic locations)
+      let bestVenue = null;
+      for (const venue of data.results) {
+        const venueName = venue.name || 'Unknown Venue';
+        const venueTypes = venue.types || [];
+        
+        // Skip generic city/administrative area results
+        const genericTypes = ['locality', 'administrative_area_level_1', 'administrative_area_level_2', 'country'];
+        if (genericTypes.some(type => venueTypes.includes(type))) {
+          continue;
+        }
+        
+        // Prefer specific business types
+        const businessTypes = ['restaurant', 'cafe', 'store', 'shopping_mall', 'bar', 'gym', 'hospital', 'school'];
+        if (businessTypes.some(type => venueTypes.includes(type))) {
+          bestVenue = venue;
+          break;
+        }
+        
+        // If no specific business found, use the first non-generic result
+        if (bestVenue === null) {
+          bestVenue = venue;
+        }
+      }
+      
+      // Fallback to first result if no good venue found
+      if (bestVenue === null) {
+        bestVenue = data.results[0];
+      }
+      
+      const venueName = bestVenue.name || 'Unknown Venue';
+      const venueTypes = bestVenue.types || [];
+      
+      // Check if venue name is just an address or generic location
+      function isGenericLocation(name) {
+        if (!name || name === 'Unknown Venue') {
+          return true;
+        }
+        
+        // Check for address patterns (numbers followed by street names)
+        const addressPattern = /^\d+[-\d]*\s+[A-Za-z\s]+(?:St|Ave|Blvd|Rd|Dr|Ln|Way|Pl|Cir|Ct)$/;
+        if (addressPattern.test(name.trim())) {
+          return true;
+        }
+        
+        // Check for generic establishment names
+        const genericNames = [
+          'establishment', 'location', 'place', 'area', 'district',
+          'neighborhood', 'community', 'region', 'zone', 'section'
+        ];
+        if (genericNames.some(generic => name.toLowerCase().includes(generic))) {
+          return true;
+        }
+        
+        // Check if it's just a city name or administrative area
+        const adminTypes = ['locality', 'administrative_area_level_1', 'administrative_area_level_2', 'country', 'political'];
+        if (adminTypes.some(type => venueTypes.includes(type))) {
+          return true;
+        }
+        
+        return false;
+      }
+      
+      // If it's a generic location, return N/A
+      if (isGenericLocation(venueName)) {
+        return {
+          venue_name: 'N/A',
+          venue_category: 'unknown',
+          venue_context: 'N/A'
+        };
+      } else {
+        // Determine category from types
+        let category = 'unknown';
+        if (venueTypes.includes('restaurant') || venueTypes.includes('food')) {
+          category = 'restaurant';
+        } else if (venueTypes.includes('cafe') || venueTypes.includes('coffee')) {
+          category = 'cafe';
+        } else if (venueTypes.includes('park')) {
+          category = 'park';
+        } else if (venueTypes.includes('shopping_mall') || venueTypes.includes('store')) {
+          category = 'shopping';
+        } else if (venueTypes.includes('school') || venueTypes.includes('university')) {
+          category = 'education';
+        } else if (venueTypes.includes('hospital') || venueTypes.includes('health')) {
+          category = 'healthcare';
+        } else if (venueTypes.includes('gym') || venueTypes.includes('fitness')) {
+          category = 'fitness';
+        } else if (venueTypes.includes('bar') || venueTypes.includes('night_club')) {
+          category = 'nightlife';
+        } else {
+          category = 'establishment';
+        }
+        
+        return {
+          venue_name: venueName,
+          venue_category: category,
+          venue_context: `${venueName} (${category})`
+        };
+      }
+    } else {
+      // No venue found, return N/A
+      return {
+        venue_name: 'N/A',
+        venue_category: 'unknown',
+        venue_context: 'N/A'
+      };
+    }
+  } catch (error) {
+    console.error('❌ Error getting venue info:', error);
+    return {
+      venue_name: 'N/A',
+      venue_category: 'unknown',
+      venue_context: 'N/A'
+    };
+  }
+}
+
 async function writeToGCS(data, filename) {
   try {
     const bucket = storage.bucket(bucketName);
@@ -181,6 +325,18 @@ async function processData() {
         }
       }
       
+      // Get venue information from Google Places API
+      let venueContext = {
+        venue_name: "N/A",
+        venue_category: "unknown",
+        venue_context: "N/A"
+      };
+      
+      if (tap.latitude && tap.longitude) {
+        console.log(`🏪 Getting venue info for tap ${i + 1}/${taps.length}...`);
+        venueContext = await getVenueInfo(tap.latitude, tap.longitude);
+      }
+      
       // Create enriched tap object matching the expected structure
       const enrichedTap = {
         tap_id: tap.tap_id,
@@ -212,11 +368,7 @@ async function processData() {
           month: 'short', 
           day: 'numeric' 
         }),
-        venue_context: {
-          venue_name: "N/A",
-          venue_category: "unknown",
-          venue_context: "N/A"
-        }
+        venue_context: venueContext
       };
       
       processedTaps.push(enrichedTap);
