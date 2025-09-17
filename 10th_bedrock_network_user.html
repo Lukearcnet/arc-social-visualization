@@ -160,6 +160,32 @@ DO NOT use file:// URLs with this version
                 border-color: rgba(255, 255, 255, 0.4);
             }
             
+            /* Timeline Slider Section (moved outside profile-section) */
+            .animation-section {
+                padding: var(--space-4);
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .animation-section > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
+            }
+            
+            /* Global View Section (moved outside profile-section) */
+            .global-view-section {
+                padding: var(--space-4);
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .global-view-section > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
+            }
+            
             /* Mode Button Styling - Match 8th bedrock */
             .mode-btn {
                 padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 1.2);
@@ -1158,11 +1184,37 @@ DO NOT use file:// URLs with this version
             <!-- Sidebar -->
             <div class="sidebar">
                 
-            <!-- Search Section (hidden in user-centric view) -->
+                <!-- Search Section (hidden in user-centric view) -->
             <div class="search-section" style="display: none;">
                 <label for="searchInput">Search Users</label>
                 <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
                 <div id="searchResults" class="search-results" style="display: none;"></div>
+            </div>
+            
+            <!-- Timeline Slider Section (moved outside profile-section) -->
+            <div class="animation-section">
+                <label>Timeline Slider</label>
+                <div class="timeline-controls">
+                    <div class="timeline-slider-container">
+                        <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
+                        <div class="timeline-labels">
+                            <span>First Connection</span>
+                            <span>All Connections</span>
+                        </div>
+                    </div>
+                    <div class="timeline-info">
+                        <span id="currentTime">All connections shown</span>
+                        <span id="connectionCount">246 total users</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Global View Section (moved outside profile-section) -->
+            <div class="global-view-section">
+                <label>View Options</label>
+                <div class="mode-toggle">
+                    <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                </div>
             </div>
                 
                 <!-- Profile Section -->
@@ -1180,32 +1232,6 @@ DO NOT use file:// URLs with this version
                         <div class="stat-card">
                             <div class="stat-number" id="profileConnections">0</div>
                             <div class="stat-label">Connections</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Timeline (moved into profile section) -->
-                    <div class="control-group" id="timelineGroup">
-                        <label class="label-timeline">Timeline</label>
-                        <div class="timeline-controls">
-                            <div class="timeline-slider-container">
-                                <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
-                                <div class="timeline-labels">
-                                    <span>First Connection</span>
-                                    <span>All Connections</span>
-                                </div>
-                            </div>
-                            <div class="timeline-info">
-                                <span id="currentTime">All connections shown</span>
-                                <span id="connectionCount">246 total users</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Global View Toggle -->
-                    <div class="control-group" id="globalViewGroup">
-                        <label>View Options</label>
-                        <div class="mode-toggle">
-                            <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
                         </div>
                     </div>
                     
@@ -2893,11 +2919,8 @@ Remember: You're helping someone explore and understand their social network dat
                 if (globalViewEnabled) {
                     globalViewBtn.classList.add('active');
                     globalViewBtn.textContent = 'Back to User View';
-                    // Hide user-specific elements but keep timeline and button visible
+                    // Hide user-specific elements (timeline and button stay visible)
                     document.getElementById('profileSection').style.display = 'none';
-                    // Show timeline and global view button in console
-                    document.getElementById('timelineGroup').style.display = 'block';
-                    document.getElementById('globalViewGroup').style.display = 'block';
                 } else {
                     globalViewBtn.classList.remove('active');
                     globalViewBtn.textContent = 'See full Arc Network';
@@ -2913,8 +2936,38 @@ Remember: You're helping someone explore and understand their social network dat
             function updateNetworkDisplay() {
                 if (globalViewEnabled) {
                     // Show all nodes and edges in global view
-                    nodes.update(Object.values(allNodes));
-                    edges.update(Object.values(allEdges));
+                    console.log('🌍 Global view: showing all nodes and edges');
+                    console.log('📊 All nodes count:', Object.keys(allNodes).length);
+                    console.log('📊 All edges count:', Object.keys(allEdges).length);
+                    
+                    // Clear any user filter when entering global view
+                    currentFilterUser = null;
+                    
+                    // Update all nodes to be visible and white
+                    const allNodeData = Object.values(allNodes).map(node => ({
+                        id: node.id,
+                        hidden: false,
+                        color: '#FFFFFF', // White for global view
+                        font: { size: 14.4, face: 'Arial', color: '#ffffff' }
+                    }));
+                    nodes.update(allNodeData);
+                    
+                    // Update all edges to be visible
+                    const allEdgeData = Object.values(allEdges).map(edge => ({
+                        id: edge.id,
+                        hidden: false,
+                        color: '#ffffff'
+                    }));
+                    edges.update(allEdgeData);
+                    
+                    // Refresh the network
+                    network.fit();
+                    network.stabilize(50);
+                    
+                    // Ensure timeline works in global mode
+                    if (timelineSlider) {
+                        updateTimelineDisplay(timelineSlider.value);
+                    }
                 } else {
                     // Return to user-centric view (restore any existing filters)
                     if (currentFilterUser) {
