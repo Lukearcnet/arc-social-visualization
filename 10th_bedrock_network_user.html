@@ -163,7 +163,7 @@ DO NOT use file:// URLs with this version
             /* Mode Button Styling - Match 8th bedrock */
             .mode-btn {
                 flex: 1;
-                padding: var(--space-1) var(--space-2);
+                padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 2.5);
                 border: 1px solid var(--stroke-muted);
                 background: var(--stroke);
                 color: var(--fg);
@@ -171,6 +171,7 @@ DO NOT use file:// URLs with this version
                 cursor: pointer;
                 font-size: var(--text-md);
                 transition: all 0.2s ease;
+                min-width: calc(100% * 2.5);
             }
             
             .mode-btn.active {
