@@ -1304,7 +1304,26 @@
             
             let filteredEvents;
             
-            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
+            if (globalViewEnabled) {
+                console.log('🎯 Taking GLOBAL VIEW branch - using completeLocationData (like Global version)');
+                // Global view mode: display all events as white nodes regardless of user selection
+                // Use completeLocationData like the Global version does
+                filteredEvents = completeLocationData.map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1, // Each tap represents one connection
+                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
+                }));
+            } else if (currentMode === 'user' && selectedUserId) {
                 console.log('🎯 Taking USER MODE branch - using completeLocationData');
                 // In user mode, always start with complete location data for degree filtering
                 // Transform completeLocationData to match expected structure
@@ -1327,25 +1346,6 @@
                 console.log('🎯 Taking SHOW ALL branch - using completeLocationData');
                 // Show All mode: display all events regardless of timeline
                 // Transform completeLocationData to match expected structure
-                filteredEvents = completeLocationData.map(tap => ({
-                    source_id: tap.user1_id,
-                    source_name: tap.user1_name,
-                    target_id: tap.user2_id,
-                    target_name: tap.user2_name,
-                    latitude: tap.latitude,
-                    longitude: tap.longitude,
-                    location: tap.location,
-                    formatted_location: tap.formatted_location,
-                    venue_context: tap.venue_context,
-                    time: tap.time,
-                    formatted_time: tap.formatted_time,
-                    tap_count: 1, // Each tap represents one connection
-                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
-                }));
-            } else if (globalViewEnabled) {
-                console.log('🎯 Taking GLOBAL VIEW branch - using completeLocationData (like Global version)');
-                // Global view mode: display all events as white nodes regardless of user selection
-                // Use completeLocationData like the Global version does
                 filteredEvents = completeLocationData.map(tap => ({
                     source_id: tap.user1_id,
                     source_name: tap.user1_name,
