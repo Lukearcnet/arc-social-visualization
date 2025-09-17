@@ -800,6 +800,7 @@
         let timelineSlider;
         let clusteringEnabled = true;
         let completeLocationData = []; // Make this global
+        let allLocationData = []; // Store all unfiltered data for global view
         let showAllEnabled = false; // Track Show All toggle state
         let globalViewEnabled = false; // Track Global View toggle state
         let cumulativeEnabled = true; // Track Cumulative toggle state
@@ -881,7 +882,25 @@
                     return Number.isFinite(lat) && Number.isFinite(lng);
                 });
                 
-                // Transform tap data to match expected format
+                // Store all unfiltered data for global view
+                allLocationData = (data.tap_data || []).map(tap => ({
+                    tap_id: tap.tap_id,
+                    user1_id: tap.user1_id,
+                    user1_name: tap.user1_name,
+                    user1_home: tap.user1_home,
+                    user2_id: tap.user2_id,
+                    user2_name: tap.user2_name,
+                    user2_home: tap.user2_home,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time
+                }));
+
+                // Transform tap data to match expected format (filtered for user view)
                 completeLocationData = cleanTaps.map(tap => ({
                     tap_id: tap.tap_id,
                     user1_id: tap.user1_id,
@@ -1309,8 +1328,8 @@
                 }));
             } else if (globalViewEnabled) {
                 // Global view mode: display all events as white nodes regardless of user selection
-                // Transform completeLocationData to match expected structure
-                filteredEvents = completeLocationData.map(tap => ({
+                // Use allLocationData (unfiltered) for global view
+                filteredEvents = allLocationData.map(tap => ({
                     source_id: tap.user1_id,
                     source_name: tap.user1_name,
                     target_id: tap.user2_id,
@@ -1519,7 +1538,10 @@
             
             // Get the appropriate total tap count based on current mode
             let totalTapCount;
-            if (currentMode === 'user' && selectedUserId) {
+            if (globalViewEnabled) {
+                // In global view, use all unfiltered data
+                totalTapCount = allLocationData.length;
+            } else if (currentMode === 'user' && selectedUserId) {
                 // In user mode, count only taps involving the selected user
                 totalTapCount = completeLocationData.filter(tap => 
                     tap.user1_id === selectedUserId || tap.user2_id === selectedUserId
@@ -1890,13 +1912,14 @@
         function updateDisplay() {
             // Update header stats
             // Count unique users from tap data
+            const dataToUse = globalViewEnabled ? allLocationData : completeLocationData;
             const uniqueUsers = new Set();
-            completeLocationData.forEach(tap => {
+            dataToUse.forEach(tap => {
                 uniqueUsers.add(tap.user1_id);
                 uniqueUsers.add(tap.user2_id);
             });
             const totalUsers = uniqueUsers.size;
-            const totalTaps = completeLocationData.length; // Use actual tap count instead of edges
+            const totalTaps = dataToUse.length; // Use actual tap count instead of edges
             
             // Update loading stats
             document.getElementById('loadingStats').textContent = 
