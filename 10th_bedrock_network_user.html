@@ -194,7 +194,9 @@ DO NOT use file:// URLs with this version
                 color: var(--fg);
                 border-radius: var(--radius-1);
                 cursor: pointer;
-                font-size: var(--text-md);
+                font-size: 31px; /* Match TAPS font size */
+                font-weight: 600; /* Match TAPS font weight */
+                letter-spacing: 0.05em; /* Match TAPS letter spacing */
                 transition: all 0.2s ease;
                 width: 100%;
                 text-align: center;
@@ -1185,39 +1187,13 @@ DO NOT use file:// URLs with this version
             <div class="sidebar">
                 
                 <!-- Search Section (hidden in user-centric view) -->
-            <div class="search-section" style="display: none;">
-                <label for="searchInput">Search Users</label>
-                <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
-                <div id="searchResults" class="search-results" style="display: none;"></div>
-            </div>
-            
-            <!-- Timeline Slider Section (moved outside profile-section) -->
-            <div class="animation-section">
-                <label>Timeline Slider</label>
-                <div class="timeline-controls">
-                    <div class="timeline-slider-container">
-                        <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
-                        <div class="timeline-labels">
-                            <span>First Connection</span>
-                            <span>All Connections</span>
-                        </div>
-                    </div>
-                    <div class="timeline-info">
-                        <span id="currentTime">All connections shown</span>
-                        <span id="connectionCount">246 total users</span>
-                    </div>
+                <div class="search-section" style="display: none;">
+                    <label for="searchInput">Search Users</label>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                    <div id="searchResults" class="search-results" style="display: none;"></div>
                 </div>
-            </div>
-            
-            <!-- Global View Section (moved outside profile-section) -->
-            <div class="global-view-section">
-                <label>View Options</label>
-                <div class="mode-toggle">
-                    <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
-                </div>
-            </div>
                 
-                <!-- Profile Section -->
+                <!-- Profile Section (Name and tap boxes) -->
                 <div id="profileSection" class="profile-section">
                     <div class="profile-header">
                         <h4 id="profileName">User Profile</h4>
@@ -1234,34 +1210,62 @@ DO NOT use file:// URLs with this version
                             <div class="stat-label">Connections</div>
                         </div>
                     </div>
-                    
-                    <div class="control-group" id="degreeFilterSection" style="display: none;">
-                        <label class="label-degrees">Degrees</label>
-                        <div class="degree-filters">
-                            <label class="degree-checkbox">
-                                <input type="checkbox" id="degree1" checked>
-                                <span class="checkmark"></span>
-                                1st Degree
-                            </label>
-                            <label class="degree-checkbox">
-                                <input type="checkbox" id="degree2">
-                                <span class="checkmark"></span>
-                                2nd Degree
-                            </label>
-                            <label class="degree-checkbox">
-                                <input type="checkbox" id="degree3">
-                                <span class="checkmark"></span>
-                                3rd Degree
-                            </label>
+                </div>
+                
+                <!-- Timeline Slider Section -->
+                <div class="animation-section">
+                    <label>Timeline Slider</label>
+                    <div class="timeline-controls">
+                        <div class="timeline-slider-container">
+                            <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
+                            <div class="timeline-labels">
+                                <span>First Connection</span>
+                                <span>All Connections</span>
+                            </div>
+                        </div>
+                        <div class="timeline-info">
+                            <span id="currentTime">All connections shown</span>
+                            <span id="connectionCount">246 total users</span>
                         </div>
                     </div>
-                    
-                    <div class="control-group">
-                        <label class="label-connection-details">Connection Details</label>
-                        <div id="connectionsList" class="connections-list">
-                            <div style="padding: 20px; text-align: center; color: #718096;">
-                                Select a user to see their connections
-                            </div>
+                </div>
+                
+                <!-- Global View Section -->
+                <div class="global-view-section">
+                    <label>View Options</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                    </div>
+                </div>
+                
+                <!-- Degrees Section (moved outside profile-section) -->
+                <div class="control-group" id="degreeFilterSection" style="display: none;">
+                    <label class="label-degrees">Degrees</label>
+                    <div class="degree-filters">
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree1" checked>
+                            <span class="checkmark"></span>
+                            1st Degree
+                        </label>
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree2">
+                            <span class="checkmark"></span>
+                            2nd Degree
+                        </label>
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree3">
+                            <span class="checkmark"></span>
+                            3rd Degree
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Connection Details Section (moved outside profile-section) -->
+                <div class="control-group">
+                    <label class="label-connection-details">Connection Details</label>
+                    <div id="connectionsList" class="connections-list">
+                        <div style="padding: 20px; text-align: center; color: #718096;">
+                            Select a user to see their connections
                         </div>
                     </div>
                 </div>
@@ -2921,11 +2925,16 @@ Remember: You're helping someone explore and understand their social network dat
                     globalViewBtn.textContent = 'Back to User View';
                     // Hide user-specific elements (timeline and button stay visible)
                     document.getElementById('profileSection').style.display = 'none';
+                    document.getElementById('degreeFilterSection').style.display = 'none';
                 } else {
                     globalViewBtn.classList.remove('active');
                     globalViewBtn.textContent = 'See full Arc Network';
                     // Show user-specific elements
                     document.getElementById('profileSection').style.display = 'block';
+                    // Only show degree filters if a user is selected
+                    if (currentFilterUser) {
+                        document.getElementById('degreeFilterSection').style.display = 'block';
+                    }
                 }
                 
                 // Update network display to show all nodes
@@ -2943,12 +2952,13 @@ Remember: You're helping someone explore and understand their social network dat
                     // Clear any user filter when entering global view
                     currentFilterUser = null;
                     
-                    // Update all nodes to be visible and white
+                    // Update all nodes to be visible and white, but hide labels in global mode
                     const allNodeData = Object.values(allNodes).map(node => ({
                         id: node.id,
                         hidden: false,
                         color: '#FFFFFF', // White for global view
-                        font: { size: 14.4, face: 'Arial', color: '#ffffff' }
+                        font: { size: 0, face: 'Arial', color: '#ffffff' }, // Hide labels in global mode
+                        label: '' // Remove labels completely
                     }));
                     nodes.update(allNodeData);
                     
@@ -2970,12 +2980,34 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 } else {
                     // Return to user-centric view (restore any existing filters)
+                    console.log('🔄 Returning to user view');
+                    console.log('📊 Current filter user:', currentFilterUser);
+                    console.log('📊 Selected node:', selectedNode);
+                    
                     if (currentFilterUser) {
+                        // Restore user-centric view with proper filtering
                         filterNetworkByUser(currentFilterUser);
+                        // Ensure degree filters are enabled for user view
+                        setDegreeFiltersEnabled(true);
+                    } else if (selectedNode) {
+                        // If no currentFilterUser but we have a selectedNode, restore that
+                        filterNetworkByUser(selectedNode);
+                        // Ensure degree filters are enabled for user view
+                        setDegreeFiltersEnabled(true);
                     } else {
                         // Show all nodes if no specific user filter
-                        nodes.update(Object.values(allNodes));
+                        console.log('🔄 No user selected, showing all nodes');
+                        // Restore labels when showing all nodes in user mode
+                        const allNodeData = Object.values(allNodes).map(node => ({
+                            id: node.id,
+                            hidden: false,
+                            font: { size: 14.4, face: 'Arial', color: '#ffffff' }, // Restore labels
+                            label: node.label // Restore original labels
+                        }));
+                        nodes.update(allNodeData);
                         edges.update(Object.values(allEdges));
+                        // Disable degree filters when no user is selected
+                        setDegreeFiltersEnabled(false);
                     }
                 }
             }
