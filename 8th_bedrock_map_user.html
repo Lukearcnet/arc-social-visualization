@@ -1295,7 +1295,7 @@
             
             let filteredEvents;
             
-            if (currentMode === 'user' && selectedUserId) {
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
                 // In user mode, always start with complete location data for degree filtering
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
