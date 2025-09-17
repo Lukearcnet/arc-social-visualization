@@ -1433,8 +1433,8 @@
                 
             }
             
-            // Apply timeline filtering if not in Show All mode OR if we're in user mode with degree filters
-            if (!showAllEnabled || (currentMode === 'user' && selectedUserId)) {
+            // Apply timeline filtering if not in Show All mode OR if we're in user mode with degree filters, but skip if in global view
+            if (!globalViewEnabled && (!showAllEnabled || (currentMode === 'user' && selectedUserId))) {
                 const beforeTimeline = filteredEvents.length;
                 
                 if (cumulativeEnabled) {
