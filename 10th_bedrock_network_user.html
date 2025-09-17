@@ -2627,6 +2627,11 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Event listeners
                 network.on('click', function(params) {
+                    // Skip node selection in global mode - allow graph interaction but no user selection
+                    if (globalViewEnabled) {
+                        return; // Allow graph dragging/zooming but prevent user selection
+                    }
+                    
                     if (params.nodes.length > 0) {
                         const nodeId = params.nodes[0];
                         selectNodeById(nodeId);
