@@ -772,7 +772,7 @@ DO NOT use file:// URLs with this version
             }
             
             .connection-item {
-                padding: 16px 21px;
+                padding: var(--space-4); /* Match other sections (25.3px) */
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 display: flex;
                 justify-content: space-between;
@@ -1261,7 +1261,7 @@ DO NOT use file:// URLs with this version
                 </div>
                 
                 <!-- Connection Details Section (moved outside profile-section) -->
-                <div class="control-group">
+                <div class="control-group" id="connectionDetailsSection">
                     <label class="label-connection-details">Connection Details</label>
                     <div id="connectionsList" class="connections-list">
                         <div style="padding: 20px; text-align: center; color: #718096;">
@@ -2926,11 +2926,15 @@ Remember: You're helping someone explore and understand their social network dat
                     // Hide user-specific elements (timeline and button stay visible)
                     document.getElementById('profileSection').style.display = 'none';
                     document.getElementById('degreeFilterSection').style.display = 'none';
+                    // Hide connection details section in global mode
+                    document.getElementById('connectionDetailsSection').style.display = 'none';
                 } else {
                     globalViewBtn.classList.remove('active');
                     globalViewBtn.textContent = 'See full Arc Network';
                     // Show user-specific elements
                     document.getElementById('profileSection').style.display = 'block';
+                    // Show connection details section in user mode
+                    document.getElementById('connectionDetailsSection').style.display = 'block';
                     // Only show degree filters if a user is selected
                     if (currentFilterUser) {
                         document.getElementById('degreeFilterSection').style.display = 'block';
