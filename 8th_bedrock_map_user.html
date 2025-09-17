@@ -1383,7 +1383,7 @@
             }
             
             // Filter events based on mode and degree connections
-            if (currentMode === 'user' && selectedUserId) {
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
                 // Calculate degree connections for the selected user
                 const degreeConnections = calculateDegreeConnections(selectedUserId);
                 
