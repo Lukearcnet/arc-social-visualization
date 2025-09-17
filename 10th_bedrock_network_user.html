@@ -163,6 +163,7 @@ DO NOT use file:// URLs with this version
             /* Timeline Slider Section (moved outside profile-section) */
             .animation-section {
                 padding: var(--space-4);
+                padding-top: calc(var(--space-4) * 0.5); /* Reduce top padding by half */
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
@@ -186,17 +187,17 @@ DO NOT use file:// URLs with this version
                 margin-bottom: 16px !important;
             }
             
-            /* Mode Button Styling - Match 8th bedrock */
+            /* Mode Button Styling - Match Activity Level Text */
             .mode-btn {
                 padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 1.2);
                 border: 1px solid var(--stroke-muted);
                 background: var(--stroke);
-                color: var(--fg);
+                color: var(--fg-muted);
                 border-radius: var(--radius-1);
                 cursor: pointer;
-                font-size: 31px; /* Match TAPS font size */
-                font-weight: 600; /* Match TAPS font weight */
-                letter-spacing: 0.05em; /* Match TAPS letter spacing */
+                font-size: 0.8rem !important; /* Match Activity Level font size */
+                font-weight: 500 !important; /* Match Activity Level font weight */
+                letter-spacing: 0.05em;
                 transition: all 0.2s ease;
                 width: 100%;
                 text-align: center;
@@ -496,6 +497,7 @@ DO NOT use file:// URLs with this version
             .control-group {
                 margin-bottom: var(--space-4);
                 padding: var(--space-4);
+                padding-top: calc(var(--space-4) * 0.5); /* Reduce top padding to match other sections */
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
@@ -3950,7 +3952,10 @@ Remember: You're helping someone explore and understand their social network dat
                                               target.closest('.controls-section') ||
                                               target.closest('.profile-section') ||
                                               target.closest('.animation-section') ||
-                                              target.closest('.search-section');
+                                              target.closest('.search-section') ||
+                                              target.closest('.global-view-section') ||
+                                              target.closest('.control-group') ||
+                                              target.closest('.degree-filter-section');
                     
                     if (isScrollableElement) {
                         // Allow normal scrolling, just prevent zoom
