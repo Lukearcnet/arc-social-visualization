@@ -1267,7 +1267,12 @@
             document.getElementById('timelineValue').textContent = formattedDate;
             
             // Update the current time display based on mode
-            if (currentMode === 'user' && selectedUserId) {
+            if (globalViewEnabled) {
+                // In global view mode, show all taps info
+                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
+                document.getElementById('currentTime').textContent = 
+                    timelineValue === '100' ? 'All taps shown' : `${allLocationData.length} total taps (${modeText})`;
+            } else if (currentMode === 'user' && selectedUserId) {
                 // In user mode, show degree-filtered event count
                 const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
                 document.getElementById('currentTime').textContent = 
@@ -1656,6 +1661,9 @@
                 // Hide user-specific elements
                 document.getElementById('profileSection').style.display = 'none';
                 document.getElementById('degreeFiltersGroup').style.display = 'none';
+                // Set timeline to 100% to show all data in global view
+                const timelineSlider = document.getElementById('timelineSlider');
+                timelineSlider.value = 100;
             } else {
                 globalViewBtn.classList.remove('active');
                 globalViewBtn.textContent = 'See full Arc Network';
