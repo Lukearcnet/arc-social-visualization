@@ -160,6 +160,24 @@ DO NOT use file:// URLs with this version
                 border-color: rgba(255, 255, 255, 0.4);
             }
             
+            /* Mode Button Styling - Match 8th bedrock */
+            .mode-btn {
+                flex: 1;
+                padding: var(--space-1) var(--space-2);
+                border: none;
+                background: transparent;
+                color: var(--fg-muted);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                font-size: var(--text-md);
+                transition: all 0.2s ease;
+            }
+            
+            .mode-btn.active {
+                background: var(--fg);
+                color: var(--bg-1);
+            }
+            
             #mynetwork {
                 width: 100%;
                 height: 100%;
@@ -1165,7 +1183,7 @@ DO NOT use file:// URLs with this version
                     </div>
                     
                     <!-- Timeline (moved into profile section) -->
-                    <div class="control-group">
+                    <div class="control-group" id="timelineGroup">
                         <label class="label-timeline">Timeline</label>
                         <div class="timeline-controls">
                             <div class="timeline-slider-container">
@@ -1179,6 +1197,14 @@ DO NOT use file:// URLs with this version
                                 <span id="currentTime">All connections shown</span>
                                 <span id="connectionCount">246 total users</span>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Global View Toggle -->
+                    <div class="control-group" id="globalViewGroup">
+                        <label>View Options</label>
+                        <div class="mode-toggle">
+                            <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
                         </div>
                     </div>
                     
@@ -1224,7 +1250,6 @@ DO NOT use file:// URLs with this version
                 <div class="network-controls-floating">
                     <button class="control-btn" onclick="stabilize()">Stabilize</button>
                     <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
-                    <button class="control-btn" onclick="activateGlobalView()">See full Arc Network</button>
                 </div>
             </div>
             
@@ -2861,14 +2886,17 @@ Remember: You're helping someone explore and understand their social network dat
             function activateGlobalView() {
                 // Toggle global view mode
                 globalViewEnabled = !globalViewEnabled;
-                const globalViewBtn = document.querySelector('button[onclick="activateGlobalView()"]');
+                const globalViewBtn = document.getElementById('globalViewBtn');
                 
                 // Update button appearance
                 if (globalViewEnabled) {
                     globalViewBtn.classList.add('active');
                     globalViewBtn.textContent = 'Back to User View';
-                    // Hide user-specific elements
+                    // Hide user-specific elements but keep timeline and button visible
                     document.getElementById('profileSection').style.display = 'none';
+                    // Show timeline and global view button in console
+                    document.getElementById('timelineGroup').style.display = 'block';
+                    document.getElementById('globalViewGroup').style.display = 'block';
                 } else {
                     globalViewBtn.classList.remove('active');
                     globalViewBtn.textContent = 'See full Arc Network';
