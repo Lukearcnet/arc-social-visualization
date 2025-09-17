@@ -1528,16 +1528,19 @@
             const venueCategory = venueInfo.venue_category || 'unknown';
             const venueDisplay = venueCategory !== 'unknown' ? `${venueName} (${venueCategory})` : venueName;
             
-            const popupContent = `
-                <div class="custom-popup">
-                    <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
-                    <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
-                    <div class="popup-info">Venue: ${venueDisplay}</div>
-                    <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent);
+            // Only create popup content and bind it if not in global view
+            if (!globalViewEnabled) {
+                const popupContent = `
+                    <div class="custom-popup">
+                        <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
+                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Venue: ${venueDisplay}</div>
+                        <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+            }
             markers.push(marker);
         }
         
