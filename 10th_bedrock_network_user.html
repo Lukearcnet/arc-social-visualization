@@ -164,9 +164,9 @@ DO NOT use file:// URLs with this version
             .mode-btn {
                 flex: 1;
                 padding: var(--space-1) var(--space-2);
-                border: none;
-                background: transparent;
-                color: var(--fg-muted);
+                border: 1px solid var(--stroke-muted);
+                background: var(--stroke);
+                color: var(--fg);
                 border-radius: var(--radius-1);
                 cursor: pointer;
                 font-size: var(--text-md);
@@ -2912,16 +2912,16 @@ Remember: You're helping someone explore and understand their social network dat
             function updateNetworkDisplay() {
                 if (globalViewEnabled) {
                     // Show all nodes and edges in global view
-                    nodes.update(allNodes.get());
-                    edges.update(allEdges.get());
+                    nodes.update(Object.values(allNodes));
+                    edges.update(Object.values(allEdges));
                 } else {
                     // Return to user-centric view (restore any existing filters)
                     if (currentFilterUser) {
                         filterNetworkByUser(currentFilterUser);
                     } else {
                         // Show all nodes if no specific user filter
-                        nodes.update(allNodes.get());
-                        edges.update(allEdges.get());
+                        nodes.update(Object.values(allNodes));
+                        edges.update(Object.values(allEdges));
                     }
                 }
             }
