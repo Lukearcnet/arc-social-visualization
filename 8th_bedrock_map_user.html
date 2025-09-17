@@ -1293,9 +1293,19 @@
             // Clear existing markers
             clearMarkers();
             
+            // Debug logging
+            console.log('🔍 updateMarkers called with:', {
+                globalViewEnabled,
+                currentMode,
+                selectedUserId,
+                allLocationDataLength: allLocationData.length,
+                completeLocationDataLength: completeLocationData.length
+            });
+            
             let filteredEvents;
             
             if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
+                console.log('🎯 Taking USER MODE branch - using completeLocationData');
                 // In user mode, always start with complete location data for degree filtering
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
@@ -1314,6 +1324,7 @@
                     timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
                 }));
             } else if (showAllEnabled) {
+                console.log('🎯 Taking SHOW ALL branch - using completeLocationData');
                 // Show All mode: display all events regardless of timeline
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
@@ -1332,6 +1343,7 @@
                     timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
                 }));
             } else if (globalViewEnabled) {
+                console.log('🎯 Taking GLOBAL VIEW branch - using allLocationData');
                 // Global view mode: display all events as white nodes regardless of user selection
                 // Use allLocationData (unfiltered) for global view
                 filteredEvents = allLocationData.map(tap => ({
@@ -1350,6 +1362,7 @@
                     timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
                 }));
             } else {
+                console.log('🎯 Taking NORMAL TIMELINE branch - using completeLocationData');
                 // Normal timeline mode: use complete location data for consistent filtering
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
@@ -1446,6 +1459,7 @@
             }
             
             // Create markers for filtered events
+            console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
                 // Use location data from the timeline event (which now includes actual tap data)
                 if (event.latitude && event.longitude) {
