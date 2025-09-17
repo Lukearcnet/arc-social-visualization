@@ -2942,8 +2942,8 @@ Remember: You're helping someone explore and understand their social network dat
                     document.getElementById('profileSection').style.display = 'block';
                     // Show connection details section in user mode
                     document.getElementById('connectionDetailsSection').style.display = 'block';
-                    // Only show degree filters if a user is selected
-                    if (currentFilterUser) {
+                    // Show degree filters if a user is selected (either currentFilterUser or selectedNode)
+                    if (currentFilterUser || selectedNode) {
                         document.getElementById('degreeFilterSection').style.display = 'block';
                     }
                 }
