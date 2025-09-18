@@ -1267,12 +1267,19 @@ DO NOT use file:// URLs with this version
             // Dynamic data loading functions
             async function loadData() {
                 try {
-                    console.log('🔄 Loading dynamic data...');
-                    const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                    console.log('🔄 Loading dynamic data from API...');
+                    const response = await fetch('/api/data?t=' + Date.now());
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    const data = await response.json();
+                    const api = await response.json();
+                    
+                    // Back-compat shim: normalize api.taps/api.users to data.tap_data/data.user_profiles
+                    const data = {
+                        tap_data: api.taps || api.tap_data || [],
+                        user_profiles: api.users || api.user_profiles || [],
+                        last_refresh: api.last_refresh || new Date().toISOString()
+                    };
                     
                     // Create all data structures
                     createSearchIndex(data);

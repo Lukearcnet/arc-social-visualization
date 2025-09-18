@@ -707,6 +707,13 @@
                     </div>
                 </div>
                 
+                <!-- Global View Toggle -->
+                <div class="control-group">
+                    <label>View Options</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                    </div>
+                </div>
                 
                 <!-- Stats Display -->
                 <div class="stats-display">
@@ -793,7 +800,9 @@
         let timelineSlider;
         let clusteringEnabled = true;
         let completeLocationData = []; // Make this global
+        let allLocationData = []; // Store all unfiltered data for global view
         let showAllEnabled = false; // Track Show All toggle state
+        let globalViewEnabled = false; // Track Global View toggle state
         let cumulativeEnabled = true; // Track Cumulative toggle state
         let degreeFilters = {
             degree1: true,
@@ -873,8 +882,26 @@
                     return Number.isFinite(lat) && Number.isFinite(lng);
                 });
                 
-                // Transform tap data to match expected format
-                completeLocationData = cleanTaps.map(tap => ({
+                // Store all unfiltered data for global view
+                allLocationData = (data.tap_data || []).map(tap => ({
+                    tap_id: tap.tap_id,
+                    user1_id: tap.user1_id,
+                    user1_name: tap.user1_name,
+                    user1_home: tap.user1_home,
+                    user2_id: tap.user2_id,
+                    user2_name: tap.user2_name,
+                    user2_home: tap.user2_home,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time
+                }));
+
+                // Transform tap data to match expected format (use all data like Global version)
+                completeLocationData = (data.tap_data || []).map(tap => ({
                     tap_id: tap.tap_id,
                     user1_id: tap.user1_id,
                     user1_name: tap.user1_name,
@@ -1240,7 +1267,12 @@
             document.getElementById('timelineValue').textContent = formattedDate;
             
             // Update the current time display based on mode
-            if (currentMode === 'user' && selectedUserId) {
+            if (globalViewEnabled) {
+                // In global view mode, show all taps info
+                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
+                document.getElementById('currentTime').textContent = 
+                    timelineValue === '100' ? 'All taps shown' : `${allLocationData.length} total taps (${modeText})`;
+            } else if (currentMode === 'user' && selectedUserId) {
                 // In user mode, show degree-filtered event count
                 const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
                 document.getElementById('currentTime').textContent = 
@@ -1261,9 +1293,38 @@
             // Clear existing markers
             clearMarkers();
             
+            // Debug logging
+            console.log('🔍 updateMarkers called with:', {
+                globalViewEnabled,
+                currentMode,
+                selectedUserId,
+                allLocationDataLength: allLocationData.length,
+                completeLocationDataLength: completeLocationData.length
+            });
+            
             let filteredEvents;
             
-            if (currentMode === 'user' && selectedUserId) {
+            if (globalViewEnabled) {
+                console.log('🎯 Taking GLOBAL VIEW branch - using completeLocationData (like Global version)');
+                // Global view mode: display all events as white nodes regardless of user selection
+                // Use completeLocationData like the Global version does
+                filteredEvents = completeLocationData.map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1, // Each tap represents one connection
+                    timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
+                }));
+            } else if (currentMode === 'user' && selectedUserId) {
+                console.log('🎯 Taking USER MODE branch - using completeLocationData');
                 // In user mode, always start with complete location data for degree filtering
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
@@ -1282,6 +1343,7 @@
                     timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
                 }));
             } else if (showAllEnabled) {
+                console.log('🎯 Taking SHOW ALL branch - using completeLocationData');
                 // Show All mode: display all events regardless of timeline
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
@@ -1300,6 +1362,7 @@
                     timestamp: new Date(tap.time).getTime() // Add timestamp for timeline filtering
                 }));
             } else {
+                console.log('🎯 Taking NORMAL TIMELINE branch - using completeLocationData');
                 // Normal timeline mode: use complete location data for consistent filtering
                 // Transform completeLocationData to match expected structure
                 filteredEvents = completeLocationData.map(tap => ({
@@ -1320,7 +1383,7 @@
             }
             
             // Filter events based on mode and degree connections
-            if (currentMode === 'user' && selectedUserId) {
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
                 // Calculate degree connections for the selected user
                 const degreeConnections = calculateDegreeConnections(selectedUserId);
                 
@@ -1396,6 +1459,7 @@
             }
             
             // Create markers for filtered events
+            console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
                 // Use location data from the timeline event (which now includes actual tap data)
                 if (event.latitude && event.longitude) {
@@ -1424,7 +1488,7 @@
             let markerColor = '#ffffff';
             let fillColor = '#ffffff';
             
-            if (currentMode === 'user' && selectedUserId) {
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
                 const sourceUserId = event.source_id;
                 const targetUserId = event.target_id;
                 
@@ -1464,16 +1528,19 @@
             const venueCategory = venueInfo.venue_category || 'unknown';
             const venueDisplay = venueCategory !== 'unknown' ? `${venueName} (${venueCategory})` : venueName;
             
-            const popupContent = `
-                <div class="custom-popup">
-                    <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
-                    <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
-                    <div class="popup-info">Venue: ${venueDisplay}</div>
-                    <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent);
+            // Only create popup content and bind it if not in global view
+            if (!globalViewEnabled) {
+                const popupContent = `
+                    <div class="custom-popup">
+                        <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
+                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Venue: ${venueDisplay}</div>
+                        <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+            }
             markers.push(marker);
         }
         
@@ -1493,7 +1560,10 @@
             
             // Get the appropriate total tap count based on current mode
             let totalTapCount;
-            if (currentMode === 'user' && selectedUserId) {
+            if (globalViewEnabled) {
+                // In global view, use all unfiltered data
+                totalTapCount = allLocationData.length;
+            } else if (currentMode === 'user' && selectedUserId) {
                 // In user mode, count only taps involving the selected user
                 totalTapCount = completeLocationData.filter(tap => 
                     tap.user1_id === selectedUserId || tap.user2_id === selectedUserId
@@ -1593,6 +1663,38 @@
             
             // Update display
             updateTimelineDisplay();
+        }
+        
+        // Activate Global View functionality
+        function activateGlobalView() {
+            // Toggle global view mode
+            globalViewEnabled = !globalViewEnabled;
+            const globalViewBtn = document.getElementById('globalViewBtn');
+            
+            // Update button appearance
+            if (globalViewEnabled) {
+                globalViewBtn.classList.add('active');
+                globalViewBtn.textContent = 'Back to User View';
+                // Hide user-specific elements
+                document.getElementById('profileSection').style.display = 'none';
+                document.getElementById('degreeFiltersGroup').style.display = 'none';
+                // Enable showAll mode to skip timeline filtering (like Global version)
+                showAllEnabled = true;
+                // Set timeline to 100% to show all data in global view
+                const timelineSlider = document.getElementById('timelineSlider');
+                timelineSlider.value = 100;
+            } else {
+                globalViewBtn.classList.remove('active');
+                globalViewBtn.textContent = 'See full Arc Network';
+                // Show user-specific elements
+                document.getElementById('profileSection').style.display = 'block';
+                document.getElementById('degreeFiltersGroup').style.display = 'block';
+                // Disable showAll mode when returning to user view
+                showAllEnabled = false;
+            }
+            
+            // Update display to show all taps as white nodes
+            updateDisplay();
         }
         
         // Initialize user search functionality
@@ -1839,13 +1941,14 @@
         function updateDisplay() {
             // Update header stats
             // Count unique users from tap data
+            const dataToUse = globalViewEnabled ? allLocationData : completeLocationData;
             const uniqueUsers = new Set();
-            completeLocationData.forEach(tap => {
+            dataToUse.forEach(tap => {
                 uniqueUsers.add(tap.user1_id);
                 uniqueUsers.add(tap.user2_id);
             });
             const totalUsers = uniqueUsers.size;
-            const totalTaps = completeLocationData.length; // Use actual tap count instead of edges
+            const totalTaps = dataToUse.length; // Use actual tap count instead of edges
             
             // Update loading stats
             document.getElementById('loadingStats').textContent = 

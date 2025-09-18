@@ -160,6 +160,54 @@ DO NOT use file:// URLs with this version
                 border-color: rgba(255, 255, 255, 0.4);
             }
             
+            /* Timeline Slider Section (moved outside profile-section) */
+            .animation-section {
+                padding: var(--space-4);
+                padding-top: calc(var(--space-4) * 0.5); /* Reduce top padding by half */
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .animation-section > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
+            }
+            
+            /* Global View Section (moved outside profile-section) */
+            .global-view-section {
+                padding: var(--space-4);
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
+            }
+            
+            .global-view-section > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
+            }
+            
+            /* Mode Button Styling - Match Activity Level Text */
+            .mode-btn {
+                padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 1.2);
+                border: 1px solid var(--stroke-muted);
+                background: var(--stroke);
+                color: var(--fg-muted);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                font-size: 0.8rem !important; /* Match Activity Level font size */
+                font-weight: 500 !important; /* Match Activity Level font weight */
+                letter-spacing: 0.05em;
+                transition: all 0.2s ease;
+                width: 100%;
+                text-align: center;
+            }
+            
+            .mode-btn.active {
+                background: var(--fg);
+                color: var(--bg-1);
+            }
+            
             #mynetwork {
                 width: 100%;
                 height: 100%;
@@ -448,6 +496,10 @@ DO NOT use file:// URLs with this version
             
             .control-group {
                 margin-bottom: var(--space-4);
+                padding: var(--space-4);
+                padding-top: calc(var(--space-4) * 0.5); /* Reduce top padding to match other sections */
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+                background: transparent;
             }
             
             .control-group label {
@@ -465,6 +517,10 @@ DO NOT use file:// URLs with this version
             .label-degrees,
             .label-connection-details {
                 font-size: calc(var(--text-md) * 0.73) !important;
+            }
+            
+            .label-connection-details {
+                margin-bottom: 16px !important;
             }
             
             .degree-controls {
@@ -725,7 +781,7 @@ DO NOT use file:// URLs with this version
             }
             
             .connection-item {
-                padding: 16px 21px;
+                padding: var(--space-4); /* Match other sections (25.3px) */
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 display: flex;
                 justify-content: space-between;
@@ -1139,14 +1195,14 @@ DO NOT use file:// URLs with this version
             <!-- Sidebar -->
             <div class="sidebar">
                 
-            <!-- Search Section (hidden in user-centric view) -->
-            <div class="search-section" style="display: none;">
-                <label for="searchInput">Search Users</label>
-                <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
-                <div id="searchResults" class="search-results" style="display: none;"></div>
-            </div>
+                <!-- Search Section (hidden in user-centric view) -->
+                <div class="search-section" style="display: none;">
+                    <label for="searchInput">Search Users</label>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                    <div id="searchResults" class="search-results" style="display: none;"></div>
+                </div>
                 
-                <!-- Profile Section -->
+                <!-- Profile Section (Name and tap boxes) -->
                 <div id="profileSection" class="profile-section">
                     <div class="profile-header">
                         <h4 id="profileName">User Profile</h4>
@@ -1163,52 +1219,62 @@ DO NOT use file:// URLs with this version
                             <div class="stat-label">Connections</div>
                         </div>
                     </div>
-                    
-                    <!-- Timeline (moved into profile section) -->
-                    <div class="control-group">
-                        <label class="label-timeline">Timeline</label>
-                        <div class="timeline-controls">
-                            <div class="timeline-slider-container">
-                                <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
-                                <div class="timeline-labels">
-                                    <span>First Connection</span>
-                                    <span>All Connections</span>
-                                </div>
-                            </div>
-                            <div class="timeline-info">
-                                <span id="currentTime">All connections shown</span>
-                                <span id="connectionCount">246 total users</span>
+                </div>
+                
+                <!-- Timeline Slider Section -->
+                <div class="animation-section">
+                    <label>Timeline Slider</label>
+                    <div class="timeline-controls">
+                        <div class="timeline-slider-container">
+                            <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
+                            <div class="timeline-labels">
+                                <span>First Connection</span>
+                                <span>All Connections</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="control-group" id="degreeFilterSection" style="display: none;">
-                        <label class="label-degrees">Degrees</label>
-                        <div class="degree-filters">
-                            <label class="degree-checkbox">
-                                <input type="checkbox" id="degree1" checked>
-                                <span class="checkmark"></span>
-                                1st Degree
-                            </label>
-                            <label class="degree-checkbox">
-                                <input type="checkbox" id="degree2">
-                                <span class="checkmark"></span>
-                                2nd Degree
-                            </label>
-                            <label class="degree-checkbox">
-                                <input type="checkbox" id="degree3">
-                                <span class="checkmark"></span>
-                                3rd Degree
-                            </label>
+                        <div class="timeline-info">
+                            <span id="currentTime">All connections shown</span>
+                            <span id="connectionCount">246 total users</span>
                         </div>
                     </div>
-                    
-                    <div class="control-group">
-                        <label class="label-connection-details">Connection Details</label>
-                        <div id="connectionsList" class="connections-list">
-                            <div style="padding: 20px; text-align: center; color: #718096;">
-                                Select a user to see their connections
-                            </div>
+                </div>
+                
+                <!-- Global View Section -->
+                <div class="global-view-section">
+                    <label>View Options</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                    </div>
+                </div>
+                
+                <!-- Degrees Section (moved outside profile-section) -->
+                <div class="control-group" id="degreeFilterSection" style="display: none;">
+                    <label class="label-degrees">Degrees</label>
+                    <div class="degree-filters">
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree1" checked>
+                            <span class="checkmark"></span>
+                            1st Degree
+                        </label>
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree2">
+                            <span class="checkmark"></span>
+                            2nd Degree
+                        </label>
+                        <label class="degree-checkbox">
+                            <input type="checkbox" id="degree3">
+                            <span class="checkmark"></span>
+                            3rd Degree
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Connection Details Section (moved outside profile-section) -->
+                <div class="control-group" id="connectionDetailsSection">
+                    <label class="label-connection-details">Connection Details</label>
+                    <div id="connectionsList" class="connections-list">
+                        <div style="padding: 20px; text-align: center; color: #718096;">
+                            Select a user to see their connections
                         </div>
                     </div>
                 </div>
@@ -1294,6 +1360,7 @@ DO NOT use file:// URLs with this version
             let allNodes;
             let allEdges;
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
+            let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
             
             // Safety helper for string operations
@@ -2560,6 +2627,11 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Event listeners
                 network.on('click', function(params) {
+                    // Skip node selection in global mode - allow graph interaction but no user selection
+                    if (globalViewEnabled) {
+                        return; // Allow graph dragging/zooming but prevent user selection
+                    }
+                    
                     if (params.nodes.length > 0) {
                         const nodeId = params.nodes[0];
                         selectNodeById(nodeId);
@@ -2852,6 +2924,110 @@ Remember: You're helping someone explore and understand their social network dat
                 const connectionCountElement = document.getElementById('connectionCount');
                 if (connectionCountElement) {
                     connectionCountElement.textContent = `${visibleNodeCount} total users`;
+                }
+            }
+            
+            // Activate Global View functionality
+            function activateGlobalView() {
+                // Toggle global view mode
+                globalViewEnabled = !globalViewEnabled;
+                const globalViewBtn = document.getElementById('globalViewBtn');
+                
+                // Update button appearance
+                if (globalViewEnabled) {
+                    globalViewBtn.classList.add('active');
+                    globalViewBtn.textContent = 'Back to User View';
+                    // Hide user-specific elements (timeline and button stay visible)
+                    document.getElementById('profileSection').style.display = 'none';
+                    document.getElementById('degreeFilterSection').style.display = 'none';
+                    // Hide connection details section in global mode
+                    document.getElementById('connectionDetailsSection').style.display = 'none';
+                } else {
+                    globalViewBtn.classList.remove('active');
+                    globalViewBtn.textContent = 'See full Arc Network';
+                    // Show user-specific elements
+                    document.getElementById('profileSection').style.display = 'block';
+                    // Show connection details section in user mode
+                    document.getElementById('connectionDetailsSection').style.display = 'block';
+                    // Show degree filters if a user is selected (either currentFilterUser or selectedNode)
+                    if (currentFilterUser || selectedNode) {
+                        document.getElementById('degreeFilterSection').style.display = 'block';
+                    }
+                }
+                
+                // Update network display to show all nodes
+                updateNetworkDisplay();
+            }
+            
+            // Update network display based on current mode
+            function updateNetworkDisplay() {
+                if (globalViewEnabled) {
+                    // Show all nodes and edges in global view
+                    console.log('🌍 Global view: showing all nodes and edges');
+                    console.log('📊 All nodes count:', Object.keys(allNodes).length);
+                    console.log('📊 All edges count:', Object.keys(allEdges).length);
+                    
+                    // Clear any user filter when entering global view
+                    currentFilterUser = null;
+                    
+                    // Update all nodes to be visible and white, but hide labels in global mode
+                    const allNodeData = Object.values(allNodes).map(node => ({
+                        id: node.id,
+                        hidden: false,
+                        color: '#FFFFFF', // White for global view
+                        font: { size: 0, face: 'Arial', color: '#ffffff' }, // Hide labels in global mode
+                        label: '' // Remove labels completely
+                    }));
+                    nodes.update(allNodeData);
+                    
+                    // Update all edges to be visible
+                    const allEdgeData = Object.values(allEdges).map(edge => ({
+                        id: edge.id,
+                        hidden: false,
+                        color: '#ffffff'
+                    }));
+                    edges.update(allEdgeData);
+                    
+                    // Refresh the network
+                    network.fit();
+                    network.stabilize(50);
+                    
+                    // Ensure timeline works in global mode
+                    if (timelineSlider) {
+                        updateTimelineDisplay(timelineSlider.value);
+                    }
+                } else {
+                    // Return to user-centric view (restore any existing filters)
+                    console.log('🔄 Returning to user view');
+                    console.log('📊 Current filter user:', currentFilterUser);
+                    console.log('📊 Selected node:', selectedNode);
+                    
+                    // Always restore node labels when returning to user mode
+                    const allNodeData = Object.values(allNodes).map(node => ({
+                        id: node.id,
+                        hidden: false,
+                        font: { size: 14.4, face: 'Arial', color: '#ffffff' }, // Restore labels
+                        label: node.label // Restore original labels
+                    }));
+                    nodes.update(allNodeData);
+                    
+                    if (currentFilterUser) {
+                        // Restore user-centric view with proper filtering
+                        filterNetworkByUser(currentFilterUser);
+                        // Ensure degree filters are enabled for user view
+                        setDegreeFiltersEnabled(true);
+                    } else if (selectedNode) {
+                        // If no currentFilterUser but we have a selectedNode, restore that
+                        filterNetworkByUser(selectedNode);
+                        // Ensure degree filters are enabled for user view
+                        setDegreeFiltersEnabled(true);
+                    } else {
+                        // Show all nodes if no specific user filter
+                        console.log('🔄 No user selected, showing all nodes');
+                        edges.update(Object.values(allEdges));
+                        // Disable degree filters when no user is selected
+                        setDegreeFiltersEnabled(false);
+                    }
                 }
             }
         
@@ -3782,7 +3958,10 @@ Remember: You're helping someone explore and understand their social network dat
                                               target.closest('.controls-section') ||
                                               target.closest('.profile-section') ||
                                               target.closest('.animation-section') ||
-                                              target.closest('.search-section');
+                                              target.closest('.search-section') ||
+                                              target.closest('.global-view-section') ||
+                                              target.closest('.control-group') ||
+                                              target.closest('.degree-filter-section');
                     
                     if (isScrollableElement) {
                         // Allow normal scrolling, just prevent zoom
