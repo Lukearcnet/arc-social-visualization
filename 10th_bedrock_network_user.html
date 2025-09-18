@@ -1543,16 +1543,36 @@ DO NOT use file:// URLs with this version
                     };
                 });
                 
-                // Create edges from taps
+                // Create edges from taps - count actual taps between each pair
                 const safeTaps = Array.isArray(taps) ? taps : [];
-                const edgeData = safeTaps.map((tap, index) => ({
+                
+                // Count taps between each pair of users
+                const tapCounts = {};
+                safeTaps.forEach(tap => {
+                    // Create a consistent key for each pair (smaller ID first)
+                    const pairKey = tap.user1_id < tap.user2_id 
+                        ? `${tap.user1_id}-${tap.user2_id}` 
+                        : `${tap.user2_id}-${tap.user1_id}`;
+                    
+                    if (!tapCounts[pairKey]) {
+                        tapCounts[pairKey] = {
+                            user1: tap.user1_id < tap.user2_id ? tap.user1_id : tap.user2_id,
+                            user2: tap.user1_id < tap.user2_id ? tap.user2_id : tap.user1_id,
+                            count: 0
+                        };
+                    }
+                    tapCounts[pairKey].count++;
+                });
+                
+                // Create one edge per pair with correct tap count
+                const edgeData = Object.values(tapCounts).map((pair, index) => ({
                     id: index,
-                    from: tap.user1_id,
-                    to: tap.user2_id,
+                    from: pair.user1,
+                    to: pair.user2,
                     color: "#ffffff",
                     width: 1.5,
-                    title: "1 taps",
-                    tap_count: 1,
+                    title: `${pair.count} tap${pair.count === 1 ? '' : 's'}`, // Correct pluralization
+                    tap_count: pair.count,
                     physics: true,
                     smooth: false
                 }));
