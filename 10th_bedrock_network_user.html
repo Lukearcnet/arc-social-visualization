@@ -3002,6 +3002,15 @@ Remember: You're helping someone explore and understand their social network dat
                     console.log('📊 Current filter user:', currentFilterUser);
                     console.log('📊 Selected node:', selectedNode);
                     
+                    // Always restore node labels when returning to user mode
+                    const allNodeData = Object.values(allNodes).map(node => ({
+                        id: node.id,
+                        hidden: false,
+                        font: { size: 14.4, face: 'Arial', color: '#ffffff' }, // Restore labels
+                        label: node.label // Restore original labels
+                    }));
+                    nodes.update(allNodeData);
+                    
                     if (currentFilterUser) {
                         // Restore user-centric view with proper filtering
                         filterNetworkByUser(currentFilterUser);
@@ -3015,14 +3024,6 @@ Remember: You're helping someone explore and understand their social network dat
                     } else {
                         // Show all nodes if no specific user filter
                         console.log('🔄 No user selected, showing all nodes');
-                        // Restore labels when showing all nodes in user mode
-                        const allNodeData = Object.values(allNodes).map(node => ({
-                            id: node.id,
-                            hidden: false,
-                            font: { size: 14.4, face: 'Arial', color: '#ffffff' }, // Restore labels
-                            label: node.label // Restore original labels
-                        }));
-                        nodes.update(allNodeData);
                         edges.update(Object.values(allEdges));
                         // Disable degree filters when no user is selected
                         setDegreeFiltersEnabled(false);
