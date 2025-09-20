@@ -493,6 +493,10 @@ DO NOT use file:// URLs with this version
                 background: transparent;
             }
             
+            .timeline-container {
+                margin-bottom: var(--space-4);
+            }
+            
             .control-group label {
                 display: block;
                 margin-bottom: var(--space-1);
@@ -1216,25 +1220,19 @@ DO NOT use file:// URLs with this version
                         </div>
                     </div>
                 </div>
-                </div> <!-- End controls-section -->
                 
-                <!-- Timeline Slider Section -->
-                <div class="animation-section">
+                <!-- Timeline Slider -->
+                <div class="control-group">
                     <label>Timeline</label>
-                    <div class="timeline-controls">
-                        <div class="timeline-slider-container">
-                            <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
-                            <div class="timeline-labels">
-                                <span>First Connection</span>
-                                <span>All Connections</span>
-                            </div>
-                        </div>
+                    <div class="timeline-container">
+                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
                         <div class="timeline-info">
+                            <span id="timelineValue">100%</span>
                             <span id="currentTime">All connections shown</span>
-                            <span id="connectionCount">246 total users</span>
                         </div>
                     </div>
                 </div>
+                </div> <!-- End controls-section -->
                 
                 <!-- Global View Section -->
                 <div class="global-view-section">
