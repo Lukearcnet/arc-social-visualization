@@ -350,8 +350,9 @@ DO NOT use file:// URLs with this version
             /* Match activity level text styling to stat labels */
             .profile-header p,
             #profileActivity {
-                font-size: 0.8rem !important;
+                font-size: 0.9rem !important;
                 font-weight: 500 !important;
+                margin: 4px 0 !important;
                 color: var(--fg-muted) !important;
             }
             
@@ -703,6 +704,8 @@ DO NOT use file:// URLs with this version
             #profileName {
                 font-size: 1.95rem !important;
                 font-weight: 700 !important;
+                margin-bottom: 10px;
+                letter-spacing: -0.025em;
             }
             
             /* Removed unused .profile-username rule - class not used in HTML */
@@ -1217,7 +1220,7 @@ DO NOT use file:// URLs with this version
                 
                 <!-- Timeline Slider Section -->
                 <div class="animation-section">
-                    <label>Timeline Slider</label>
+                    <label>Timeline</label>
                     <div class="timeline-controls">
                         <div class="timeline-slider-container">
                             <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
