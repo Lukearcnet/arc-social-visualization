@@ -4135,11 +4135,22 @@ Remember: You're helping someone explore and understand their social network dat
                     const profileName = document.querySelector('#profileName');
                     const statCard = document.querySelector('.stat-card');
                     
+                    console.log('🔍 10TH BEDROCK - AUDIT CHECK:', {
+                        profileSection: !!profileSection,
+                        profileSectionDisplay: profileSection ? profileSection.style.display : 'not found',
+                        profileName: !!profileName,
+                        profileNameWidth: profileName ? profileName.offsetWidth : 'not found',
+                        statCard: !!statCard,
+                        statCardWidth: statCard ? statCard.offsetWidth : 'not found'
+                    });
+                    
                     if (profileSection && profileSection.style.display !== 'none' && 
                         profileName && profileName.offsetWidth > 0 && 
                         statCard && statCard.offsetWidth > 0) {
+                        console.log('✅ 10TH BEDROCK - Running audit now');
                         runStyleAudit();
                     } else {
+                        console.log('⏳ 10TH BEDROCK - Retrying audit in 500ms');
                         // Retry every 500ms until elements are visible
                         setTimeout(runAuditWhenReady, 500);
                     }
@@ -4148,6 +4159,11 @@ Remember: You're helping someone explore and understand their social network dat
                 // Start checking after page loads
                 window.addEventListener('load', () => {
                     setTimeout(runAuditWhenReady, 1000);
+                    // Fallback: run audit after 5 seconds regardless
+                    setTimeout(() => {
+                        console.log('🔄 10TH BEDROCK - Fallback audit after 5 seconds');
+                        runStyleAudit();
+                    }, 5000);
                 });
                 
                 // Add comprehensive debugging for minimize button
