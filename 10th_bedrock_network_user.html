@@ -2767,6 +2767,12 @@ Remember: You're helping someone explore and understand their social network dat
                 const degreeFilterSection = document.getElementById('degreeFilterSection');
                 degreeFilterSection.style.display = 'block';
                 
+                // Run audit after profile section becomes visible
+                setTimeout(() => {
+                    console.log('🔍 10TH BEDROCK - Profile section shown, running audit');
+                    runStyleAudit();
+                }, 100);
+                
                 // Update profile header
                 document.getElementById('profileName').textContent = node.label;
                 document.getElementById('profileActivity').textContent = 
