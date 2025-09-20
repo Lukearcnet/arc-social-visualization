@@ -2080,9 +2080,25 @@
             }
         }
 
-        // Run audit after page loads
+        // Run audit after profile section becomes visible
+        function runAuditWhenReady() {
+            const profileSection = document.querySelector('.profile-section');
+            const profileName = document.querySelector('#profileName');
+            const statCard = document.querySelector('.stat-card');
+            
+            if (profileSection && profileSection.style.display !== 'none' && 
+                profileName && profileName.offsetWidth > 0 && 
+                statCard && statCard.offsetWidth > 0) {
+                runStyleAudit();
+            } else {
+                // Retry every 500ms until elements are visible
+                setTimeout(runAuditWhenReady, 500);
+            }
+        }
+
+        // Start checking after page loads
         window.addEventListener('load', () => {
-            setTimeout(runStyleAudit, 1000);
+            setTimeout(runAuditWhenReady, 1000);
         });
 
         // Global zoom prevention
