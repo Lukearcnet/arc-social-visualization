@@ -2042,15 +2042,19 @@
             
             // 1) Compare actual pixels for sentinel nodes
             console.log('📊 SENTINEL NODES COMPUTED STYLES:');
-            console.table([
-                dumpComputed(document.querySelector('.sidebar')),
-                dumpComputed(document.querySelector('#profileName')),
-                dumpComputed(document.querySelector('.stat-card'))
-            ]);
+            const sidebarData = dumpComputed(document.querySelector('.sidebar'));
+            const profileNameData = dumpComputed(document.querySelector('#profileName'));
+            const statCardData = dumpComputed(document.querySelector('.stat-card'));
+            console.log('SIDEBAR:', sidebarData);
+            console.log('PROFILE NAME:', profileNameData);
+            console.log('STAT CARD:', statCardData);
             
             // 2) Check root + ancestor overrides
             console.log('🌳 ANCESTOR CHAIN AUDIT:');
-            console.table(auditAncestors(document.querySelector('.sidebar')));
+            const ancestorData = auditAncestors(document.querySelector('.sidebar'));
+            ancestorData.forEach((ancestor, index) => {
+                console.log(`ANCESTOR ${index}:`, ancestor);
+            });
             
             // 3) Verify rem base
             const htmlFontSize = getComputedStyle(document.documentElement).fontSize;
