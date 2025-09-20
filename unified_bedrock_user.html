@@ -340,6 +340,11 @@
     </div>
 
     <script>
+        // ========================================
+        // FEATURE FLAGS - Easy to toggle features
+        // ========================================
+        const ENABLE_LOGIN = false; // Set to true to enable Twilio SMS login
+        
         // Global variables
         let currentView = 'map';
         let mapFrame = null;
@@ -870,14 +875,22 @@
         // Initialize the application
         async function init() {
             
+            // Load user data
+            await loadUserData();
+            
+            // Check if login is enabled
+            if (!ENABLE_LOGIN) {
+                // Skip login - go directly to bedrocks
+                console.log('🔓 Login disabled - proceeding directly to visualization');
+                initializeBedrocks();
+                return;
+            }
+            
             // Setup phone input formatting
             setupPhoneInput();
             
             // Setup SMS input
             setupSMSInput();
-            
-            // Load user data
-            await loadUserData();
             
             // Check for existing authentication
             if (checkExistingAuth()) {
