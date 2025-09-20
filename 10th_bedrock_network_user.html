@@ -493,8 +493,18 @@ DO NOT use file:// URLs with this version
                 background: transparent;
             }
             
+            .timeline-control-group {
+                margin-bottom: var(--space-4);
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
+                background: transparent;
+            }
+            
             .timeline-container {
                 margin-bottom: var(--space-4);
+            }
+            
+            .timeline-options {
+                margin-top: 24px;
             }
             
             .control-group label {
@@ -502,7 +512,7 @@ DO NOT use file:// URLs with this version
                 margin-bottom: var(--space-1);
                 font-weight: 500;
                 color: var(--fg);
-                font-size: var(--text-lg);
+                font-size: var(--text-md);
                 text-transform: none;
                 letter-spacing: 0.05em;
             }
@@ -1222,13 +1232,20 @@ DO NOT use file:// URLs with this version
                 </div>
                 
                 <!-- Timeline Slider -->
-                <div class="control-group">
+                <div class="timeline-control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
                         <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
                         <div class="timeline-info">
                             <span id="timelineValue">100%</span>
                             <span id="currentTime">All connections shown</span>
+                        </div>
+                        <div class="timeline-options" style="margin-top: 24px;">
+                            <label class="degree-checkbox">
+                                <input type="checkbox" id="cumulativeCheck" checked>
+                                <span class="checkmark"></span>
+                                Cumulative
+                            </label>
                         </div>
                     </div>
                 </div>
