@@ -2767,11 +2767,6 @@ Remember: You're helping someone explore and understand their social network dat
                 const degreeFilterSection = document.getElementById('degreeFilterSection');
                 degreeFilterSection.style.display = 'block';
                 
-                // Run audit after profile section becomes visible
-                setTimeout(() => {
-                    console.log('🔍 10TH BEDROCK - Profile section shown, running audit');
-                    runStyleAudit();
-                }, 100);
                 
                 // Update profile header
                 document.getElementById('profileName').textContent = node.label;
@@ -4161,6 +4156,20 @@ Remember: You're helping someone explore and understand their social network dat
                         setTimeout(runAuditWhenReady, 500);
                     }
                 }
+
+                // Add audit call to selectNode function after function definitions
+                const originalSelectNode = selectNode;
+                selectNode = function(nodeId) {
+                    const result = originalSelectNode.call(this, nodeId);
+                    
+                    // Run audit after profile section becomes visible
+                    setTimeout(() => {
+                        console.log('🔍 10TH BEDROCK - Profile section shown, running audit');
+                        runStyleAudit();
+                    }, 100);
+                    
+                    return result;
+                };
 
                 // Start checking after page loads
                 window.addEventListener('load', () => {
