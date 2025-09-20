@@ -96,12 +96,11 @@ DO NOT use file:// URLs with this version
                 line-height: 1.6;
             }
             
-            /* Modern Container Layout */
+            /* Modern Container Layout - Match 8th bedrock CSS Grid */
             .main-container {
-                display: flex;
-                display: -webkit-flex;
-                display: -moz-flex;
-                height: 100vh;
+                display: grid;
+                grid-template-columns: 380px 1fr;
+                grid-template-rows: 100%;
                 height: 100vh;
                 background: #000000;
                 position: relative;
@@ -122,7 +121,6 @@ DO NOT use file:// URLs with this version
             }
             
             .graph-container {
-                flex: 1;
                 position: relative;
                 background: rgba(0, 0, 0, 0.8);
                 -webkit-backdrop-filter: blur(5px);
