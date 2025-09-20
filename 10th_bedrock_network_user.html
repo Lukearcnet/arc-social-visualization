@@ -120,6 +120,11 @@ DO NOT use file:// URLs with this version
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             }
             
+            .controls-section {
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+            }
+            
             .graph-container {
                 position: relative;
                 background: rgba(0, 0, 0, 0.8);
@@ -1181,15 +1186,17 @@ DO NOT use file:// URLs with this version
             <!-- Sidebar -->
             <div class="sidebar">
                 
-                <!-- Search Section (hidden in user-centric view) -->
-                <div class="search-section" style="display: none;">
-                    <label for="searchInput">Search Users</label>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
-                    <div id="searchResults" class="search-results" style="display: none;"></div>
-                </div>
-                
-                <!-- Profile Section (Name and tap boxes) -->
-                <div id="profileSection" class="profile-section">
+                <!-- Controls Section -->
+                <div class="controls-section">
+                    <!-- Search Section (hidden in user-centric view) -->
+                    <div class="search-section" style="display: none;">
+                        <label for="searchInput">Search Users</label>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                        <div id="searchResults" class="search-results" style="display: none;"></div>
+                    </div>
+                    
+                    <!-- Profile Section (Name and tap boxes) -->
+                    <div id="profileSection" class="profile-section">
                     <div class="profile-header">
                         <h4 id="profileName">User Profile</h4>
                         <p id="profileActivity">Activity Level</p>
@@ -1206,6 +1213,7 @@ DO NOT use file:// URLs with this version
                         </div>
                     </div>
                 </div>
+                </div> <!-- End controls-section -->
                 
                 <!-- Timeline Slider Section -->
                 <div class="animation-section">
