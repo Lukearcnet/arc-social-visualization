@@ -343,7 +343,7 @@
         // ========================================
         // FEATURE FLAGS - Easy to toggle features
         // ========================================
-        const ENABLE_LOGIN = false; // Set to true to enable Twilio SMS login
+        const ENABLE_SMS_VERIFICATION = false; // Set to true to enable Twilio SMS verification
         
         // Global variables
         let currentView = 'map';
@@ -587,35 +587,41 @@
                 return;
             }
 
-            // Disable button during SMS sending
+            // Disable button during processing
             loginButton.disabled = true;
-            loginButton.textContent = 'Sending...';
+            loginButton.textContent = 'Processing...';
 
             try {
                 // Add +1 prefix to the phone number
                 const fullPhoneNumber = '+1' + cleanPhone;
                 currentPhoneNumber = fullPhoneNumber;
                 
-                // Send SMS via our API
-                const response = await fetch('/api/auth/start', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ phone: fullPhoneNumber })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.ok) {
-                    // SMS sent successfully - switch to SMS entry state
-                    showSMSEntryState();
-                    showSuccess('SMS sent! Check your phone for the verification code.');
+                if (ENABLE_SMS_VERIFICATION) {
+                    // Send SMS via our API
+                    const response = await fetch('/api/auth/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ phone: fullPhoneNumber })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.ok) {
+                        // SMS sent successfully - switch to SMS entry state
+                        showSMSEntryState();
+                        showSuccess('SMS sent! Check your phone for the verification code.');
+                    } else {
+                        showError('Failed to send SMS. Please try again.');
+                    }
                 } else {
-                    showError('Failed to send SMS. Please try again.');
+                    // Skip SMS verification - authenticate directly
+                    console.log('🔓 SMS verification disabled - authenticating directly');
+                    await authenticateUser();
                 }
             } catch (error) {
-                console.error('SMS send error:', error);
+                console.error('Login error:', error);
                 showError('An error occurred. Please try again.');
             } finally {
                 // Re-enable button
@@ -878,19 +884,13 @@
             // Load user data
             await loadUserData();
             
-            // Check if login is enabled
-            if (!ENABLE_LOGIN) {
-                // Skip login - go directly to bedrocks
-                console.log('🔓 Login disabled - proceeding directly to visualization');
-                initializeBedrocks();
-                return;
-            }
-            
             // Setup phone input formatting
             setupPhoneInput();
             
-            // Setup SMS input
-            setupSMSInput();
+            // Setup SMS input (only if SMS verification is enabled)
+            if (ENABLE_SMS_VERIFICATION) {
+                setupSMSInput();
+            }
             
             // Check for existing authentication
             if (checkExistingAuth()) {
