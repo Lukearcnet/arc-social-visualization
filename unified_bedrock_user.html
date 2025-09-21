@@ -368,6 +368,13 @@
             opacity: 1;
         }
 
+        /* Show overlay on mobile when it has the show class */
+        @media (max-width: 900px) {
+            .mobile-controls-overlay.show {
+                display: block;
+            }
+        }
+
         .mobile-controls-panel {
             position: fixed;
             bottom: 0;
@@ -1168,13 +1175,19 @@
         // ========================================
         
         function toggleMobileControls() {
+            console.log('Hamburger button clicked!');
             const overlay = document.getElementById('mobileControlsOverlay');
             const panel = document.getElementById('mobileControlsPanel');
             const btn = document.getElementById('hamburgerBtn');
             
+            console.log('Elements found:', { overlay, panel, btn });
+            console.log('Overlay has show class:', overlay.classList.contains('show'));
+            
             if (overlay.classList.contains('show')) {
+                console.log('Closing mobile controls');
                 closeMobileControls();
             } else {
+                console.log('Opening mobile controls');
                 openMobileControls();
             }
         }
@@ -1184,9 +1197,16 @@
             const panel = document.getElementById('mobileControlsPanel');
             const btn = document.getElementById('hamburgerBtn');
             
+            console.log('Adding show classes...');
             overlay.classList.add('show');
             panel.classList.add('show');
             btn.classList.add('active');
+            
+            console.log('Classes after adding:', {
+                overlay: overlay.className,
+                panel: panel.className,
+                btn: btn.className
+            });
             
             // Load control content from active iframe
             loadControlContent();
