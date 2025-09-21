@@ -517,6 +517,10 @@ DO NOT use file:// URLs with this version
             .label-timeline,
             .label-degrees,
             .label-connection-details {
+                display: block;
+                margin-bottom: var(--space-1);
+                color: var(--fg);
+                font-weight: 500;
                 font-size: var(--text-md);
             }
             
@@ -543,7 +547,7 @@ DO NOT use file:// URLs with this version
                 font-size: var(--text-md);
                 color: var(--fg);
                 position: relative;
-                padding-left: 24px;
+                padding-left: 30px;
             }
             
             .degree-checkbox input[type="checkbox"] {
@@ -557,12 +561,13 @@ DO NOT use file:// URLs with this version
             .checkmark {
                 position: absolute;
                 left: 0;
-                top: 0;
+                top: 50%;
+                transform: translateY(-50%);
                 height: 16px;
                 width: 16px;
-                background-color: transparent;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 2px;
                 transition: all 0.2s ease;
             }
             
@@ -579,8 +584,8 @@ DO NOT use file:// URLs with this version
                 content: "";
                 position: absolute;
                 display: none;
-                left: 4px;
-                top: 1px;
+                left: 5px;
+                top: 2px;
                 width: 4px;
                 height: 8px;
                 border: solid #000000;
