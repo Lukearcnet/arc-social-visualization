@@ -514,7 +514,14 @@ DO NOT use file:// URLs with this version
             }
             
             /* Timeline, Degrees, and Connection Details labels */
-            .label-timeline,
+            .label-timeline {
+                display: block;
+                margin-bottom: var(--space-1);
+                color: var(--fg);
+                font-weight: 500;
+                font-size: 15px !important;
+            }
+            
             .label-degrees,
             .label-connection-details {
                 display: block;
@@ -1256,7 +1263,7 @@ DO NOT use file:// URLs with this version
                 
                 <!-- Degrees Section (moved outside profile-section) -->
                 <div class="control-group" id="degreeFilterSection" style="display: none;">
-                    <label class="label-degrees">Degrees</label>
+                    <label class="label-degrees">Degree Connections</label>
                     <div class="degree-filters">
                         <label class="degree-checkbox">
                             <input type="checkbox" id="degree1" checked>
