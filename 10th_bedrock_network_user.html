@@ -36,7 +36,7 @@ DO NOT use file:// URLs with this version
     <html lang="en">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>ARC Social Network - AI Chatbot Bedrock Version</title>
         
         <!-- Vis.js Network -->
@@ -48,23 +48,20 @@ DO NOT use file:// URLs with this version
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
         
         <style>
-            /* CSS Custom Properties - Scaled for 380px sidebar */
+            /* CSS Custom Properties - Normalized to match 8th bedrock */
             :root {
-                /* Scale factor: 380px / 300px = 1.267 */
-                --scale-factor: 1.267;
+                /* Standard spacing (matching 8th bedrock) */
+                --space-1: 8px;
+                --space-2: 12px;
+                --space-3: 16px;
+                --space-4: 20px;
                 
-                /* Scaled spacing */
-                --space-1: calc(8px * var(--scale-factor));   /* 10.1px */
-                --space-2: calc(12px * var(--scale-factor));  /* 15.2px */
-                --space-3: calc(16px * var(--scale-factor));  /* 20.3px */
-                --space-4: calc(20px * var(--scale-factor));  /* 25.3px */
-                
-                /* Scaled text sizes */
-                --text-sm: calc(0.8rem * var(--scale-factor));
-                --text-md: calc(0.9rem * var(--scale-factor));
-                --text-lg: calc(1rem * var(--scale-factor));
-                --text-xl: calc(1.25rem * var(--scale-factor));
-                --text-2xl: calc(1.5rem * var(--scale-factor));
+                /* Standard text sizes (matching 8th bedrock) */
+                --text-sm: 0.8rem;
+                --text-md: 0.9rem;
+                --text-lg: 1rem;
+                --text-xl: 1.25rem;
+                --text-2xl: 1.5rem;
                 
                 /* Colors (same as 8th bedrock) */
                 --fg: #ffffff;
@@ -76,10 +73,10 @@ DO NOT use file:// URLs with this version
                 --stroke: rgba(255, 255, 255, 0.1);
                 --stroke-muted: rgba(255, 255, 255, 0.2);
                 
-                /* Scaled border radius */
-                --radius-1: calc(6px * var(--scale-factor));
-                --radius-2: calc(8px * var(--scale-factor));
-                --radius-3: calc(10px * var(--scale-factor));
+                /* Standard border radius (matching 8th bedrock) */
+                --radius-1: 6px;
+                --radius-2: 8px;
+                --radius-3: 10px;
             }
             
             /* Modern CSS Reset and Base Styles */
@@ -99,12 +96,11 @@ DO NOT use file:// URLs with this version
                 line-height: 1.6;
             }
             
-            /* Modern Container Layout */
+            /* Modern Container Layout - Match 8th bedrock CSS Grid */
             .main-container {
-                display: flex;
-                display: -webkit-flex;
-                display: -moz-flex;
-                height: 100vh;
+                display: grid;
+                grid-template-columns: 380px 1fr;
+                grid-template-rows: 100%;
                 height: 100vh;
                 background: #000000;
                 position: relative;
@@ -114,6 +110,7 @@ DO NOT use file:// URLs with this version
             /* Sleek Sidebar Design */
             .sidebar {
                 width: 380px;
+                padding: 0 16px 16px 16px; /* Match 8th bedrock padding */
                 background: rgba(20, 20, 20, 0.98);
                 -webkit-backdrop-filter: blur(20px);
                 backdrop-filter: blur(20px);
@@ -123,8 +120,12 @@ DO NOT use file:// URLs with this version
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             }
             
+            .controls-section {
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
+                border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+            }
+            
             .graph-container {
-                flex: 1;
                 position: relative;
                 background: rgba(0, 0, 0, 0.8);
                 -webkit-backdrop-filter: blur(5px);
@@ -162,8 +163,7 @@ DO NOT use file:// URLs with this version
             
             /* Timeline Slider Section (moved outside profile-section) */
             .animation-section {
-                padding: var(--space-4);
-                padding-top: calc(var(--space-4) * 0.5); /* Reduce top padding by half */
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
@@ -176,7 +176,7 @@ DO NOT use file:// URLs with this version
             
             /* Global View Section (moved outside profile-section) */
             .global-view-section {
-                padding: var(--space-4);
+                padding: calc(var(--space-4) / 2 * 0.6) 16px var(--space-4) 16px;
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
@@ -247,7 +247,7 @@ DO NOT use file:// URLs with this version
             
             /* Enhanced Search Section */
             .search-section {
-                padding: var(--space-4);
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
@@ -350,8 +350,9 @@ DO NOT use file:// URLs with this version
             /* Match activity level text styling to stat labels */
             .profile-header p,
             #profileActivity {
-                font-size: 0.8rem !important;
+                font-size: 0.9rem !important;
                 font-weight: 500 !important;
+                margin: 4px 0 !important;
                 color: var(--fg-muted) !important;
             }
             
@@ -359,10 +360,6 @@ DO NOT use file:// URLs with this version
             
             /* Removed conflicting connections-list rule that was preventing scrolling */
             
-            /* Fix any remaining small text */
-            .sidebar * {
-                font-size: inherit !important;
-            }
             
             /* Force arc text to be large */
             .header h3 {
@@ -372,52 +369,47 @@ DO NOT use file:// URLs with this version
             }
             
             .sidebar input::placeholder {
-                font-size: 0.9rem !important;
+                font-size: 0.9rem;
             }
             
             .sidebar small,
             .sidebar .text-muted {
-                font-size: 8px !important;
+                font-size: 0.8rem;
             }
             
-            /* Fix timeline slider labels */
+            /* Timeline slider labels */
             .animation-section > label {
-                font-size: 15px !important;
-                font-weight: 500 !important;
-                margin-bottom: 16px !important;
+                font-size: var(--text-md);
+                font-weight: 500;
+                margin-bottom: var(--space-2);
             }
             
-            /* Fix search section labels */
+            /* Search section labels */
             .search-section > label {
-                font-size: 15px !important;
-                font-weight: 500 !important;
-                margin-bottom: 16px !important;
+                font-size: var(--text-md);
+                font-weight: 500;
+                margin-bottom: var(--space-2);
             }
             
-            /* Fix date and user count display */
+            /* Timeline info display */
             .timeline-info {
-                font-size: 10px !important;
-                font-weight: 500 !important;
+                font-size: var(--text-sm);
+                font-weight: 500;
             }
             
-            /* Fix any Bootstrap text classes */
+            /* Bootstrap text classes */
             .text-center,
             .text-start,
             .text-end {
-                font-size: inherit !important;
+                font-size: inherit;
             }
             
-            /* Ensure all text in sidebar is readable */
-            .sidebar div,
-            .sidebar span {
-                font-size: 10px !important;
-            }
             
-            /* Fix checkbox and radio button labels */
+            /* Form check labels */
             .form-check input[type="checkbox"] + label,
             .form-check input[type="radio"] + label {
-                font-size: 11px !important;
-                font-weight: 500 !important;
+                font-size: var(--text-sm);
+                font-weight: 500;
             }
             
             /* Timeline Slider Section */
@@ -474,7 +466,7 @@ DO NOT use file:// URLs with this version
             .timeline-labels {
                 display: flex;
                 justify-content: space-between;
-                font-size: 11px;
+                font-size: var(--text-sm);
                 color: #cccccc;
                 font-weight: 500;
             }
@@ -489,50 +481,63 @@ DO NOT use file:// URLs with this version
             
             /* Modern Controls Section */
             .controls-section {
-                padding: var(--space-4);
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
             
             .control-group {
                 margin-bottom: var(--space-4);
-                padding: var(--space-4);
-                padding-top: calc(var(--space-4) * 0.5); /* Reduce top padding to match other sections */
+                padding: calc(var(--space-4) / 2 * 0.6) 16px;
                 border-bottom: 1px solid rgba(64, 64, 64, 0.3);
                 background: transparent;
             }
+            
+            .timeline-control-group {
+                margin-bottom: var(--space-4);
+                background: transparent;
+            }
+            
+            .timeline-container {
+                margin-bottom: var(--space-4);
+            }
+            
             
             .control-group label {
                 display: block;
                 margin-bottom: var(--space-1);
                 font-weight: 500;
                 color: var(--fg);
-                font-size: var(--text-lg);
+                font-size: var(--text-md);
                 text-transform: none;
                 letter-spacing: 0.05em;
             }
             
-            /* Specific font size fixes for Timeline, Degrees, and Connection Details labels */
+            /* Timeline, Degrees, and Connection Details labels */
             .label-timeline,
             .label-degrees,
             .label-connection-details {
-                font-size: calc(var(--text-md) * 0.73) !important;
+                display: block;
+                margin-bottom: var(--space-1);
+                color: var(--fg);
+                font-weight: 500;
+                font-size: var(--text-md);
             }
             
             .label-connection-details {
-                margin-bottom: 16px !important;
+                margin-bottom: var(--space-2);
             }
             
             .degree-controls {
                 display: flex;
-                gap: 16px;
+                gap: var(--space-2);
                 flex-wrap: wrap;
             }
             
             .degree-filters {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: var(--space-1);
             }
             
             .degree-checkbox {
@@ -556,12 +561,13 @@ DO NOT use file:// URLs with this version
             .checkmark {
                 position: absolute;
                 left: 0;
-                top: 0;
+                top: 50%;
+                transform: translateY(-50%);
                 height: 16px;
                 width: 16px;
-                background-color: transparent;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 2px;
                 transition: all 0.2s ease;
             }
             
@@ -578,8 +584,8 @@ DO NOT use file:// URLs with this version
                 content: "";
                 position: absolute;
                 display: none;
-                left: 4px;
-                top: 1px;
+                left: 5px;
+                top: 2px;
                 width: 4px;
                 height: 8px;
                 border: solid #000000;
@@ -683,7 +689,8 @@ DO NOT use file:// URLs with this version
             
             /* Modern Profile Section */
             .profile-section {
-                padding: var(--space-4);
+                padding: calc(var(--space-4) / 2 * 0.6) var(--space-2);
+                margin: 0 calc(-1 * var(--space-4)) 0 calc(-1 * var(--space-4));
                 display: none;
                 background: transparent;
                 overflow-y: auto !important;
@@ -712,6 +719,8 @@ DO NOT use file:// URLs with this version
             #profileName {
                 font-size: 1.95rem !important;
                 font-weight: 700 !important;
+                margin-bottom: 10px;
+                letter-spacing: -0.025em;
             }
             
             /* Removed unused .profile-username rule - class not used in HTML */
@@ -720,7 +729,7 @@ DO NOT use file:// URLs with this version
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 16px;
-                margin-bottom: 20px;
+                margin-bottom: 10px;
             }
             
             .stat-card {
@@ -739,17 +748,17 @@ DO NOT use file:// URLs with this version
             }
             
             .stat-number {
-                font-size: 62px;
-                font-weight: 800;
+                font-size: 1.5rem !important;
+                font-weight: 700 !important;
                 color: #ffffff;
                 margin-bottom: 5px;
             }
             
             .stat-label {
-                font-size: 31px;
-                color: rgba(255, 255, 255, 0.7);
-                text-transform: uppercase;
-                font-weight: 600;
+                font-size: 0.8rem !important;
+                font-weight: 500 !important;
+                color: var(--fg-muted);
+                text-transform: uppercase !important;
                 letter-spacing: 0.05em;
             }
             
@@ -781,13 +790,14 @@ DO NOT use file:// URLs with this version
             }
             
             .connection-item {
-                padding: var(--space-4); /* Match other sections (25.3px) */
+                padding: var(--space-1) var(--space-2); /* Match 8th bedrock search results */
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 transition: background-color 0.2s ease;
                 color: #ffffff;
+                font-size: 0.72rem; /* Reduced by 40% from 1.2rem (1.2 * 0.6 = 0.72) */
             }
             
             .connection-item:hover {
@@ -1195,15 +1205,17 @@ DO NOT use file:// URLs with this version
             <!-- Sidebar -->
             <div class="sidebar">
                 
-                <!-- Search Section (hidden in user-centric view) -->
-                <div class="search-section" style="display: none;">
-                    <label for="searchInput">Search Users</label>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
-                    <div id="searchResults" class="search-results" style="display: none;"></div>
-                </div>
-                
-                <!-- Profile Section (Name and tap boxes) -->
-                <div id="profileSection" class="profile-section">
+                <!-- Controls Section -->
+                <div class="controls-section">
+                    <!-- Search Section (hidden in user-centric view) -->
+                    <div class="search-section" style="display: none;">
+                        <label for="searchInput">Search Users</label>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                        <div id="searchResults" class="search-results" style="display: none;"></div>
+                    </div>
+                    
+                    <!-- Profile Section (Name and tap boxes) -->
+                    <div id="profileSection" class="profile-section">
                     <div class="profile-header">
                         <h4 id="profileName">User Profile</h4>
                         <p id="profileActivity">Activity Level</p>
@@ -1221,23 +1233,18 @@ DO NOT use file:// URLs with this version
                     </div>
                 </div>
                 
-                <!-- Timeline Slider Section -->
-                <div class="animation-section">
-                    <label>Timeline Slider</label>
-                    <div class="timeline-controls">
-                        <div class="timeline-slider-container">
-                            <input type="range" id="timelineSlider" min="0" max="100" value="100" class="timeline-slider">
-                            <div class="timeline-labels">
-                                <span>First Connection</span>
-                                <span>All Connections</span>
-                            </div>
-                        </div>
+                <!-- Timeline Slider -->
+                <div class="timeline-control-group">
+                    <label>Timeline</label>
+                    <div class="timeline-container">
+                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
                         <div class="timeline-info">
                             <span id="currentTime">All connections shown</span>
                             <span id="connectionCount">246 total users</span>
                         </div>
                     </div>
                 </div>
+                </div> <!-- End controls-section -->
                 
                 <!-- Global View Section -->
                 <div class="global-view-section">
@@ -2781,6 +2788,7 @@ Remember: You're helping someone explore and understand their social network dat
                 const degreeFilterSection = document.getElementById('degreeFilterSection');
                 degreeFilterSection.style.display = 'block';
                 
+                
                 // Update profile header
                 document.getElementById('profileName').textContent = node.label;
                 document.getElementById('profileActivity').textContent = 
@@ -4043,6 +4051,156 @@ Remember: You're helping someone explore and understand their social network dat
                         e.preventDefault();
                     }
                 }, { passive: false });
+
+                // COMPUTED STYLE AUDIT FUNCTIONS
+                function dumpComputed(el) {
+                    if (!el) return { node: 'NOT_FOUND', error: 'Element not found' };
+                    const cs = getComputedStyle(el);
+                    return {
+                        node: el.className || el.id || el.tagName,
+                        width: el.clientWidth, 
+                        height: el.clientHeight,
+                        fontFamily: cs.fontFamily, 
+                        fontSize: cs.fontSize, 
+                        lineHeight: cs.lineHeight,
+                        letterSpacing: cs.letterSpacing, 
+                        boxSizing: cs.boxSizing,
+                        padding: `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`,
+                        margin: `${cs.marginTop} ${cs.marginRight} ${cs.marginBottom} ${cs.marginLeft}`,
+                        border: `${cs.borderTopWidth} ${cs.borderRightWidth} ${cs.borderBottomWidth} ${cs.borderLeftWidth}`,
+                        transform: cs.transform,
+                        zoom: cs.zoom,
+                        minWidth: cs.minWidth
+                    };
+                }
+
+                function auditAncestors(el) {
+                    const chain = [];
+                    while (el) {
+                        const cs = getComputedStyle(el);
+                        chain.push({
+                            node: el.id || el.className || el.tagName,
+                            fontSize: cs.fontSize, 
+                            lineHeight: cs.lineHeight, 
+                            letterSpacing: cs.letterSpacing,
+                            boxSizing: cs.boxSizing, 
+                            transform: cs.transform, 
+                            zoom: cs.zoom,
+                            minWidth: cs.minWidth, 
+                            width: cs.width,
+                            height: cs.height
+                        });
+                        el = el.parentElement;
+                    }
+                    return chain;
+                }
+
+                function runStyleAudit() {
+                    console.log('🔍 10TH BEDROCK - COMPUTED STYLE AUDIT');
+                    console.log('======================================');
+                    
+                    // 1) Compare actual pixels for sentinel nodes
+                    console.log('📊 SENTINEL NODES COMPUTED STYLES:');
+                    const sidebarData = dumpComputed(document.querySelector('.sidebar'));
+                    const profileNameData = dumpComputed(document.querySelector('#profileName'));
+                    const statCardData = dumpComputed(document.querySelector('.stat-card'));
+                    console.log('SIDEBAR:', sidebarData);
+                    console.log('PROFILE NAME:', profileNameData);
+                    console.log('STAT CARD:', statCardData);
+                    
+                    // 2) Check root + ancestor overrides
+                    console.log('🌳 ANCESTOR CHAIN AUDIT:');
+                    const ancestorData = auditAncestors(document.querySelector('.sidebar'));
+                    ancestorData.forEach((ancestor, index) => {
+                        console.log(`ANCESTOR ${index}:`, ancestor);
+                    });
+                    
+                    // 3) Verify rem base
+                    const htmlFontSize = getComputedStyle(document.documentElement).fontSize;
+                    const bodyFontSize = getComputedStyle(document.body).fontSize;
+                    console.log('📏 ROOT FONT SIZES:');
+                    console.log('HTML font-size:', htmlFontSize);
+                    console.log('Body font-size:', bodyFontSize);
+                    
+                    // 4) Confirm sidebar width
+                    const sidebar = document.querySelector('.sidebar');
+                    if (sidebar) {
+                        console.log('📐 SIDEBAR DIMENSIONS:');
+                        console.log('offsetWidth:', sidebar.offsetWidth);
+                        console.log('computed width:', getComputedStyle(sidebar).width);
+                        console.log('clientWidth:', sidebar.clientWidth);
+                    }
+                    
+                    // 5) Check for any transforms on graph container
+                    const graphContainer = document.querySelector('.graph-container');
+                    if (graphContainer) {
+                        const transform = getComputedStyle(graphContainer).transform;
+                        console.log('🔄 GRAPH CONTAINER TRANSFORM:', transform);
+                    }
+                    
+                    // 6) Check for any CSS variable overrides
+                    console.log('🎨 CSS VARIABLE VALUES:');
+                    const root = document.documentElement;
+                    const computedStyle = getComputedStyle(root);
+                    console.log('--space-1:', computedStyle.getPropertyValue('--space-1'));
+                    console.log('--space-2:', computedStyle.getPropertyValue('--space-2'));
+                    console.log('--space-3:', computedStyle.getPropertyValue('--space-3'));
+                    console.log('--space-4:', computedStyle.getPropertyValue('--space-4'));
+                    console.log('--text-sm:', computedStyle.getPropertyValue('--text-sm'));
+                    console.log('--text-md:', computedStyle.getPropertyValue('--text-md'));
+                    console.log('--text-lg:', computedStyle.getPropertyValue('--text-lg'));
+                }
+
+                // Run audit after profile section becomes visible
+                function runAuditWhenReady() {
+                    const profileSection = document.querySelector('.profile-section');
+                    const profileName = document.querySelector('#profileName');
+                    const statCard = document.querySelector('.stat-card');
+                    
+                    console.log('🔍 10TH BEDROCK - AUDIT CHECK:', {
+                        profileSection: !!profileSection,
+                        profileSectionDisplay: profileSection ? profileSection.style.display : 'not found',
+                        profileName: !!profileName,
+                        profileNameWidth: profileName ? profileName.offsetWidth : 'not found',
+                        statCard: !!statCard,
+                        statCardWidth: statCard ? statCard.offsetWidth : 'not found'
+                    });
+                    
+                    if (profileSection && profileSection.style.display !== 'none' && 
+                        profileName && profileName.offsetWidth > 0 && 
+                        statCard && statCard.offsetWidth > 0) {
+                        console.log('✅ 10TH BEDROCK - Running audit now');
+                        runStyleAudit();
+                    } else {
+                        console.log('⏳ 10TH BEDROCK - Retrying audit in 500ms');
+                        // Retry every 500ms until elements are visible
+                        setTimeout(runAuditWhenReady, 500);
+                    }
+                }
+
+                // Add audit call to selectNode function after function definitions
+                const originalSelectNode = selectNode;
+                selectNode = function(nodeId) {
+                    const result = originalSelectNode.call(this, nodeId);
+                    
+                    // Run audit after profile section becomes visible
+                    setTimeout(() => {
+                        console.log('🔍 10TH BEDROCK - Profile section shown, running audit');
+                        runStyleAudit();
+                    }, 100);
+                    
+                    return result;
+                };
+
+                // Start checking after page loads
+                window.addEventListener('load', () => {
+                    setTimeout(runAuditWhenReady, 1000);
+                    // Fallback: run audit after 5 seconds regardless
+                    setTimeout(() => {
+                        console.log('🔄 10TH BEDROCK - Fallback audit after 5 seconds');
+                        runStyleAudit();
+                    }, 5000);
+                });
                 
                 // Add comprehensive debugging for minimize button
                 const minimizeButton = document.getElementById('minimizeButton');
