@@ -479,14 +479,22 @@
             });
         }
 
-        // Load user data from comprehensive_data.json
+        // Load user data from dynamic API (same as visualizations)
         async function loadUserData() {
             try {
-                const response = await fetch('./data/comprehensive_data.json?t=' + Date.now());
+                const response = await fetch('/api/data?t=' + Date.now());
                 if (!response.ok) {
                     throw new Error('Failed to load user data');
                 }
-                userData = await response.json();
+                const apiData = await response.json();
+                
+                // Normalize API data to match expected format
+                userData = {
+                    tap_data: apiData.taps || apiData.tap_data || [],
+                    user_profiles: apiData.users || apiData.user_profiles || []
+                };
+                
+                console.log('✅ User data loaded from API:', userData.tap_data.length, 'taps');
             } catch (error) {
                 console.error('❌ Error loading user data:', error);
                 showError('Failed to load user data. Please refresh the page.');
