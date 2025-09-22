@@ -1213,7 +1213,7 @@ DO NOT use file:// URLs with this version
             /* Hamburger Button */
             .mobile-hamburger {
                 position: fixed;
-                top: 60px;
+                top: 80px;
                 left: 20px;
                 z-index: 1000;
                 background: rgba(42, 42, 42, 0.9);
@@ -4376,9 +4376,23 @@ Remember: You're helping someone explore and understand their social network dat
                 if (sidebar.classList.contains('show')) {
                     sidebar.classList.remove('show');
                     hamburger.classList.remove('active');
+                    // Notify parent that control panel is closed
+                    if (window.parent) {
+                        window.parent.postMessage({
+                            type: 'controlPanelState',
+                            isOpen: false
+                        }, '*');
+                    }
                 } else {
                     sidebar.classList.add('show');
                     hamburger.classList.add('active');
+                    // Notify parent that control panel is open
+                    if (window.parent) {
+                        window.parent.postMessage({
+                            type: 'controlPanelState',
+                            isOpen: true
+                        }, '*');
+                    }
                 }
             }
         </script>

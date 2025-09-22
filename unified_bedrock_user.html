@@ -277,12 +277,24 @@
         @media (max-width: 900px) {
             .view-toggle {
                 position: fixed;
-                top: 20px;
+                top: 80px;
                 left: 50%;
                 transform: translateX(-50%);
                 right: auto;
                 z-index: 1001;
             }
+        }
+        
+        /* Extra small screens (iPhone mini) */
+        @media (max-width: 400px) {
+            .view-toggle {
+                top: 100px;
+            }
+        }
+        
+        /* Hide view toggle when control panel is open */
+        .view-toggle.hidden {
+            display: none;
         }
 
     </style>
@@ -1048,6 +1060,37 @@
             }
         });
 
+
+        // ========================================
+        // MOBILE VIEW TOGGLE VISIBILITY CONTROL
+        // ========================================
+        
+        // Function to hide view toggle when control panel is open
+        function hideViewToggle() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle) {
+                viewToggle.classList.add('hidden');
+            }
+        }
+        
+        // Function to show view toggle when control panel is closed
+        function showViewToggle() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle) {
+                viewToggle.classList.remove('hidden');
+            }
+        }
+        
+        // Listen for iframe messages about control panel state
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'controlPanelState') {
+                if (event.data.isOpen) {
+                    hideViewToggle();
+                } else {
+                    showViewToggle();
+                }
+            }
+        });
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
