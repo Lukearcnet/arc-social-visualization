@@ -4462,6 +4462,9 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Mobile resize functionality
             function initResize() {
+                // Only initialize on mobile screens
+                if (!window.matchMedia('(max-width: 900px)').matches) return;
+                
                 const sidebar = document.querySelector('.sidebar');
                 const resizeHandle = document.getElementById('resizeHandle');
                 
@@ -4497,6 +4500,9 @@ Remember: You're helping someone explore and understand their social network dat
             }
             
             function handleResizeStart(e) {
+                // Only work on mobile screens
+                if (!window.matchMedia('(max-width: 900px)').matches) return;
+                
                 isMobileResizing = true;
                 mobileStartY = e.touches[0].clientY;
                 const sidebar = document.querySelector('.sidebar');
