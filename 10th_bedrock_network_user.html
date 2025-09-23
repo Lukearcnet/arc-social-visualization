@@ -4463,7 +4463,12 @@ Remember: You're helping someone explore and understand their social network dat
                 // Load saved height or use default
                 const savedHeight = localStorage.getItem('mobileSidebarHeight');
                 if (savedHeight) {
-                    sidebar.style.height = savedHeight;
+                    sidebar.style.setProperty('height', savedHeight, 'important');
+                    sidebar.style.setProperty('bottom', 'auto', 'important');
+                } else {
+                    // Set initial height to 50% if no saved preference
+                    sidebar.style.setProperty('height', '50%', 'important');
+                    sidebar.style.setProperty('bottom', 'auto', 'important');
                 }
                 
                 // Touch events for drag handle
@@ -4478,7 +4483,9 @@ Remember: You're helping someone explore and understand their social network dat
                 isMobileResizing = true;
                 mobileStartY = e.touches[0].clientY;
                 const sidebar = document.querySelector('.sidebar');
-                const currentHeight = sidebar.style.height;
+                
+                // Get current height from computed style or inline style
+                const currentHeight = sidebar.style.height || getComputedStyle(sidebar).height;
                 mobileStartHeight = currentHeight ? parseFloat(currentHeight) : 50; // Default to 50% if no height set
                 
                 // Prevent scrolling and other touch events
@@ -4494,7 +4501,9 @@ Remember: You're helping someone explore and understand their social network dat
                 const newHeight = Math.max(10, Math.min(90, mobileStartHeight + deltaY));
                 
                 const sidebar = document.querySelector('.sidebar');
-                sidebar.style.height = newHeight + '%';
+                // Override CSS with !important to ensure JavaScript controls height
+                sidebar.style.setProperty('height', newHeight + '%', 'important');
+                sidebar.style.setProperty('bottom', 'auto', 'important');
                 
                 // Prevent scrolling and other touch events
                 e.preventDefault();
