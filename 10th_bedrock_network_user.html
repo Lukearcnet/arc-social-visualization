@@ -914,6 +914,7 @@ DO NOT use file:// URLs with this version
                 background: color(display-p3 1.000 1.000 1.000 / 0.072);
                 border: 1px solid rgba(255, 255, 255, 0.108);
                 min-height: 1170px;
+                max-height: 80vh;
                 -webkit-backdrop-filter: blur(10px);
                 backdrop-filter: blur(10px);
             }
@@ -1278,7 +1279,8 @@ DO NOT use file:// URLs with this version
                 
                 /* Resize Handle - Mobile Only */
                 .resize-handle {
-                    position: fixed;
+                    position: absolute;
+                    bottom: 0;
                     left: 0;
                     right: 0;
                     height: 40px;
@@ -1290,15 +1292,6 @@ DO NOT use file:// URLs with this version
                     justify-content: center;
                     z-index: 1001;
                     touch-action: none;
-                    /* Only show when sidebar is open */
-                    transform: translateX(-100%);
-                    transition: transform 0.3s ease;
-                    /* Position will be set dynamically by JavaScript */
-                }
-                
-                /* Show resize handle when sidebar is open */
-                .sidebar.show ~ .resize-handle {
-                    transform: translateX(0);
                 }
                 
                 /* Hide resize handle on desktop */
@@ -1442,10 +1435,10 @@ DO NOT use file:// URLs with this version
                 </div>
                 
                 <!-- Controls Section removed - controls moved to floating controls -->
+                
+                <!-- Mobile Resize Handle -->
+                <div class="resize-handle" id="resizeHandle"></div>
             </div>
-            
-            <!-- Mobile Resize Handle - Outside sidebar for proper positioning -->
-            <div class="resize-handle" id="resizeHandle"></div>
             
             <!-- Graph Container -->
             <div class="graph-container">
@@ -4470,25 +4463,8 @@ Remember: You're helping someone explore and understand their social network dat
                 // Load saved height or use default
                 const savedHeight = localStorage.getItem('mobileSidebarHeight');
                 if (savedHeight) {
-                    sidebar.style.setProperty('height', savedHeight, 'important');
-                    sidebar.style.setProperty('bottom', 'auto', 'important');
-                } else {
-                    // Set initial height to 50% if no saved preference
-                    sidebar.style.setProperty('height', '50%', 'important');
-                    sidebar.style.setProperty('bottom', 'auto', 'important');
+                    sidebar.style.height = savedHeight;
                 }
-                
-                // Position drag bar at bottom of control panel
-                const positionDragBar = () => {
-                    const sidebarRect = sidebar.getBoundingClientRect();
-                    const handleTop = sidebarRect.bottom - 40; // 40px is handle height
-                    resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
-                    resizeHandle.style.setProperty('bottom', 'auto', 'important');
-                };
-                
-                // Position initially and on resize
-                positionDragBar();
-                window.addEventListener('resize', positionDragBar);
                 
                 // Touch events for drag handle
                 resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
@@ -4502,16 +4478,8 @@ Remember: You're helping someone explore and understand their social network dat
                 isMobileResizing = true;
                 mobileStartY = e.touches[0].clientY;
                 const sidebar = document.querySelector('.sidebar');
-                
-                // Get current height from computed style or inline style
-                const currentHeight = sidebar.style.height || getComputedStyle(sidebar).height;
+                const currentHeight = sidebar.style.height;
                 mobileStartHeight = currentHeight ? parseFloat(currentHeight) : 50; // Default to 50% if no height set
-                
-                // DEBUG: Log initial values
-                console.log('🔍 RESIZE START DEBUG:');
-                console.log('mobileStartY:', mobileStartY);
-                console.log('currentHeight:', currentHeight);
-                console.log('mobileStartHeight:', mobileStartHeight);
                 
                 // Prevent scrolling and other touch events
                 e.preventDefault();
@@ -4522,32 +4490,11 @@ Remember: You're helping someone explore and understand their social network dat
                 if (!isMobileResizing) return;
                 
                 const currentY = e.touches[0].clientY;
-                const deltaY = currentY - mobileStartY; // Direct: drag down = expand down
-                
-                // Scale down sensitivity for 1:1 feel (divide by 10 for smoother control)
-                const scaledDelta = deltaY / 10;
-                const newHeight = Math.max(5, Math.min(95, mobileStartHeight + scaledDelta));
-                
-                // DEBUG: Log calculation values
-                console.log('🔍 RESIZE MOVE DEBUG:');
-                console.log('currentY:', currentY);
-                console.log('deltaY:', deltaY);
-                console.log('scaledDelta:', scaledDelta);
-                console.log('mobileStartHeight:', mobileStartHeight);
-                console.log('newHeight:', newHeight);
+                const deltaY = mobileStartY - currentY; // Inverted because bottom increases as we go up
+                const newHeight = Math.max(10, Math.min(90, mobileStartHeight + deltaY));
                 
                 const sidebar = document.querySelector('.sidebar');
-                const resizeHandle = document.getElementById('resizeHandle');
-                
-                // Override CSS with !important to ensure JavaScript controls height
-                sidebar.style.setProperty('height', newHeight + '%', 'important');
-                sidebar.style.setProperty('bottom', 'auto', 'important');
-                
-                // Position drag bar at bottom of control panel
-                const sidebarRect = sidebar.getBoundingClientRect();
-                const handleTop = sidebarRect.bottom - 40; // 40px is handle height
-                resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
-                resizeHandle.style.setProperty('bottom', 'auto', 'important');
+                sidebar.style.height = newHeight + '%';
                 
                 // Prevent scrolling and other touch events
                 e.preventDefault();
