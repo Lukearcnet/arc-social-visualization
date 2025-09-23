@@ -1280,7 +1280,6 @@ DO NOT use file:// URLs with this version
                 /* Resize Handle - Mobile Only */
                 .resize-handle {
                     position: fixed;
-                    top: 50%;
                     left: 0;
                     right: 0;
                     height: 40px;
@@ -1295,6 +1294,7 @@ DO NOT use file:// URLs with this version
                     /* Only show when sidebar is open */
                     transform: translateX(-100%);
                     transition: transform 0.3s ease;
+                    /* Position will be set dynamically by JavaScript */
                 }
                 
                 /* Show resize handle when sidebar is open */
@@ -4479,6 +4479,18 @@ Remember: You're helping someone explore and understand their social network dat
                     sidebar.style.setProperty('bottom', 'auto', 'important');
                 }
                 
+                // Position drag bar at bottom of control panel
+                const positionDragBar = () => {
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    const handleTop = sidebarRect.bottom - 40; // 40px is handle height
+                    resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
+                    resizeHandle.style.setProperty('bottom', 'auto', 'important');
+                };
+                
+                // Position initially and on resize
+                positionDragBar();
+                window.addEventListener('resize', positionDragBar);
+                
                 // Touch events for drag handle
                 resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
                 resizeHandle.addEventListener('touchmove', handleResizeMove, { passive: false });
@@ -4511,7 +4523,7 @@ Remember: You're helping someone explore and understand their social network dat
                 if (!isMobileResizing) return;
                 
                 const currentY = e.touches[0].clientY;
-                const deltaY = mobileStartY - currentY; // Inverted because bottom increases as we go up
+                const deltaY = currentY - mobileStartY; // Direct: drag down = expand down
                 const newHeight = Math.max(10, Math.min(90, mobileStartHeight + deltaY));
                 
                 // DEBUG: Log calculation values
@@ -4522,9 +4534,17 @@ Remember: You're helping someone explore and understand their social network dat
                 console.log('newHeight:', newHeight);
                 
                 const sidebar = document.querySelector('.sidebar');
+                const resizeHandle = document.getElementById('resizeHandle');
+                
                 // Override CSS with !important to ensure JavaScript controls height
                 sidebar.style.setProperty('height', newHeight + '%', 'important');
                 sidebar.style.setProperty('bottom', 'auto', 'important');
+                
+                // Position drag bar at bottom of control panel
+                const sidebarRect = sidebar.getBoundingClientRect();
+                const handleTop = sidebarRect.bottom - 40; // 40px is handle height
+                resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
+                resizeHandle.style.setProperty('bottom', 'auto', 'important');
                 
                 // Prevent scrolling and other touch events
                 e.preventDefault();
