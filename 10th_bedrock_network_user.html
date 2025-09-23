@@ -4488,6 +4488,12 @@ Remember: You're helping someone explore and understand their social network dat
                 const currentHeight = sidebar.style.height || getComputedStyle(sidebar).height;
                 mobileStartHeight = currentHeight ? parseFloat(currentHeight) : 50; // Default to 50% if no height set
                 
+                // DEBUG: Log initial values
+                console.log('🔍 RESIZE START DEBUG:');
+                console.log('mobileStartY:', mobileStartY);
+                console.log('currentHeight:', currentHeight);
+                console.log('mobileStartHeight:', mobileStartHeight);
+                
                 // Prevent scrolling and other touch events
                 e.preventDefault();
                 e.stopPropagation();
@@ -4499,6 +4505,13 @@ Remember: You're helping someone explore and understand their social network dat
                 const currentY = e.touches[0].clientY;
                 const deltaY = mobileStartY - currentY; // Inverted because bottom increases as we go up
                 const newHeight = Math.max(10, Math.min(90, mobileStartHeight + deltaY));
+                
+                // DEBUG: Log calculation values
+                console.log('🔍 RESIZE MOVE DEBUG:');
+                console.log('currentY:', currentY);
+                console.log('deltaY:', deltaY);
+                console.log('mobileStartHeight:', mobileStartHeight);
+                console.log('newHeight:', newHeight);
                 
                 const sidebar = document.querySelector('.sidebar');
                 // Override CSS with !important to ensure JavaScript controls height
