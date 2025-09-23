@@ -1283,14 +1283,15 @@ DO NOT use file:// URLs with this version
                     bottom: 0;
                     left: 0;
                     right: 0;
-                    height: 30px;
-                    background: rgba(42, 42, 42, 0.8);
-                    border-top: 2px solid rgba(255, 255, 255, 0.2);
+                    height: 40px;
+                    background: rgba(42, 42, 42, 0.9);
+                    border-top: 2px solid rgba(255, 255, 255, 0.3);
                     cursor: ns-resize;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     z-index: 1001;
+                    touch-action: none;
                 }
                 
                 .resize-handle::before {
@@ -1301,44 +1302,9 @@ DO NOT use file:// URLs with this version
                     border-radius: 2px;
                 }
                 
-                /* Resize Arrow Buttons */
-                .resize-arrows {
-                    position: absolute;
-                    bottom: 35px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    display: flex;
-                    gap: 10px;
-                    z-index: 1002;
-                }
                 
-                .resize-arrow {
-                    width: 32px;
-                    height: 32px;
-                    background: rgba(42, 42, 42, 0.9);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    color: white;
-                    font-size: 14px;
-                }
-                
-                .resize-arrow:hover {
-                    background: rgba(42, 42, 42, 1);
-                    border-color: #007bff;
-                }
-                
-                .resize-arrow:active {
-                    transform: scale(0.95);
-                }
-                
-                /* Hide resize controls when sidebar is hidden */
-                .sidebar:not(.show) .resize-handle,
-                .sidebar:not(.show) .resize-arrows {
+                /* Hide resize handle when sidebar is hidden */
+                .sidebar:not(.show) .resize-handle {
                     display: none;
                 }
                 
@@ -1463,12 +1429,8 @@ DO NOT use file:// URLs with this version
                 
                 <!-- Controls Section removed - controls moved to floating controls -->
                 
-                <!-- Mobile Resize Controls -->
+                <!-- Mobile Resize Handle -->
                 <div class="resize-handle" id="resizeHandle"></div>
-                <div class="resize-arrows">
-                    <button class="resize-arrow" id="resizeUp" title="Increase panel size">▲</button>
-                    <button class="resize-arrow" id="resizeDown" title="Decrease panel size">▼</button>
-                </div>
             </div>
             
             <!-- Graph Container -->
@@ -4488,10 +4450,8 @@ Remember: You're helping someone explore and understand their social network dat
             function initResize() {
                 const sidebar = document.querySelector('.sidebar');
                 const resizeHandle = document.getElementById('resizeHandle');
-                const resizeUp = document.getElementById('resizeUp');
-                const resizeDown = document.getElementById('resizeDown');
                 
-                if (!sidebar || !resizeHandle || !resizeUp || !resizeDown) return;
+                if (!sidebar || !resizeHandle) return;
                 
                 // Load saved height or use default
                 const savedHeight = localStorage.getItem('mobileSidebarHeight');
@@ -4503,10 +4463,6 @@ Remember: You're helping someone explore and understand their social network dat
                 resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
                 resizeHandle.addEventListener('touchmove', handleResizeMove, { passive: false });
                 resizeHandle.addEventListener('touchend', handleResizeEnd, { passive: false });
-                
-                // Click events for arrow buttons
-                resizeUp.addEventListener('click', () => adjustSize(10));
-                resizeDown.addEventListener('click', () => adjustSize(-10));
             }
             
             function handleResizeStart(e) {
@@ -4518,7 +4474,9 @@ Remember: You're helping someone explore and understand their social network dat
                 const currentBottom = sidebar.style.bottom;
                 mobileStartHeight = currentBottom ? parseFloat(currentBottom) : 0;
                 
+                // Prevent scrolling and other touch events
                 e.preventDefault();
+                e.stopPropagation();
             }
             
             function handleResizeMove(e) {
@@ -4531,7 +4489,9 @@ Remember: You're helping someone explore and understand their social network dat
                 const sidebar = document.querySelector('.sidebar');
                 sidebar.style.bottom = newHeight + '%';
                 
+                // Prevent scrolling and other touch events
                 e.preventDefault();
+                e.stopPropagation();
             }
             
             function handleResizeEnd(e) {
@@ -4544,20 +4504,11 @@ Remember: You're helping someone explore and understand their social network dat
                 // Save the height preference
                 localStorage.setItem('mobileSidebarHeight', finalHeight);
                 
+                // Prevent scrolling and other touch events
                 e.preventDefault();
+                e.stopPropagation();
             }
             
-            function adjustSize(delta) {
-                const sidebar = document.querySelector('.sidebar');
-                if (!sidebar) return;
-                
-                const currentBottom = sidebar.style.bottom;
-                const currentHeight = currentBottom ? parseFloat(currentBottom) : 0;
-                const newHeight = Math.max(10, Math.min(90, currentHeight + delta));
-                
-                sidebar.style.bottom = newHeight + '%';
-                localStorage.setItem('mobileSidebarHeight', newHeight + '%');
-            }
             
             // Initialize resize on DOM load
             document.addEventListener('DOMContentLoaded', initResize);
