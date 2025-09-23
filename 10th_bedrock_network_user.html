@@ -4479,10 +4479,10 @@ Remember: You're helping someone explore and understand their social network dat
             // MOBILE RESIZE FUNCTIONS
             // ========================================
             
-            let isResizing = false;
-            let startY = 0;
-            let startHeight = 0;
-            let currentHeight = 0;
+            let isMobileResizing = false;
+            let mobileStartY = 0;
+            let mobileStartHeight = 0;
+            let mobileCurrentHeight = 0;
             
             // Initialize resize functionality
             function initResize() {
@@ -4512,21 +4512,21 @@ Remember: You're helping someone explore and understand their social network dat
             function handleResizeStart(e) {
                 if (!window.matchMedia('(max-width: 900px)').matches) return;
                 
-                isResizing = true;
-                startY = e.touches[0].clientY;
+                isMobileResizing = true;
+                mobileStartY = e.touches[0].clientY;
                 const sidebar = document.querySelector('.sidebar');
                 const currentBottom = sidebar.style.bottom;
-                startHeight = currentBottom ? parseFloat(currentBottom) : 0;
+                mobileStartHeight = currentBottom ? parseFloat(currentBottom) : 0;
                 
                 e.preventDefault();
             }
             
             function handleResizeMove(e) {
-                if (!isResizing) return;
+                if (!isMobileResizing) return;
                 
                 const currentY = e.touches[0].clientY;
-                const deltaY = startY - currentY; // Inverted because bottom increases as we go up
-                const newHeight = Math.max(10, Math.min(90, startHeight + deltaY));
+                const deltaY = mobileStartY - currentY; // Inverted because bottom increases as we go up
+                const newHeight = Math.max(10, Math.min(90, mobileStartHeight + deltaY));
                 
                 const sidebar = document.querySelector('.sidebar');
                 sidebar.style.bottom = newHeight + '%';
@@ -4535,9 +4535,9 @@ Remember: You're helping someone explore and understand their social network dat
             }
             
             function handleResizeEnd(e) {
-                if (!isResizing) return;
+                if (!isMobileResizing) return;
                 
-                isResizing = false;
+                isMobileResizing = false;
                 const sidebar = document.querySelector('.sidebar');
                 const finalHeight = sidebar.style.bottom;
                 
