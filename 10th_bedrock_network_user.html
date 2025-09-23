@@ -1277,7 +1277,7 @@ DO NOT use file:// URLs with this version
                     border-bottom-right-radius: 20px;
                 }
                 
-                /* Resize Handle */
+                /* Resize Handle - Mobile Only */
                 .resize-handle {
                     position: absolute;
                     bottom: 0;
@@ -1292,6 +1292,13 @@ DO NOT use file:// URLs with this version
                     justify-content: center;
                     z-index: 1001;
                     touch-action: none;
+                }
+                
+                /* Hide resize handle on desktop */
+                @media (min-width: 901px) {
+                    .resize-handle {
+                        display: none;
+                    }
                 }
                 
                 .resize-handle::before {
@@ -4456,7 +4463,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Load saved height or use default
                 const savedHeight = localStorage.getItem('mobileSidebarHeight');
                 if (savedHeight) {
-                    sidebar.style.bottom = savedHeight;
+                    sidebar.style.height = savedHeight;
                 }
                 
                 // Touch events for drag handle
@@ -4471,8 +4478,8 @@ Remember: You're helping someone explore and understand their social network dat
                 isMobileResizing = true;
                 mobileStartY = e.touches[0].clientY;
                 const sidebar = document.querySelector('.sidebar');
-                const currentBottom = sidebar.style.bottom;
-                mobileStartHeight = currentBottom ? parseFloat(currentBottom) : 0;
+                const currentHeight = sidebar.style.height;
+                mobileStartHeight = currentHeight ? parseFloat(currentHeight) : 50; // Default to 50% if no height set
                 
                 // Prevent scrolling and other touch events
                 e.preventDefault();
@@ -4487,7 +4494,7 @@ Remember: You're helping someone explore and understand their social network dat
                 const newHeight = Math.max(10, Math.min(90, mobileStartHeight + deltaY));
                 
                 const sidebar = document.querySelector('.sidebar');
-                sidebar.style.bottom = newHeight + '%';
+                sidebar.style.height = newHeight + '%';
                 
                 // Prevent scrolling and other touch events
                 e.preventDefault();
@@ -4499,7 +4506,7 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 isMobileResizing = false;
                 const sidebar = document.querySelector('.sidebar');
-                const finalHeight = sidebar.style.bottom;
+                const finalHeight = sidebar.style.height;
                 
                 // Save the height preference
                 localStorage.setItem('mobileSidebarHeight', finalHeight);
