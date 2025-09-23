@@ -1275,12 +1275,13 @@ DO NOT use file:// URLs with this version
                     padding: 60px 20px 20px 20px;
                     border-bottom-left-radius: 20px;
                     border-bottom-right-radius: 20px;
+                    /* Remove max-height constraint for mobile resize */
+                    max-height: none;
                 }
                 
                 /* Resize Handle - Mobile Only */
                 .resize-handle {
-                    position: absolute;
-                    bottom: 0;
+                    position: fixed;
                     left: 0;
                     right: 0;
                     height: 40px;
@@ -1292,6 +1293,15 @@ DO NOT use file:// URLs with this version
                     justify-content: center;
                     z-index: 1001;
                     touch-action: none;
+                    /* Only show when sidebar is open */
+                    transform: translateX(-100%);
+                    transition: transform 0.3s ease;
+                    /* Position will be set dynamically by JavaScript */
+                }
+                
+                /* Show resize handle when sidebar is open */
+                .sidebar.show ~ .resize-handle {
+                    transform: translateX(0);
                 }
                 
                 /* Hide resize handle on desktop */
@@ -1435,10 +1445,10 @@ DO NOT use file:// URLs with this version
                 </div>
                 
                 <!-- Controls Section removed - controls moved to floating controls -->
-                
-                <!-- Mobile Resize Handle -->
-                <div class="resize-handle" id="resizeHandle"></div>
             </div>
+            
+            <!-- Mobile Resize Handle - Outside sidebar for proper positioning -->
+            <div class="resize-handle" id="resizeHandle"></div>
             
             <!-- Graph Container -->
             <div class="graph-container">
@@ -1520,6 +1530,12 @@ DO NOT use file:// URLs with this version
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
+            
+            // Mobile resize variables
+            let isMobileResizing = false;
+            let mobileStartY = 0;
+            let mobileStartHeight = 0;
+            let mobileCurrentHeight = 0;
             
             // Safety helper for string operations
             const lower = v => (v ?? '').toString().toLowerCase();
@@ -4442,6 +4458,99 @@ Remember: You're helping someone explore and understand their social network dat
                         }, '*');
                     }
                 }
+            }
+            
+            // Mobile resize functionality
+            function initResize() {
+                const sidebar = document.querySelector('.sidebar');
+                const resizeHandle = document.getElementById('resizeHandle');
+                
+                if (!sidebar || !resizeHandle) return;
+                
+                // Load saved height or use default
+                const savedHeight = localStorage.getItem('mobileSidebarHeight');
+                if (savedHeight) {
+                    sidebar.style.setProperty('height', savedHeight, 'important');
+                    sidebar.style.setProperty('bottom', 'auto', 'important');
+                } else {
+                    // Set initial height to 50% if no saved preference
+                    sidebar.style.setProperty('height', '50%', 'important');
+                    sidebar.style.setProperty('bottom', 'auto', 'important');
+                }
+                
+                // Position drag bar at bottom of control panel
+                const positionDragBar = () => {
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    const handleTop = sidebarRect.bottom - 40; // 40px is handle height
+                    resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
+                    resizeHandle.style.setProperty('bottom', 'auto', 'important');
+                };
+                
+                // Position initially and on resize
+                positionDragBar();
+                window.addEventListener('resize', positionDragBar);
+                
+                // Touch events for drag handle
+                resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
+                resizeHandle.addEventListener('touchmove', handleResizeMove, { passive: false });
+                resizeHandle.addEventListener('touchend', handleResizeEnd, { passive: false });
+            }
+            
+            function handleResizeStart(e) {
+                isMobileResizing = true;
+                mobileStartY = e.touches[0].clientY;
+                const sidebar = document.querySelector('.sidebar');
+                
+                // Get current height from computed style or inline style
+                const currentHeight = sidebar.style.height || getComputedStyle(sidebar).height;
+                mobileStartHeight = currentHeight ? parseFloat(currentHeight) : 50; // Default to 50% if no height set
+                
+                // Prevent scrolling and other touch events
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function handleResizeMove(e) {
+                if (!isMobileResizing) return;
+                
+                const currentY = e.touches[0].clientY;
+                const deltaY = currentY - mobileStartY; // Direct: drag down = expand down
+                
+                // Scale down sensitivity for 1:1 feel (divide by 10 for smoother control)
+                const scaledDelta = deltaY / 10;
+                const newHeight = Math.max(5, Math.min(95, mobileStartHeight + scaledDelta));
+                
+                const sidebar = document.querySelector('.sidebar');
+                const resizeHandle = document.getElementById('resizeHandle');
+                
+                // Override CSS with !important to ensure JavaScript controls height
+                sidebar.style.setProperty('height', newHeight + '%', 'important');
+                sidebar.style.setProperty('bottom', 'auto', 'important');
+                
+                // Position drag bar at bottom of control panel
+                const sidebarRect = sidebar.getBoundingClientRect();
+                const handleTop = sidebarRect.bottom - 40; // 40px is handle height
+                resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
+                resizeHandle.style.setProperty('bottom', 'auto', 'important');
+                
+                // Prevent scrolling and other touch events
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function handleResizeEnd(e) {
+                if (!isMobileResizing) return;
+                
+                isMobileResizing = false;
+                const sidebar = document.querySelector('.sidebar');
+                const finalHeight = sidebar.style.height;
+                
+                // Save the height preference
+                localStorage.setItem('mobileSidebarHeight', finalHeight);
+                
+                // Prevent scrolling and other touch events
+                e.preventDefault();
+                e.stopPropagation();
             }
             
             // ========================================
