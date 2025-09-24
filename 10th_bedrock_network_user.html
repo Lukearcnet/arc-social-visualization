@@ -2698,6 +2698,7 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Initialize the network
             async function initNetwork() {
+                console.log('🚀 initNetwork() called - starting network initialization');
                 const container = document.getElementById('mynetwork');
                 
                 // Load data first
@@ -2705,6 +2706,7 @@ Remember: You're helping someone explore and understand their social network dat
                     await loadData();
                 } catch (error) {
                     console.error('Failed to load data:', error);
+                    console.log('❌ initNetwork() returning early due to data load failure');
                     return;
                 }
                 
@@ -4047,6 +4049,7 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Initialize everything when the page loads
             document.addEventListener('DOMContentLoaded', async function() {
+                console.log('📱 DOMContentLoaded event fired - starting initialization');
                 // Initialize network (which will load data)
                 await initNetwork();
                 initSearch();
