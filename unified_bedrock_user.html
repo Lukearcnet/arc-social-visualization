@@ -268,6 +268,36 @@
         .loaded .loading-screen {
             display: none;
         }
+
+        /* ========================================
+           MOBILE RESPONSIVE STYLES
+           ======================================== */
+        
+        /* Mobile View Toggle Positioning */
+        @media (max-width: 900px) {
+            .view-toggle {
+                position: fixed !important;
+                top: 27px !important;
+                left: 40% !important;
+                transform: translateX(-50%) !important;
+                right: auto !important;
+                z-index: 1001 !important;
+            }
+        }
+        
+        /* Extra small screens (iPhone mini) - keep same alignment */
+        @media (max-width: 400px) {
+            .view-toggle {
+                top: 27px !important;
+                left: 40% !important;
+            }
+        }
+        
+        /* Hide view toggle when control panel is open */
+        .view-toggle.hidden {
+            display: none;
+        }
+
     </style>
 </head>
 <body>
@@ -321,6 +351,7 @@
         </div>
     </div>
 
+
     <!-- Main Container -->
     <div class="main-container">
         <!-- Content Area -->
@@ -343,7 +374,7 @@
         // ========================================
         // FEATURE FLAGS - Easy to toggle features
         // ========================================
-        const ENABLE_SMS_VERIFICATION = true; // Set to true to enable Twilio SMS verification
+        const ENABLE_SMS_VERIFICATION = false; // Set to true to enable Twilio SMS verification
         
         // Global variables
         let currentView = 'map';
@@ -1027,6 +1058,38 @@
             const viewParam = urlParams.get('view');
             if (viewParam && viewParam !== currentView) {
                 switchView(viewParam);
+            }
+        });
+
+
+        // ========================================
+        // MOBILE VIEW TOGGLE VISIBILITY CONTROL
+        // ========================================
+        
+        // Function to hide view toggle when control panel is open
+        function hideViewToggle() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle) {
+                viewToggle.classList.add('hidden');
+            }
+        }
+        
+        // Function to show view toggle when control panel is closed
+        function showViewToggle() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle) {
+                viewToggle.classList.remove('hidden');
+            }
+        }
+        
+        // Listen for iframe messages about control panel state
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'controlPanelState') {
+                if (event.data.isOpen) {
+                    hideViewToggle();
+                } else {
+                    showViewToggle();
+                }
             }
         });
 
