@@ -2797,7 +2797,9 @@ Remember: You're helping someone explore and understand their social network dat
                 };
                 
                 // Create network
+                console.log('🌐 Creating vis.Network instance...');
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
+                console.log('✅ vis.Network created successfully');
                 
                 // Force white text for all nodes after network creation
                 setTimeout(() => {
