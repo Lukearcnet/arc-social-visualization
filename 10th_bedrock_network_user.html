@@ -1349,6 +1349,11 @@ DO NOT use file:// URLs with this version
                     display: none;
                 }
                 
+                /* Hide resize handle completely on desktop */
+                .resize-handle {
+                    display: none !important;
+                }
+                
                 /* Reset network controls position for desktop */
                 .network-controls-floating {
                     top: 20px;
@@ -1359,10 +1364,9 @@ DO NOT use file:// URLs with this version
                     max-height: 100vh;
                 }
                 
-                /* Ensure desktop graph container has proper height and z-index */
+                /* Ensure desktop graph container has proper height */
                 .graph-container {
                     height: 100vh;
-                    z-index: 1001; /* Higher than sidebar's z-index: 1000 */
                 }
             }
         </style>
