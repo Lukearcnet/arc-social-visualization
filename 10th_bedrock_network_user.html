@@ -4469,6 +4469,12 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 console.log('🔍 Screen size check:', { isMobile, screenWidth, maxWidth: 900 });
                 
+                // Don't run mobile resize if iframe is still loading (screenWidth: 0)
+                if (screenWidth === 0) {
+                    console.log('🔄 Iframe still loading - skipping mobile resize initialization');
+                    return;
+                }
+                
                 if (!isMobile) {
                     console.log('🖥️ Desktop detected - skipping mobile resize initialization');
                     return;
