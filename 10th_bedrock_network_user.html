@@ -2708,6 +2708,7 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Initialize the network
             async function initNetwork() {
+                console.log('🚀 initNetwork() called - starting network initialization');
                 const container = document.getElementById('mynetwork');
                 
                 // Load data first
@@ -2805,7 +2806,14 @@ Remember: You're helping someone explore and understand their social network dat
                 };
                 
                 // Create network
+                console.log('🌐 Creating vis.Network instance...');
+                
+                // Debug: Check container dimensions
+                const containerRect = container.getBoundingClientRect();
+                console.log('📐 Container dimensions:', containerRect.width, 'x', containerRect.height);
+                
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
+                console.log('✅ vis.Network created successfully');
                 
                 
                 // Force white text for all nodes after network creation
@@ -4058,6 +4066,7 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Initialize everything when the page loads
             document.addEventListener('DOMContentLoaded', async function() {
+                console.log('📱 DOMContentLoaded event fired - starting initialization');
                 // Initialize network (which will load data)
                 await initNetwork();
                 initSearch();
