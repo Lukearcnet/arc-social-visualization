@@ -2798,8 +2798,68 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Create network
                 console.log('🌐 Creating vis.Network instance...');
+                
+                // Debug: Check container dimensions and properties
+                const containerRect = container.getBoundingClientRect();
+                const containerStyle = getComputedStyle(container);
+                console.log('📐 Container dimensions:', {
+                    width: containerRect.width,
+                    height: containerRect.height,
+                    top: containerRect.top,
+                    left: containerRect.left,
+                    display: containerStyle.display,
+                    visibility: containerStyle.visibility,
+                    opacity: containerStyle.opacity,
+                    zIndex: containerStyle.zIndex,
+                    position: containerStyle.position
+                });
+                
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
+                
+                // Debug: Check if network is actually rendering
+                setTimeout(() => {
+                    const networkCanvas = container.querySelector('canvas');
+                    if (networkCanvas) {
+                        console.log('🎨 Network canvas found:', {
+                            width: networkCanvas.width,
+                            height: networkCanvas.height,
+                            style: {
+                                width: networkCanvas.style.width,
+                                height: networkCanvas.style.height,
+                                display: getComputedStyle(networkCanvas).display,
+                                visibility: getComputedStyle(networkCanvas).visibility
+                            }
+                        });
+                    } else {
+                        console.log('❌ No network canvas found!');
+                    }
+                    
+                    // Debug: Check parent containers
+                    const graphContainer = document.querySelector('.graph-container');
+                    if (graphContainer) {
+                        const graphRect = graphContainer.getBoundingClientRect();
+                        const graphStyle = getComputedStyle(graphContainer);
+                        console.log('📦 Graph container:', {
+                            width: graphRect.width,
+                            height: graphRect.height,
+                            display: graphStyle.display,
+                            visibility: graphStyle.visibility,
+                            opacity: graphStyle.opacity,
+                            zIndex: graphStyle.zIndex,
+                            position: graphStyle.position
+                        });
+                    }
+                    
+                    // Debug: Check for mobile-specific CSS that might affect desktop
+                    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+                    console.log('📱 Screen size debug:', {
+                        isMobile,
+                        screenWidth: window.innerWidth,
+                        maxWidth: 900,
+                        mediaQuery: window.matchMedia('(max-width: 900px)').matches
+                    });
+                }, 1000);
                 
                 // Force white text for all nodes after network creation
                 setTimeout(() => {
