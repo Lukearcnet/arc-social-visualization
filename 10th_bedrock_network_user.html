@@ -1353,6 +1353,16 @@ DO NOT use file:// URLs with this version
                 .network-controls-floating {
                     top: 20px;
                 }
+                
+                /* Ensure desktop sidebar has proper height constraint */
+                .sidebar {
+                    max-height: 100vh;
+                }
+                
+                /* Ensure desktop network container has proper height */
+                .network-container {
+                    height: 100vh;
+                }
             }
         </style>
     </head>
@@ -2698,7 +2708,6 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Initialize the network
             async function initNetwork() {
-                console.log('🚀 initNetwork() called - starting network initialization');
                 const container = document.getElementById('mynetwork');
                 
                 // Load data first
@@ -2706,7 +2715,6 @@ Remember: You're helping someone explore and understand their social network dat
                     await loadData();
                 } catch (error) {
                     console.error('Failed to load data:', error);
-                    console.log('❌ initNetwork() returning early due to data load failure');
                     return;
                 }
                 
@@ -2797,56 +2805,8 @@ Remember: You're helping someone explore and understand their social network dat
                 };
                 
                 // Create network
-                console.log('🌐 Creating vis.Network instance...');
-                
-                // Debug: Check container dimensions and properties
-                const containerRect = container.getBoundingClientRect();
-                const containerStyle = getComputedStyle(container);
-                console.log('📐 Container width:', containerRect.width);
-                console.log('📐 Container height:', containerRect.height);
-                console.log('📐 Container top:', containerRect.top);
-                console.log('📐 Container left:', containerRect.left);
-                console.log('📐 Container display:', containerStyle.display);
-                console.log('📐 Container visibility:', containerStyle.visibility);
-                console.log('📐 Container opacity:', containerStyle.opacity);
-                
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
-                console.log('✅ vis.Network created successfully');
                 
-                // Debug: Check if network is actually rendering
-                setTimeout(() => {
-                    const networkCanvas = container.querySelector('canvas');
-                    if (networkCanvas) {
-                        console.log('🎨 Canvas width:', networkCanvas.width);
-                        console.log('🎨 Canvas height:', networkCanvas.height);
-                        console.log('🎨 Canvas style width:', networkCanvas.style.width);
-                        console.log('🎨 Canvas style height:', networkCanvas.style.height);
-                        console.log('🎨 Canvas display:', getComputedStyle(networkCanvas).display);
-                        console.log('🎨 Canvas visibility:', getComputedStyle(networkCanvas).visibility);
-                        console.log('🎨 Canvas opacity:', getComputedStyle(networkCanvas).opacity);
-                    } else {
-                        console.log('❌ No network canvas found!');
-                    }
-                    
-                    // Debug: Check parent containers
-                    const graphContainer = document.querySelector('.graph-container');
-                    if (graphContainer) {
-                        const graphRect = graphContainer.getBoundingClientRect();
-                        const graphStyle = getComputedStyle(graphContainer);
-                        console.log('📦 Graph container width:', graphRect.width);
-                        console.log('📦 Graph container height:', graphRect.height);
-                        console.log('📦 Graph container display:', graphStyle.display);
-                        console.log('📦 Graph container visibility:', graphStyle.visibility);
-                        console.log('📦 Graph container opacity:', graphStyle.opacity);
-                        console.log('📦 Graph container zIndex:', graphStyle.zIndex);
-                    }
-                    
-                    // Debug: Check for mobile-specific CSS that might affect desktop
-                    const isMobile = window.matchMedia('(max-width: 900px)').matches;
-                    console.log('📱 Is mobile:', isMobile);
-                    console.log('📱 Screen width:', window.innerWidth);
-                    console.log('📱 Max width:', 900);
-                }, 1000);
                 
                 // Force white text for all nodes after network creation
                 setTimeout(() => {
@@ -4098,7 +4058,6 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Initialize everything when the page loads
             document.addEventListener('DOMContentLoaded', async function() {
-                console.log('📱 DOMContentLoaded event fired - starting initialization');
                 // Initialize network (which will load data)
                 await initNetwork();
                 initSearch();
