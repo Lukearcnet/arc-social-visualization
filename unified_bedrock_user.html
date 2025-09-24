@@ -1095,8 +1095,24 @@
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Fix mobile view toggle positioning immediately
+            fixMobileViewTogglePosition();
             init();
         });
+        
+        // Function to fix mobile view toggle positioning
+        function fixMobileViewTogglePosition() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle && window.innerWidth <= 900) {
+                // Force mobile positioning immediately
+                viewToggle.style.position = 'fixed';
+                viewToggle.style.top = '27px';
+                viewToggle.style.left = '40%';
+                viewToggle.style.transform = 'translateX(-50%)';
+                viewToggle.style.right = 'auto';
+                viewToggle.style.zIndex = '1001';
+            }
+        }
     </script>
 </body>
 </html>
