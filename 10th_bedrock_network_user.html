@@ -4465,6 +4465,9 @@ Remember: You're helping someone explore and understand their social network dat
             function initResize() {
                 // Check screen size immediately and only proceed if mobile
                 const isMobile = window.matchMedia('(max-width: 900px)').matches;
+                const screenWidth = window.innerWidth;
+                
+                console.log('🔍 Screen size check:', { isMobile, screenWidth, maxWidth: 900 });
                 
                 if (!isMobile) {
                     console.log('🖥️ Desktop detected - skipping mobile resize initialization');
