@@ -721,10 +721,61 @@
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
                 padding: 60px 20px 20px 20px;
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
+                /* Remove max-height constraint for mobile resize */
+                max-height: none;
             }
             
             .sidebar.show {
                 transform: translateX(0);
+            }
+            
+            /* Resize Handle - Mobile Only */
+            .resize-handle {
+                position: fixed;
+                left: 0;
+                right: 0;
+                height: 40px;
+                background: rgba(42, 42, 42, 0.9);
+                border-top: 2px solid rgba(255, 255, 255, 0.3);
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
+                cursor: ns-resize;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1001;
+                touch-action: none;
+                /* Only show when sidebar is open */
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                /* Position will be set dynamically by JavaScript */
+            }
+            
+            /* Show resize handle when sidebar is open */
+            .sidebar.show ~ .resize-handle {
+                transform: translateX(0);
+            }
+            
+            /* Hide resize handle on desktop */
+            @media (min-width: 901px) {
+                .resize-handle {
+                    display: none;
+                }
+            }
+            
+            .resize-handle::before {
+                content: '';
+                width: 40px;
+                height: 4px;
+                background: rgba(255, 255, 255, 0.4);
+                border-radius: 2px;
+            }
+            
+            /* Hide resize handle when sidebar is hidden */
+            .sidebar:not(.show) .resize-handle {
+                display: none;
             }
             
             .map-container {
@@ -745,6 +796,11 @@
         @media (min-width: 901px) {
             .mobile-hamburger {
                 display: none;
+            }
+            
+            /* Hide resize handle completely on desktop */
+            .resize-handle {
+                display: none !important;
             }
         }
     </style>
@@ -866,6 +922,9 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Mobile Resize Handle - Outside sidebar for proper positioning -->
+        <div class="resize-handle" id="resizeHandle"></div>
         
         <!-- Map Container -->
         <div class="map-container">
@@ -2513,6 +2572,12 @@
         // MOBILE RESPONSIVE FUNCTIONS
         // ========================================
         
+        // Mobile resize variables
+        let isMobileResizing = false;
+        let mobileStartY = 0;
+        let mobileStartHeight = 0;
+        let mobileCurrentHeight = 0;
+        
         function toggleMobileSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const hamburger = document.getElementById('mobileHamburger');
@@ -2539,6 +2604,128 @@
                 }
             }
         }
+        
+        // ========================================
+        // MOBILE RESIZE FUNCTIONS
+        // ========================================
+        
+        // Mobile resize functionality
+        function initResize() {
+            // Check screen size immediately and only proceed if mobile
+            const isMobile = window.matchMedia('(max-width: 900px)').matches;
+            const screenWidth = window.innerWidth;
+            
+            console.log('🔍 Screen size check:', { isMobile, screenWidth, maxWidth: 900 });
+            
+            // Don't run mobile resize if iframe is still loading (screenWidth: 0)
+            if (screenWidth === 0) {
+                console.log('🔄 Iframe still loading - skipping mobile resize initialization');
+                return;
+            }
+            
+            // Only proceed if mobile
+            if (!isMobile) {
+                console.log('🖥️ Desktop detected - skipping mobile resize initialization');
+                return;
+            }
+            
+            console.log('📱 Mobile detected - initializing resize functionality');
+            const sidebar = document.querySelector('.sidebar');
+            const resizeHandle = document.getElementById('resizeHandle');
+            
+            if (!sidebar || !resizeHandle) return;
+            
+            // Load saved height or use default
+            const savedHeight = localStorage.getItem('mobileSidebarHeight');
+            if (savedHeight) {
+                sidebar.style.setProperty('height', savedHeight, 'important');
+                sidebar.style.setProperty('bottom', 'auto', 'important');
+            } else {
+                // Set initial height to 50% if no saved preference
+                sidebar.style.setProperty('height', '50%', 'important');
+                sidebar.style.setProperty('bottom', 'auto', 'important');
+            }
+            
+            // Position drag bar at bottom of control panel
+            const positionDragBar = () => {
+                const sidebarRect = sidebar.getBoundingClientRect();
+                const handleTop = sidebarRect.bottom - 40; // 40px is handle height
+                resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
+                resizeHandle.style.setProperty('bottom', 'auto', 'important');
+            };
+            
+            // Position initially and on resize
+            positionDragBar();
+            window.addEventListener('resize', positionDragBar);
+            
+            // Touch events for drag handle
+            resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
+            resizeHandle.addEventListener('touchmove', handleResizeMove, { passive: false });
+            resizeHandle.addEventListener('touchend', handleResizeEnd, { passive: false });
+        }
+        
+        function handleResizeStart(e) {
+            // Only work on mobile screens
+            if (!window.matchMedia('(max-width: 900px)').matches) return;
+            
+            isMobileResizing = true;
+            mobileStartY = e.touches[0].clientY;
+            const sidebar = document.querySelector('.sidebar');
+            
+            // Get current height from computed style or inline style
+            const currentHeight = sidebar.style.height || getComputedStyle(sidebar).height;
+            mobileStartHeight = currentHeight ? parseFloat(currentHeight) : 50; // Default to 50% if no height set                                                                                                 
+            
+            // Prevent scrolling and other touch events
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function handleResizeMove(e) {
+            if (!isMobileResizing) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = currentY - mobileStartY; // Direct drag (not inverted)
+            
+            // Scale down sensitivity for 1:1 feel (divide by 10 for smoother control)
+            const scaledDelta = deltaY / 10;
+            const newHeight = Math.max(5, Math.min(95, mobileStartHeight + scaledDelta));
+            
+            const sidebar = document.querySelector('.sidebar');
+            const resizeHandle = document.getElementById('resizeHandle');
+            
+            // Override CSS with !important to ensure JavaScript controls height
+            sidebar.style.setProperty('height', newHeight + '%', 'important');
+            sidebar.style.setProperty('bottom', 'auto', 'important');
+            
+            // Position drag bar at bottom of control panel
+            const sidebarRect = sidebar.getBoundingClientRect();
+            const handleTop = sidebarRect.bottom - 40; // 40px is handle height
+            resizeHandle.style.setProperty('top', handleTop + 'px', 'important');
+            resizeHandle.style.setProperty('bottom', 'auto', 'important');
+            
+            // Prevent scrolling and other touch events
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function handleResizeEnd(e) {
+            if (!isMobileResizing) return;
+            
+            isMobileResizing = false;
+            const sidebar = document.querySelector('.sidebar');
+            const finalHeight = sidebar.style.height;
+            
+            // Save the height preference
+            localStorage.setItem('mobileSidebarHeight', finalHeight);
+            
+            // Prevent scrolling and other touch events
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Initialize resize on DOM load
+        document.addEventListener('DOMContentLoaded', initResize);
     </script>
 </body>
 </html>
