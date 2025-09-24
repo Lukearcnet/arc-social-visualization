@@ -1380,9 +1380,9 @@ DO NOT use file:// URLs with this version
                 }
                 
                 .sidebar {
-                    width: 0 !important;
-                    min-width: 0 !important;
-                    overflow: hidden !important;
+                    width: clamp(200px, 30vw, 300px) !important;
+                    min-width: 200px !important;
+                    overflow: auto !important;
                 }
                 
                 .graph-container {
