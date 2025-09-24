@@ -4463,9 +4463,13 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Mobile resize functionality
             function initResize() {
-                // Only initialize on mobile screens
-                if (!window.matchMedia('(max-width: 900px)').matches) return;
+                // Only initialize on mobile screens - double check
+                if (!window.matchMedia('(max-width: 900px)').matches) {
+                    console.log('🖥️ Desktop detected - skipping mobile resize initialization');
+                    return;
+                }
                 
+                console.log('📱 Mobile detected - initializing resize functionality');
                 const sidebar = document.querySelector('.sidebar');
                 const resizeHandle = document.getElementById('resizeHandle');
                 
