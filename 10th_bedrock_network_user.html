@@ -2802,17 +2802,13 @@ Remember: You're helping someone explore and understand their social network dat
                 // Debug: Check container dimensions and properties
                 const containerRect = container.getBoundingClientRect();
                 const containerStyle = getComputedStyle(container);
-                console.log('📐 Container dimensions:', {
-                    width: containerRect.width,
-                    height: containerRect.height,
-                    top: containerRect.top,
-                    left: containerRect.left,
-                    display: containerStyle.display,
-                    visibility: containerStyle.visibility,
-                    opacity: containerStyle.opacity,
-                    zIndex: containerStyle.zIndex,
-                    position: containerStyle.position
-                });
+                console.log('📐 Container width:', containerRect.width);
+                console.log('📐 Container height:', containerRect.height);
+                console.log('📐 Container top:', containerRect.top);
+                console.log('📐 Container left:', containerRect.left);
+                console.log('📐 Container display:', containerStyle.display);
+                console.log('📐 Container visibility:', containerStyle.visibility);
+                console.log('📐 Container opacity:', containerStyle.opacity);
                 
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
@@ -2821,16 +2817,13 @@ Remember: You're helping someone explore and understand their social network dat
                 setTimeout(() => {
                     const networkCanvas = container.querySelector('canvas');
                     if (networkCanvas) {
-                        console.log('🎨 Network canvas found:', {
-                            width: networkCanvas.width,
-                            height: networkCanvas.height,
-                            style: {
-                                width: networkCanvas.style.width,
-                                height: networkCanvas.style.height,
-                                display: getComputedStyle(networkCanvas).display,
-                                visibility: getComputedStyle(networkCanvas).visibility
-                            }
-                        });
+                        console.log('🎨 Canvas width:', networkCanvas.width);
+                        console.log('🎨 Canvas height:', networkCanvas.height);
+                        console.log('🎨 Canvas style width:', networkCanvas.style.width);
+                        console.log('🎨 Canvas style height:', networkCanvas.style.height);
+                        console.log('🎨 Canvas display:', getComputedStyle(networkCanvas).display);
+                        console.log('🎨 Canvas visibility:', getComputedStyle(networkCanvas).visibility);
+                        console.log('🎨 Canvas opacity:', getComputedStyle(networkCanvas).opacity);
                     } else {
                         console.log('❌ No network canvas found!');
                     }
@@ -2840,25 +2833,19 @@ Remember: You're helping someone explore and understand their social network dat
                     if (graphContainer) {
                         const graphRect = graphContainer.getBoundingClientRect();
                         const graphStyle = getComputedStyle(graphContainer);
-                        console.log('📦 Graph container:', {
-                            width: graphRect.width,
-                            height: graphRect.height,
-                            display: graphStyle.display,
-                            visibility: graphStyle.visibility,
-                            opacity: graphStyle.opacity,
-                            zIndex: graphStyle.zIndex,
-                            position: graphStyle.position
-                        });
+                        console.log('📦 Graph container width:', graphRect.width);
+                        console.log('📦 Graph container height:', graphRect.height);
+                        console.log('📦 Graph container display:', graphStyle.display);
+                        console.log('📦 Graph container visibility:', graphStyle.visibility);
+                        console.log('📦 Graph container opacity:', graphStyle.opacity);
+                        console.log('📦 Graph container zIndex:', graphStyle.zIndex);
                     }
                     
                     // Debug: Check for mobile-specific CSS that might affect desktop
                     const isMobile = window.matchMedia('(max-width: 900px)').matches;
-                    console.log('📱 Screen size debug:', {
-                        isMobile,
-                        screenWidth: window.innerWidth,
-                        maxWidth: 900,
-                        mediaQuery: window.matchMedia('(max-width: 900px)').matches
-                    });
+                    console.log('📱 Is mobile:', isMobile);
+                    console.log('📱 Screen width:', window.innerWidth);
+                    console.log('📱 Max width:', 900);
                 }, 1000);
                 
                 // Force white text for all nodes after network creation
