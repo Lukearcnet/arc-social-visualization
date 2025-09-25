@@ -55,7 +55,7 @@
             width: 100%;
             height: 100%;
             background: var(--bg-primary);
-            z-index: 10000;
+            z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -218,7 +218,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 99999;
         }
 
         .loading-progress-container {
@@ -269,14 +269,14 @@
             display: none;
         }
         
-        /* Iframe context adjustments for mobile controls - only when app is loaded */
+        /* Iframe context adjustments for mobile controls */
         @media (max-width: 900px) {
-            body.iframe-context.loaded .mobile-hamburger {
+            body.iframe-context .mobile-hamburger {
                 top: 10px !important;
                 z-index: 10000 !important;
             }
             
-            body.iframe-context.loaded .view-toggle {
+            body.iframe-context .view-toggle {
                 top: 10px !important;
                 z-index: 10000 !important;
             }
