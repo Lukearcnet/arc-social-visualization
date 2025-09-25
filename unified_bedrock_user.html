@@ -55,7 +55,7 @@
             width: 100%;
             height: 100%;
             background: var(--bg-primary);
-            z-index: 10000;
+            z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -218,7 +218,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 99999;
         }
 
         .loading-progress-container {
@@ -281,6 +281,60 @@
                 z-index: 10000 !important;
             }
         }
+
+        /* ========================================
+           MOBILE RESPONSIVE STYLES
+           ======================================== */
+        
+        /* Mobile View Toggle Positioning */
+        @media (max-width: 900px) {
+            .view-toggle {
+                position: fixed !important;
+                top: 27px !important;
+                left: 40% !important;
+                transform: translateX(-50%) !important;
+                right: auto !important;
+                z-index: 1001 !important;
+            }
+        }
+        
+        /* Extra small screens (iPhone mini) - keep same alignment */
+        @media (max-width: 400px) {
+            .view-toggle {
+                top: 27px !important;
+                left: 40% !important;
+            }
+        }
+        
+        /* Hide view toggle when control panel is open */
+        .view-toggle.hidden {
+            display: none;
+        }
+        
+        /* Intermediate screen sizes - override CSS Grid layout */
+        @media (min-width: 380px) and (max-width: 900px) {
+            .main-container {
+                display: flex !important;
+                flex-direction: row !important;
+            }
+            
+            .sidebar:not(.show) {
+                width: clamp(200px, 30vw, 300px) !important;
+                min-width: 200px !important;
+                overflow: auto !important;
+            }
+            
+            .sidebar.show {
+                width: 100% !important;
+                min-width: 100% !important;
+            }
+            
+            .content-area {
+                flex: 1 !important;
+                width: 100% !important;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -333,6 +387,7 @@
             <div id="successMessage" class="success-message"></div>
         </div>
     </div>
+
 
     <!-- Main Container -->
     <div class="main-container">
@@ -1043,6 +1098,38 @@
             }
         });
 
+
+        // ========================================
+        // MOBILE VIEW TOGGLE VISIBILITY CONTROL
+        // ========================================
+        
+        // Function to hide view toggle when control panel is open
+        function hideViewToggle() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle) {
+                viewToggle.classList.add('hidden');
+            }
+        }
+        
+        // Function to show view toggle when control panel is closed
+        function showViewToggle() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle) {
+                viewToggle.classList.remove('hidden');
+            }
+        }
+        
+        // Listen for iframe messages about control panel state
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'controlPanelState') {
+                if (event.data.isOpen) {
+                    hideViewToggle();
+                } else {
+                    showViewToggle();
+                }
+            }
+        });
+
         // Detect iframe context and add class for mobile adjustments
         function detectIframeContext() {
             if (window !== window.top) {
@@ -1054,8 +1141,24 @@
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             detectIframeContext();
+            // Fix mobile view toggle positioning immediately
+            fixMobileViewTogglePosition();
             init();
         });
+        
+        // Function to fix mobile view toggle positioning
+        function fixMobileViewTogglePosition() {
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle && window.innerWidth <= 900) {
+                // Force mobile positioning immediately
+                viewToggle.style.position = 'fixed';
+                viewToggle.style.top = '27px';
+                viewToggle.style.left = '40%';
+                viewToggle.style.transform = 'translateX(-50%)';
+                viewToggle.style.right = 'auto';
+                viewToggle.style.zIndex = '1001';
+            }
+        }
     </script>
 </body>
 </html>
