@@ -653,6 +653,19 @@
         .leaflet-control-zoom {
             display: none !important;
         }
+        
+        /* Iframe context adjustments for mobile controls */
+        @media (max-width: 900px) {
+            body.iframe-context .mobile-hamburger {
+                top: 10px !important;
+                z-index: 10000 !important;
+            }
+            
+            body.iframe-context .map-controls-floating {
+                top: 10px !important;
+                z-index: 10000 !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2359,8 +2372,17 @@
             }
         });
         
+        // Detect iframe context and add class for mobile adjustments
+        function detectIframeContext() {
+            if (window !== window.top) {
+                document.body.classList.add('iframe-context');
+                console.log('🔗 Iframe context detected - applying mobile control adjustments');
+            }
+        }
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            detectIframeContext();
             preventGlobalZoom();
             init();
             
