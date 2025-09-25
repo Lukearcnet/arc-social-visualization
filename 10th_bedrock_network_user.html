@@ -4342,59 +4342,7 @@ Remember: You're helping someone explore and understand their social network dat
                 }
 
                 function runStyleAudit() {
-                    console.log('🔍 10TH BEDROCK - COMPUTED STYLE AUDIT');
-                    console.log('======================================');
-                    
-                    // 1) Compare actual pixels for sentinel nodes
-                    console.log('📊 SENTINEL NODES COMPUTED STYLES:');
-                    const sidebarData = dumpComputed(document.querySelector('.sidebar'));
-                    const profileNameData = dumpComputed(document.querySelector('#profileName'));
-                    const statCardData = dumpComputed(document.querySelector('.stat-card'));
-                    console.log('SIDEBAR:', sidebarData);
-                    console.log('PROFILE NAME:', profileNameData);
-                    console.log('STAT CARD:', statCardData);
-                    
-                    // 2) Check root + ancestor overrides
-                    console.log('🌳 ANCESTOR CHAIN AUDIT:');
-                    const ancestorData = auditAncestors(document.querySelector('.sidebar'));
-                    ancestorData.forEach((ancestor, index) => {
-                        console.log(`ANCESTOR ${index}:`, ancestor);
-                    });
-                    
-                    // 3) Verify rem base
-                    const htmlFontSize = getComputedStyle(document.documentElement).fontSize;
-                    const bodyFontSize = getComputedStyle(document.body).fontSize;
-                    console.log('📏 ROOT FONT SIZES:');
-                    console.log('HTML font-size:', htmlFontSize);
-                    console.log('Body font-size:', bodyFontSize);
-                    
-                    // 4) Confirm sidebar width
-                    const sidebar = document.querySelector('.sidebar');
-                    if (sidebar) {
-                        console.log('📐 SIDEBAR DIMENSIONS:');
-                        console.log('offsetWidth:', sidebar.offsetWidth);
-                        console.log('computed width:', getComputedStyle(sidebar).width);
-                        console.log('clientWidth:', sidebar.clientWidth);
-                    }
-                    
-                    // 5) Check for any transforms on graph container
-                    const graphContainer = document.querySelector('.graph-container');
-                    if (graphContainer) {
-                        const transform = getComputedStyle(graphContainer).transform;
-                        console.log('🔄 GRAPH CONTAINER TRANSFORM:', transform);
-                    }
-                    
-                    // 6) Check for any CSS variable overrides
-                    console.log('🎨 CSS VARIABLE VALUES:');
-                    const root = document.documentElement;
-                    const computedStyle = getComputedStyle(root);
-                    console.log('--space-1:', computedStyle.getPropertyValue('--space-1'));
-                    console.log('--space-2:', computedStyle.getPropertyValue('--space-2'));
-                    console.log('--space-3:', computedStyle.getPropertyValue('--space-3'));
-                    console.log('--space-4:', computedStyle.getPropertyValue('--space-4'));
-                    console.log('--text-sm:', computedStyle.getPropertyValue('--text-sm'));
-                    console.log('--text-md:', computedStyle.getPropertyValue('--text-md'));
-                    console.log('--text-lg:', computedStyle.getPropertyValue('--text-lg'));
+                    // Style audit function - debugging logs removed for production
                 }
 
                 // Run audit after profile section becomes visible
@@ -4482,16 +4430,6 @@ Remember: You're helping someone explore and understand their social network dat
                         const rect = minimizeButton.getBoundingClientRect();
                         const style = window.getComputedStyle(minimizeButton);
                         
-                        console.log('📍 Minimize button position:', {
-                            top: rect.top,
-                            left: rect.left,
-                            width: rect.width,
-                            height: rect.height,
-                            visible: rect.width > 0 && rect.height > 0,
-                            display: style.display,
-                            zIndex: style.zIndex,
-                            pointerEvents: style.pointerEvents
-                        });
                         
                         // Test if we can detect mouse events on the button area
                         document.addEventListener('mousemove', function(e) {
@@ -4545,7 +4483,6 @@ Remember: You're helping someone explore and understand their social network dat
                 const isMobile = window.matchMedia('(max-width: 900px)').matches;
                 const screenWidth = window.innerWidth;
                 
-                console.log('🔍 Screen size check:', { isMobile, screenWidth, maxWidth: 900 });
                 
                 // Don't run mobile resize if iframe is still loading (screenWidth: 0)
                 if (screenWidth === 0) {
@@ -4554,7 +4491,6 @@ Remember: You're helping someone explore and understand their social network dat
                 }
                 
                 if (!isMobile) {
-                    console.log('🖥️ Desktop detected - skipping mobile resize initialization');
                     return;
                 }
                 

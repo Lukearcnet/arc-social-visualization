@@ -2227,47 +2227,7 @@
         }
 
         function runStyleAudit() {
-            console.log('🔍 8TH BEDROCK - COMPUTED STYLE AUDIT');
-            console.log('=====================================');
-            
-            // 1) Compare actual pixels for sentinel nodes
-            console.log('📊 SENTINEL NODES COMPUTED STYLES:');
-            const sidebarData = dumpComputed(document.querySelector('.sidebar'));
-            const profileNameData = dumpComputed(document.querySelector('#profileName'));
-            const statCardData = dumpComputed(document.querySelector('.stat-card'));
-            console.log('SIDEBAR:', sidebarData);
-            console.log('PROFILE NAME:', profileNameData);
-            console.log('STAT CARD:', statCardData);
-            
-            // 2) Check root + ancestor overrides
-            console.log('🌳 ANCESTOR CHAIN AUDIT:');
-            const ancestorData = auditAncestors(document.querySelector('.sidebar'));
-            ancestorData.forEach((ancestor, index) => {
-                console.log(`ANCESTOR ${index}:`, ancestor);
-            });
-            
-            // 3) Verify rem base
-            const htmlFontSize = getComputedStyle(document.documentElement).fontSize;
-            const bodyFontSize = getComputedStyle(document.body).fontSize;
-            console.log('📏 ROOT FONT SIZES:');
-            console.log('HTML font-size:', htmlFontSize);
-            console.log('Body font-size:', bodyFontSize);
-            
-            // 4) Confirm sidebar width
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar) {
-                console.log('📐 SIDEBAR DIMENSIONS:');
-                console.log('offsetWidth:', sidebar.offsetWidth);
-                console.log('computed width:', getComputedStyle(sidebar).width);
-                console.log('clientWidth:', sidebar.clientWidth);
-            }
-            
-            // 5) Check for any transforms on graph container
-            const graphContainer = document.querySelector('.graph-container');
-            if (graphContainer) {
-                const transform = getComputedStyle(graphContainer).transform;
-                console.log('🔄 GRAPH CONTAINER TRANSFORM:', transform);
-            }
+            // Style audit function - debugging logs removed for production
         }
 
         // Run audit after profile section becomes visible
@@ -2654,7 +2614,6 @@
             const isMobile = window.matchMedia('(max-width: 900px)').matches;
             const screenWidth = window.innerWidth;
             
-            console.log('🔍 Screen size check:', { isMobile, screenWidth, maxWidth: 900 });
             
             // Don't run mobile resize if iframe is still loading (screenWidth: 0)
             if (screenWidth === 0) {
@@ -2664,7 +2623,6 @@
             
             // Only proceed if mobile
             if (!isMobile) {
-                console.log('🖥️ Desktop detected - skipping mobile resize initialization');
                 return;
             }
             
