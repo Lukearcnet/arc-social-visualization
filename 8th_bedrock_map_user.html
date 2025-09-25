@@ -1371,6 +1371,11 @@
                 }
             });
             
+            // Re-enable map zoom when popup closes (regardless of how it closes)
+            map.on('popupclose', function(e) {
+                enableMapZoom();
+            });
+            
         }
         
         // Initialize timeline slider
