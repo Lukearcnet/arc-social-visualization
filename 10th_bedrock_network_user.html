@@ -1206,14 +1206,14 @@ DO NOT use file:// URLs with this version
                 }
             }
             
-            /* Iframe context adjustments for mobile controls */
+            /* Iframe context adjustments for mobile controls - only when app is loaded */
             @media (max-width: 900px) {
-                body.iframe-context .mobile-hamburger {
+                body.iframe-context.loaded .mobile-hamburger {
                     top: 10px !important;
                     z-index: 10000 !important;
                 }
                 
-                body.iframe-context .network-controls-floating {
+                body.iframe-context.loaded .network-controls-floating {
                     top: 10px !important;
                     z-index: 10000 !important;
                 }

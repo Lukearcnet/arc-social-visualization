@@ -269,14 +269,14 @@
             display: none;
         }
         
-        /* Iframe context adjustments for mobile controls */
+        /* Iframe context adjustments for mobile controls - only when app is loaded */
         @media (max-width: 900px) {
-            body.iframe-context .mobile-hamburger {
+            body.iframe-context.loaded .mobile-hamburger {
                 top: 10px !important;
                 z-index: 10000 !important;
             }
             
-            body.iframe-context .view-toggle {
+            body.iframe-context.loaded .view-toggle {
                 top: 10px !important;
                 z-index: 10000 !important;
             }
