@@ -1205,6 +1205,19 @@ DO NOT use file:// URLs with this version
                     max-height: 40vh;
                 }
             }
+            
+            /* Iframe context adjustments for mobile controls */
+            @media (max-width: 900px) {
+                body.iframe-context .mobile-hamburger {
+                    top: 10px !important;
+                    z-index: 10000 !important;
+                }
+                
+                body.iframe-context .network-controls-floating {
+                    top: 10px !important;
+                    z-index: 10000 !important;
+                }
+            }
 
             /* ========================================
                MOBILE RESPONSIVE DESIGN
@@ -4100,8 +4113,17 @@ Remember: You're helping someone explore and understand their social network dat
             
 
             
+            // Detect iframe context and add class for mobile adjustments
+            function detectIframeContext() {
+                if (window !== window.top) {
+                    document.body.classList.add('iframe-context');
+                    console.log('🔗 Iframe context detected - applying mobile control adjustments');
+                }
+            }
+
             // Initialize everything when the page loads
             document.addEventListener('DOMContentLoaded', async function() {
+                detectIframeContext();
                 console.log('📱 DOMContentLoaded event fired - starting initialization');
                 // Initialize network (which will load data)
                 await initNetwork();
