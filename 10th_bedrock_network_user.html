@@ -3586,8 +3586,8 @@ Remember: You're helping someone explore and understand their social network dat
                     size = Math.max(10, Math.min(60, 10 + (timelineTaps * 0.167)));
                 }
                 
-                // New 6-step color gradient: Light grey → White (100 taps max)
-                let color = "#D3D3D3"; // Default light grey
+                // New 6-step color gradient: Dark grey → White (100 taps max)
+                let color = "#808080"; // Default dark grey
                 if (timelineTaps >= 100) {
                     color = "#FFFFFF"; // White for very high activity (100+ taps)
                 } else if (timelineTaps >= 80) {
