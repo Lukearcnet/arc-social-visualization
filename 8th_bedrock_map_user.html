@@ -1409,8 +1409,8 @@
                 }
             });
             
-            // Set initial value to 0%
-            timelineSlider.value = 0;
+            // Set initial value to 100% (far right)
+            timelineSlider.value = 100;
             updateTimelineDisplay();
             
             console.log('Timeline initialized');
@@ -1799,8 +1799,8 @@
                 toggleShowAll(); // This will turn off Show All mode
             }
             
-            // Reset timeline slider to 0
-            timelineSlider.value = 0;
+            // Reset timeline slider to 100% (far right)
+            timelineSlider.value = 100;
             
             // Update display
             updateTimelineDisplay();
@@ -1977,8 +1977,8 @@
             // Regenerate timeline for selected user
             createTimelineData(userId);
             
-            // Reset timeline slider to 0
-            timelineSlider.value = 0;
+            // Reset timeline slider to 100% (far right)
+            timelineSlider.value = 100;
             
             // Update display
             updateTimelineDisplay();
