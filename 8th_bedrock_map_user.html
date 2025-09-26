@@ -1479,6 +1479,11 @@
                     timelineValue === '100' ? 'All taps shown' : `${timelineData.length} total taps (${modeText})`;
             }
             
+            // Update profile stats if a user is selected
+            if (currentMode === 'user' && selectedUserId) {
+                updateProfileStats(selectedUserId, currentTime);
+            }
+            
             // Update markers based on timeline
             updateMarkers(currentTime);
         }
@@ -1991,7 +1996,7 @@
             // Update profile header
             document.getElementById('profileName').textContent = userName;
             
-            // Calculate user stats
+            // Calculate user stats (total lifetime stats for initial display)
             const userTaps = completeLocationData.filter(tap => 
                 tap.user1_id === userId || tap.user2_id === userId
             ).length;
@@ -2015,6 +2020,34 @@
             // Update profile data
             document.getElementById('profileActivity').textContent = `Activity Level: ${activityLevel}`;
             document.getElementById('profileTaps').textContent = userTaps;
+            document.getElementById('profileConnections').textContent = connectionCount;
+        }
+        
+        // Update profile stats based on timeline position
+        function updateProfileStats(userId, currentTime) {
+            // Calculate timeline-based stats for the selected user
+            let timelineTaps = 0;
+            let timelineConnections = new Set();
+            
+            // Filter events up to the current timeline point
+            const filteredEvents = completeLocationData.filter(tap => {
+                const tapTime = new Date(tap.time).getTime();
+                return tapTime <= currentTime && (tap.user1_id === userId || tap.user2_id === userId);
+            });
+            
+            // Count taps and connections
+            filteredEvents.forEach(tap => {
+                timelineTaps++;
+                timelineConnections.add(tap.user1_id);
+                timelineConnections.add(tap.user2_id);
+            });
+            
+            // Remove the user themselves from connections count
+            timelineConnections.delete(userId);
+            const connectionCount = timelineConnections.size;
+            
+            // Update the profile stats display
+            document.getElementById('profileTaps').textContent = timelineTaps;
             document.getElementById('profileConnections').textContent = connectionCount;
         }
         
