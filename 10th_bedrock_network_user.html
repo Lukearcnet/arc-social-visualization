@@ -3308,13 +3308,13 @@ Remember: You're helping someone explore and understand their social network dat
                     return;
                 }
                 
-                // Reset degree filters to default
-                currentDegreeFilter = {1: true, 2: false, 3: false};
+                // Reset degree filters to default (all degrees enabled)
+                currentDegreeFilter = {1: true, 2: true, 3: true};
                 document.getElementById('degree1').checked = true;
-                document.getElementById('degree2').checked = false;
-                document.getElementById('degree3').checked = false;
+                document.getElementById('degree2').checked = true;
+                document.getElementById('degree3').checked = true;
                 
-                // Apply initial filter (1st degree only) FIRST
+                // Apply initial filter (all degrees) FIRST
                 applyDegreeFilter();
                 
                 // Then set timeline to 100% to show user's connections
