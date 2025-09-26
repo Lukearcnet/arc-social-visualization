@@ -1797,17 +1797,45 @@ DO NOT use file:// URLs with this version
                 });
                 
                 // Create one edge per pair with correct tap count
-                const edgeData = Object.values(tapCounts).map((pair, index) => ({
-                    id: index,
-                    from: pair.user1,
-                    to: pair.user2,
-                    color: "#ffffff",
-                    width: 1.5,
-                    title: `${pair.count} tap${pair.count === 1 ? '' : 's'}`, // Correct pluralization
-                    tap_count: pair.count,
-                    physics: true,
-                    smooth: false
-                }));
+                const edgeData = Object.values(tapCounts).map((pair, index) => {
+                    const tapCount = pair.count;
+                    
+                    // 5-segment system for thickness and color
+                    let thickness, color;
+                    
+                    if (tapCount === 1) {
+                        thickness = 0.5;
+                        color = "#E0E0E0"; // Light grey
+                    } else if (tapCount >= 2 && tapCount <= 3) {
+                        thickness = 0.8;
+                        color = "#D0D0D0"; // Medium-light grey
+                    } else if (tapCount >= 4 && tapCount <= 5) {
+                        thickness = 1.0;
+                        color = "#C0C0C0"; // Medium grey
+                    } else if (tapCount >= 6 && tapCount <= 8) {
+                        thickness = 1.2;
+                        color = "#F0F0F0"; // Light white
+                    } else if (tapCount >= 9) {
+                        thickness = 1.5;
+                        color = "#FFFFFF"; // White
+                    } else {
+                        // Fallback for edge cases
+                        thickness = 0.5;
+                        color = "#E0E0E0";
+                    }
+                    
+                    return {
+                        id: index,
+                        from: pair.user1,
+                        to: pair.user2,
+                        color: color,
+                        width: thickness,
+                        title: `${pair.count} tap${pair.count === 1 ? '' : 's'}`, // Correct pluralization
+                        tap_count: pair.count,
+                        physics: true,
+                        smooth: false
+                    };
+                });
                 
                 // Update the datasets
                 nodes = new vis.DataSet(nodeData);
@@ -3834,9 +3862,47 @@ Remember: You're helping someone explore and understand their social network dat
                             
                             // Collect edge update for batch processing
                             const shouldShow = isInTimeline && isInDegreeFilter;
+                            
+                            // Calculate timeline-based tap count for edge styling
+                            let timelineTapCount = 0;
+                            if (shouldShow) {
+                                // Count taps between these users up to current timeline position
+                                const user1Id = edge.from;
+                                const user2Id = edge.to;
+                                timelineTapCount = completeLocationData.slice(0, eventIndex).filter(tap => 
+                                    (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                                    (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                                ).length;
+                            }
+                            
+                            // Apply 5-segment styling based on timeline tap count
+                            let thickness, color;
+                            if (timelineTapCount === 1) {
+                                thickness = 0.5;
+                                color = "#E0E0E0"; // Light grey
+                            } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                                thickness = 0.8;
+                                color = "#D0D0D0"; // Medium-light grey
+                            } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                                thickness = 1.0;
+                                color = "#C0C0C0"; // Medium grey
+                            } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                                thickness = 1.2;
+                                color = "#F0F0F0"; // Light white
+                            } else if (timelineTapCount >= 9) {
+                                thickness = 1.5;
+                                color = "#FFFFFF"; // White
+                            } else {
+                                // Fallback for no taps or edge cases
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            }
+                            
                             userCentricTimelineEdgeUpdates.push({
                                 id: edge.id, 
-                                hidden: !shouldShow
+                                hidden: !shouldShow,
+                                width: thickness,
+                                color: color
                             });
                             
                             if (!shouldShow) hiddenCount++;
@@ -4035,10 +4101,46 @@ Remember: You're helping someone explore and understand their social network dat
                     } else {
                         // Global mode at 100% timeline - show all nodes and edges with full timeline properties
                         
-                        // Show all edges (batch update)
+                        // Show all edges with timeline-based styling (batch update)
                         const globalModeEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
-                            globalModeEdgeUpdates.push({id: edge.id, hidden: false});
+                            // Calculate timeline-based tap count for edge styling
+                            const user1Id = edge.from;
+                            const user2Id = edge.to;
+                            const timelineTapCount = completeLocationData.slice(0, eventIndex).filter(tap => 
+                                (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                                (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                            ).length;
+                            
+                            // Apply 5-segment styling based on timeline tap count
+                            let thickness, color;
+                            if (timelineTapCount === 1) {
+                                thickness = 0.5;
+                                color = "#E0E0E0"; // Light grey
+                            } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                                thickness = 0.8;
+                                color = "#D0D0D0"; // Medium-light grey
+                            } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                                thickness = 1.0;
+                                color = "#C0C0C0"; // Medium grey
+                            } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                                thickness = 1.2;
+                                color = "#F0F0F0"; // Light white
+                            } else if (timelineTapCount >= 9) {
+                                thickness = 1.5;
+                                color = "#FFFFFF"; // White
+                            } else {
+                                // Fallback for no taps or edge cases
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            }
+                            
+                            globalModeEdgeUpdates.push({
+                                id: edge.id, 
+                                hidden: false,
+                                width: thickness,
+                                color: color
+                            });
                         });
                         edges.update(globalModeEdgeUpdates);
                         
