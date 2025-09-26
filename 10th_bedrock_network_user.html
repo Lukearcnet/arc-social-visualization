@@ -3516,12 +3516,17 @@ Remember: You're helping someone explore and understand their social network dat
                 });
             }
             
-            // Calculate node properties based on timeline position
+            // Calculate node properties based on timeline position and degree filters
             function calculateTimelineNodeProperties(nodeId, eventIndex) {
                 const node = allNodes[nodeId];
                 if (!node) return { size: 10, color: "#87CEEB" }; // Default values
                 
-                // Count taps and connections up to this timeline point
+                // Get current degree filter settings
+                const degree1Enabled = document.getElementById('degree1').checked;
+                const degree2Enabled = document.getElementById('degree2').checked;
+                const degree3Enabled = document.getElementById('degree3').checked;
+                
+                // Count taps and connections up to this timeline point, filtered by degree
                 let timelineTaps = 0;
                 let timelineConnections = new Set();
                 
@@ -3529,9 +3534,45 @@ Remember: You're helping someone explore and understand their social network dat
                 for (let i = 0; i < eventIndex; i++) {
                     const event = timeSequence[i];
                     if (event.user1_id === nodeId || event.user2_id === nodeId) {
-                        timelineTaps++;
-                        timelineConnections.add(event.user1_id);
-                        timelineConnections.add(event.user2_id);
+                        // Check if this event should be included based on degree filters
+                        let shouldIncludeEvent = false;
+                        
+                        // If we're in user-centric mode, check degree relationships
+                        if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== null) {
+                            const selectedUserId = currentFilterUser;
+                            const userNode = allNodes[selectedUserId];
+                            const profileData = userNode.profile_data;
+                            const degree1Connections = profileData.degree_1_connections || [];
+                            const degree2Connections = profileData.degree_2_connections || [];
+                            const degree3Connections = profileData.degree_3_connections || [];
+                            
+                            // Check if this event involves connections that match the selected degree filters
+                            if (event.user1_id === selectedUserId || event.user2_id === selectedUserId) {
+                                // Direct connection to selected user
+                                if (degree1Enabled) {
+                                    shouldIncludeEvent = true;
+                                }
+                            } else if (degree1Connections.includes(event.user1_id) && degree1Connections.includes(event.user2_id)) {
+                                // Connection between 1st degree connections
+                                if (degree2Enabled) {
+                                    shouldIncludeEvent = true;
+                                }
+                            } else if (degree2Connections.includes(event.user1_id) && degree2Connections.includes(event.user2_id)) {
+                                // Connection between 2nd degree connections
+                                if (degree3Enabled) {
+                                    shouldIncludeEvent = true;
+                                }
+                            }
+                        } else {
+                            // Global mode - include all events
+                            shouldIncludeEvent = true;
+                        }
+                        
+                        if (shouldIncludeEvent) {
+                            timelineTaps++;
+                            timelineConnections.add(event.user1_id);
+                            timelineConnections.add(event.user2_id);
+                        }
                     }
                 }
                 
@@ -3616,21 +3657,8 @@ Remember: You're helping someone explore and understand their social network dat
                     // Always enable degree filters - user can interact with them while sliding timeline
                     setDegreeFiltersEnabled(true);
                     
-                    if (percentage >= 100) {
-                        // Timeline at 100%: Restore previous state if available
-                        if (savedDegreeFilterState[1] !== undefined) {
-                            restoreDegreeFilterState();
-                        }
-                    } else {
-                        // Timeline < 100%: Save current state and show all degrees visually
-                        if (savedDegreeFilterState[1] === undefined) {
-                            saveDegreeFilterState();
-                        }
-                        // Visually check all degrees to show they're active
-                        document.getElementById('degree1').checked = true;
-                        document.getElementById('degree2').checked = true;
-                        document.getElementById('degree3').checked = true;
-                    }
+                    // Always respect the user's degree filter selections
+                    // No forced checking or state saving/restoring
                 } else {
                     // Global mode: Disable degree filters since they don't apply to global view
                     document.getElementById('degree1').checked = true;
@@ -3714,27 +3742,21 @@ Remember: You're helping someone explore and understand their social network dat
                             const degree2Enabled = document.getElementById('degree2').checked;
                             const degree3Enabled = document.getElementById('degree3').checked;
                             
-                            // Collect all degree-filtered connections
+                            // Collect degree-filtered connections based on actual user selections
                             const degreeFilteredConnections = new Set();
                             
-                                                    if (percentage < 100) {
-                            // Timeline < 100%: Automatically include ALL degrees
                             // Always include the selected user themselves
                             degreeFilteredConnections.add(selectedUserId);
-                            degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                            degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                            degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                        } else {
-                                // Timeline at 100%: Use checkbox states
-                                if (degree1Enabled) {
-                                    degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                                }
-                                if (degree2Enabled) {
-                                    degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                                }
-                                if (degree3Enabled) {
-                                    degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                                }
+                            
+                            // Add connections based on what degrees are actually enabled
+                            if (degree1Enabled) {
+                                degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            }
+                            if (degree2Enabled) {
+                                degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                            }
+                            if (degree3Enabled) {
+                                degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
                             }
                         
                         
@@ -3779,31 +3801,25 @@ Remember: You're helping someone explore and understand their social network dat
                         Object.values(allEdges).forEach(edge => {
                             const isInTimeline = visibleEdgeIds.has(edge.id);
                             
-                            // When timeline < 100%, show all degrees for the user
+                            // Check if edge matches degree filter criteria
                             let isInDegreeFilter = false;
                             
-                            if (percentage < 100) {
-                                // Timeline < 100%: Show all degrees (1st, 2nd, 3rd) for the user
-                                // Only show edges where both nodes are in the connected component
-                                isInDegreeFilter = connectedComponent.has(edge.from) && connectedComponent.has(edge.to);
-                            } else {
-                                // Timeline at 100%: Use normal degree filtering
-                                if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
+                            // Use degree filtering logic for all timeline positions
+                            if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
                                     // 1st degree only: only edges connected to Luke
                                     isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
                                                      (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                                } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
-                                    // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
-                                    const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                            (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                                    const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
-                                    isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
-                                } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
-                                    // All degrees: all edges between degree-filtered users
-                                    isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
-                                                     (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
-                                                     (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
-                                }
+                            } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
+                                // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
+                                const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
+                                                        (edge.to === selectedUserId && degree1Connections.includes(edge.from));
+                                const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
+                                isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
+                            } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
+                                // All degrees: all edges between degree-filtered users
+                                isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
+                                                 (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
+                                                 (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
                             }
                             
                             if (isInTimeline) timelineEdgeCount++;
@@ -3943,7 +3959,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
                             }
                         
-                        // Show all degree-filtered connections at 100% timeline (batch update)
+                        // Apply degree filtering to all edges (same logic for all timeline positions)
                         const hundredPercentEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
                             let isInDegreeFilter = false;
@@ -3996,11 +4012,11 @@ Remember: You're helping someone explore and understand their social network dat
                         nodes.update(hundredPercentNodeUpdates);
                         
                         
-                        // Update node properties based on timeline position (100% case) - batch update
+                        // Update node properties based on timeline position and degree filters - batch update
                         const hundredPercentNodePropsUpdates = [];
                         nodes.forEach(node => {
                             if (node.id === selectedUserId || (degreeFilteredConnections.has(node.id) && nodesWithVisibleEdges.has(node.id))) {
-                                const timelineProps = calculateTimelineNodeProperties(node.id, timeSequence.length); // Full timeline
+                                const timelineProps = calculateTimelineNodeProperties(node.id, eventIndex); // Use current timeline position
                                 hundredPercentNodePropsUpdates.push({
                                     id: node.id, 
                                     size: timelineProps.size,
