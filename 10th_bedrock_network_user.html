@@ -1747,13 +1747,12 @@ DO NOT use file:// URLs with this version
                     const taps = user.profile_stats.tap_count;
                     const connections = user.profile_stats.connections_count;
                     
-                    // Match bedrock's initial sizing formula (not timeline sizing)
-                    let size = 8; // Base size for 1-4 taps
-                    if (taps >= 5) size = 10;   // 5 taps
-                    if (taps >= 10) size = 12;  // 10-13 taps  
-                    if (taps >= 20) size = 15;  // 20+ taps (like Grace Brown with 91 taps)
-                    if (taps >= 50) size = 18;  // 50+ taps
-                    if (taps >= 100) size = 20; // 100+ taps
+                    // Use same sizing formula as timeline: 10px base + 0.167px per tap, max 60px
+                    let size = 10; // Base size
+                    if (taps > 0) {
+                        // Same formula as timeline sizing: 300 taps = 60px max size
+                        size = Math.max(10, Math.min(60, 10 + (taps * 0.167)));
+                    }
                     
                     return {
                         id: user.user_id,
@@ -3580,27 +3579,25 @@ Remember: You're helping someone explore and understand their social network dat
                 timelineConnections.delete(nodeId);
                 const connectionCount = timelineConnections.size;
                 
-                // Calculate size with smaller increments (10px → 11px → 12px → 13px...)
+                // Calculate size with new formula: 10px base + 0.167px per tap, max 60px
                 let size = 10; // Base size
                 if (timelineTaps > 0) {
-                    // More granular size increments: each tap adds 1px instead of 0.5px
-                    size = Math.max(10, Math.min(35, 10 + timelineTaps));
+                    // New sizing: 300 taps = 60px max size
+                    size = Math.max(10, Math.min(60, 10 + (timelineTaps * 0.167)));
                 }
                 
-                // Grey to white gradient: Light grey → Medium grey → Dark grey → White
-                let color = "#D3D3D3"; // Default light grey
-                if (timelineTaps >= 25) {
-                    color = "#FFFFFF"; // White for very high activity
+                // New 6-step color gradient: Dark grey → White (100 taps max)
+                let color = "#808080"; // Default dark grey
+                if (timelineTaps >= 100) {
+                    color = "#FFFFFF"; // White for very high activity (100+ taps)
+                } else if (timelineTaps >= 80) {
+                    color = "#F5F5F5"; // Very light grey for high activity (80+ taps)
+                } else if (timelineTaps >= 60) {
+                    color = "#E0E0E0"; // Light grey for medium-high activity (60+ taps)
+                } else if (timelineTaps >= 40) {
+                    color = "#C0C0C0"; // Silver for medium activity (40+ taps)
                 } else if (timelineTaps >= 20) {
-                    color = "#F5F5F5"; // Very light grey for high activity
-                } else if (timelineTaps >= 15) {
-                    color = "#E0E0E0"; // Light grey for medium-high activity
-                } else if (timelineTaps >= 10) {
-                    color = "#C0C0C0"; // Silver for medium activity
-                } else if (timelineTaps >= 5) {
-                    color = "#A9A9A9"; // Dark grey for low-medium activity
-                } else if (timelineTaps >= 1) {
-                    color = "#808080"; // Grey for low activity
+                    color = "#A9A9A9"; // Dark grey for low-medium activity (20+ taps)
                 }
                 
                 return { size, color, taps: timelineTaps, connections: connectionCount };
@@ -3620,6 +3617,15 @@ Remember: You're helping someone explore and understand their social network dat
                     // Fallback to original timestamp if parsing fails
                     return timestamp;
                 }
+            }
+            
+            // Update profile stats based on timeline position
+            function updateProfileStats(userId, eventIndex) {
+                const timelineProps = calculateTimelineNodeProperties(userId, eventIndex);
+                
+                // Update the profile stats display
+                document.getElementById('profileTaps').textContent = timelineProps.taps;
+                document.getElementById('profileConnections').textContent = timelineProps.connections;
             }
             
             function updateTimelineDisplay(percentage) {
@@ -4060,6 +4066,11 @@ Remember: You're helping someone explore and understand their social network dat
                     document.getElementById('currentTime').textContent = formattedDate;
                 } else {
                     document.getElementById('currentTime').textContent = 'No connections shown';
+                }
+                
+                // Update profile stats if a user is selected
+                if (isUserCentric && selectedUserId) {
+                    updateProfileStats(selectedUserId, eventIndex);
                 }
                 
                 // Count visible nodes (users)
