@@ -4174,7 +4174,9 @@ Remember: You're helping someone explore and understand their social network dat
                 document.getElementById('degree1').addEventListener('change', function() {
                     currentDegreeFilter[1] = this.checked;
                     if (currentFilterUser) {
-                        applyDegreeFilter();
+                        // Use current timeline position instead of showing all connections
+                        const currentTimelinePosition = timelineSlider.value;
+                        updateTimelineDisplay(currentTimelinePosition);
                     } else if (selectedNode) {
                         displayConnections(selectedNode);
                     }
@@ -4188,7 +4190,9 @@ Remember: You're helping someone explore and understand their social network dat
                         document.getElementById('degree1').checked = true;
                     }
                     if (currentFilterUser) {
-                        applyDegreeFilter();
+                        // Use current timeline position instead of showing all connections
+                        const currentTimelinePosition = timelineSlider.value;
+                        updateTimelineDisplay(currentTimelinePosition);
                     } else if (selectedNode) {
                         displayConnections(selectedNode);
                     }
@@ -4204,7 +4208,9 @@ Remember: You're helping someone explore and understand their social network dat
                         document.getElementById('degree2').checked = true;
                     }
                     if (currentFilterUser) {
-                        applyDegreeFilter();
+                        // Use current timeline position instead of showing all connections
+                        const currentTimelinePosition = timelineSlider.value;
+                        updateTimelineDisplay(currentTimelinePosition);
                     } else if (selectedNode) {
                         displayConnections(selectedNode);
                     }
