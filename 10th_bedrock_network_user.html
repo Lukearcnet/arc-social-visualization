@@ -3869,7 +3869,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 // Count taps between these users up to current timeline position
                                 const user1Id = edge.from;
                                 const user2Id = edge.to;
-                                timelineTapCount = completeLocationData.slice(0, eventIndex).filter(tap => 
+                                timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
                                     (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
                                     (tap.user1_id === user2Id && tap.user2_id === user1Id)
                                 ).length;
@@ -4107,7 +4107,7 @@ Remember: You're helping someone explore and understand their social network dat
                             // Calculate timeline-based tap count for edge styling
                             const user1Id = edge.from;
                             const user2Id = edge.to;
-                            const timelineTapCount = completeLocationData.slice(0, eventIndex).filter(tap => 
+                            const timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
                                 (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
                                 (tap.user1_id === user2Id && tap.user2_id === user1Id)
                             ).length;
