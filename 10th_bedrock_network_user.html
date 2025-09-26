@@ -3571,17 +3571,12 @@ Remember: You're helping someone explore and understand their social network dat
                 });
             }
             
-            // Calculate node properties based on timeline position and degree filters
+            // Calculate node properties based on timeline position (total activity, not filtered by selected user)
             function calculateTimelineNodeProperties(nodeId, eventIndex) {
                 const node = allNodes[nodeId];
                 if (!node) return { size: 10, color: "#87CEEB" }; // Default values
                 
-                // Get current degree filter settings
-                const degree1Enabled = document.getElementById('degree1').checked;
-                const degree2Enabled = document.getElementById('degree2').checked;
-                const degree3Enabled = document.getElementById('degree3').checked;
-                
-                // Count taps and connections up to this timeline point, filtered by degree
+                // Count ALL events involving this node up to the current timeline point (not filtered by degree)
                 let timelineTaps = 0;
                 let timelineConnections = new Set();
                 
@@ -3589,45 +3584,10 @@ Remember: You're helping someone explore and understand their social network dat
                 for (let i = 0; i < eventIndex; i++) {
                     const event = timeSequence[i];
                     if (event.user1_id === nodeId || event.user2_id === nodeId) {
-                        // Check if this event should be included based on degree filters
-                        let shouldIncludeEvent = false;
-                        
-                        // If we're in user-centric mode, check degree relationships
-                        if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== null) {
-                            const selectedUserId = currentFilterUser;
-                            const userNode = allNodes[selectedUserId];
-                            const profileData = userNode.profile_data;
-                            const degree1Connections = profileData.degree_1_connections || [];
-                            const degree2Connections = profileData.degree_2_connections || [];
-                            const degree3Connections = profileData.degree_3_connections || [];
-                            
-                            // Check if this event involves connections that match the selected degree filters
-                            if (event.user1_id === selectedUserId || event.user2_id === selectedUserId) {
-                                // Direct connection to selected user
-                                if (degree1Enabled) {
-                                    shouldIncludeEvent = true;
-                                }
-                            } else if (degree1Connections.includes(event.user1_id) && degree1Connections.includes(event.user2_id)) {
-                                // Connection between 1st degree connections
-                                if (degree2Enabled) {
-                                    shouldIncludeEvent = true;
-                                }
-                            } else if (degree2Connections.includes(event.user1_id) && degree2Connections.includes(event.user2_id)) {
-                                // Connection between 2nd degree connections
-                                if (degree3Enabled) {
-                                    shouldIncludeEvent = true;
-                                }
-                            }
-                        } else {
-                            // Global mode - include all events
-                            shouldIncludeEvent = true;
-                        }
-                        
-                        if (shouldIncludeEvent) {
-                            timelineTaps++;
-                            timelineConnections.add(event.user1_id);
-                            timelineConnections.add(event.user2_id);
-                        }
+                        // Include ALL events involving this node (no degree filtering for styling)
+                        timelineTaps++;
+                        timelineConnections.add(event.user1_id);
+                        timelineConnections.add(event.user2_id);
                     }
                 }
                 
@@ -3891,17 +3851,13 @@ Remember: You're helping someone explore and understand their social network dat
                             // Collect edge update for batch processing
                             const shouldShow = isInTimeline && isInDegreeFilter;
                             
-                            // Calculate timeline-based tap count for edge styling
-                            let timelineTapCount = 0;
-                            if (shouldShow) {
-                                // Count taps between these users up to current timeline position
-                                const user1Id = edge.from;
-                                const user2Id = edge.to;
-                                timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
-                                    (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
-                                    (tap.user1_id === user2Id && tap.user2_id === user1Id)
-                                ).length;
-                            }
+                            // Calculate total tap count between these users up to timeline position (not filtered by selected user)
+                            const user1Id = edge.from;
+                            const user2Id = edge.to;
+                            const timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
+                                (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                                (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                            ).length;
                             
                             // Apply 5-segment styling based on timeline tap count
                             let thickness, color;
@@ -4132,7 +4088,7 @@ Remember: You're helping someone explore and understand their social network dat
                         // Show all edges with timeline-based styling (batch update)
                         const globalModeEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
-                            // Calculate timeline-based tap count for edge styling
+                            // Calculate total tap count between these users up to timeline position (not filtered by selected user)
                             const user1Id = edge.from;
                             const user2Id = edge.to;
                             const timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
