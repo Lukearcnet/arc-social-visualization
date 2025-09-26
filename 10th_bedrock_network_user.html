@@ -3619,6 +3619,15 @@ Remember: You're helping someone explore and understand their social network dat
                 }
             }
             
+            // Update profile stats based on timeline position
+            function updateProfileStats(userId, eventIndex) {
+                const timelineProps = calculateTimelineNodeProperties(userId, eventIndex);
+                
+                // Update the profile stats display
+                document.getElementById('profileTaps').textContent = timelineProps.taps;
+                document.getElementById('profileConnections').textContent = timelineProps.connections;
+            }
+            
             function updateTimelineDisplay(percentage) {
                 if (timeSequence.length === 0) return;
                 
@@ -4057,6 +4066,11 @@ Remember: You're helping someone explore and understand their social network dat
                     document.getElementById('currentTime').textContent = formattedDate;
                 } else {
                     document.getElementById('currentTime').textContent = 'No connections shown';
+                }
+                
+                // Update profile stats if a user is selected
+                if (isUserCentric && selectedUserId) {
+                    updateProfileStats(selectedUserId, eventIndex);
                 }
                 
                 // Count visible nodes (users)
