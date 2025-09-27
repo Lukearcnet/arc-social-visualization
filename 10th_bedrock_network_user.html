@@ -3826,23 +3826,8 @@ Remember: You're helping someone explore and understand their social network dat
                             // Check if edge matches degree filter criteria
                             let isInDegreeFilter = false;
                             
-                            // Use degree filtering logic for all timeline positions
-                            if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
-                                    // 1st degree only: only edges connected to Luke
-                                    isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                     (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                            } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
-                                // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
-                                const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                        (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                                const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
-                                isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
-                            } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
-                                // All degrees: all edges between degree-filtered users
-                                isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
-                            }
+                            // Simple node-based degree filtering: show edges between visible nodes
+                            isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
                             
                             if (isInTimeline) timelineEdgeCount++;
                             if (isInDegreeFilter) degreeFilterEdgeCount++;
@@ -4020,22 +4005,8 @@ Remember: You're helping someone explore and understand their social network dat
                         Object.values(allEdges).forEach(edge => {
                             let isInDegreeFilter = false;
                             
-                            if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
-                                // 1st degree only: only edges connected to Luke
-                                isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                 (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                            } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
-                                // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
-                                const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                        (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                                const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
-                                isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
-                            } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
-                                // All degrees: all edges between degree-filtered users
-                                isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
-                            }
+                            // Simple node-based degree filtering: show edges between visible nodes
+                            isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
                             
                             hundredPercentEdgeUpdates.push({
                                 id: edge.id, 
