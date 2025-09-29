@@ -623,15 +623,26 @@ DO NOT use file:// URLs with this version
                 transition: all 0.3s ease;
             }
             
-            /* Edge highlighting on hover and selection */
-            .vis-edge:hover {
+            /* Edge highlighting on hover and selection - more specific selectors */
+            .vis-network .vis-edge:hover {
                 stroke: #54E7FD !important;
-                stroke-width: 2px !important;
+                stroke-width: 3px !important;
             }
             
-            .vis-edge.vis-selected {
+            .vis-network .vis-edge.vis-selected {
                 stroke: #54E7FD !important;
-                stroke-width: 2px !important;
+                stroke-width: 3px !important;
+            }
+            
+            /* Target SVG line elements directly */
+            .vis-network svg .vis-edge:hover {
+                stroke: #54E7FD !important;
+                stroke-width: 3px !important;
+            }
+            
+            .vis-network svg .vis-edge.vis-selected {
+                stroke: #54E7FD !important;
+                stroke-width: 3px !important;
             }
             
             
@@ -2987,7 +2998,75 @@ Remember: You're helping someone explore and understand their social network dat
                             label.style.color = '#ffffff';
                         });
                     }, 1000);
+                    
+                    // Add edge highlighting functionality
+                    setTimeout(() => {
+                        addEdgeHighlighting();
+                    }, 1500);
                 });
+            }
+            
+            // Edge highlighting functionality
+            function addEdgeHighlighting() {
+                // Add event listeners for edge highlighting
+                network.on('hoverNode', function(params) {
+                    if (params.node) {
+                        highlightConnectedEdges(params.node);
+                    }
+                });
+                
+                network.on('blurNode', function(params) {
+                    restoreEdgeColors();
+                });
+                
+                network.on('selectNode', function(params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        highlightConnectedEdges(nodeId);
+                    }
+                });
+                
+                network.on('deselectNode', function(params) {
+                    restoreEdgeColors();
+                });
+            }
+            
+            let originalEdgeColors = new Map();
+            let currentlyHighlightedEdges = new Set();
+            
+            function highlightConnectedEdges(nodeId) {
+                const connectedEdges = edges.get().filter(edge => 
+                    edge.from === nodeId || edge.to === nodeId
+                );
+                
+                connectedEdges.forEach(edge => {
+                    if (!originalEdgeColors.has(edge.id)) {
+                        originalEdgeColors.set(edge.id, edge.color);
+                    }
+                    
+                    if (!currentlyHighlightedEdges.has(edge.id)) {
+                        edges.update({
+                            id: edge.id,
+                            color: '#54E7FD'
+                        });
+                        currentlyHighlightedEdges.add(edge.id);
+                    }
+                });
+            }
+            
+            function restoreEdgeColors() {
+                currentlyHighlightedEdges.forEach(edgeId => {
+                    const originalColor = originalEdgeColors.get(edgeId);
+                    if (originalColor) {
+                        edges.update({
+                            id: edgeId,
+                            color: originalColor
+                        });
+                    }
+                });
+                
+                currentlyHighlightedEdges.clear();
+                originalEdgeColors.clear();
             }
         
             // Search functionality
