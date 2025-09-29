@@ -3011,21 +3011,23 @@ Remember: You're helping someone explore and understand their social network dat
                 // Add event listeners for edge highlighting
                 network.on('hoverNode', function(params) {
                     if (params.node) {
-                        highlightConnectedEdges(params.node);
+                        // Clear any previous hovered edges first
+                        restoreEdgeColors(true);
+                        highlightConnectedEdges(params.node, false);
                     }
                 });
                 
                 network.on('blurNode', function(params) {
-                    // Only restore if no node is currently selected
-                    if (!network.getSelectedNodes().length) {
-                        restoreEdgeColors();
-                    }
+                    // Always restore hovered edges when mouse leaves
+                    restoreEdgeColors(true);
                 });
                 
                 network.on('selectNode', function(params) {
                     if (params.nodes.length > 0) {
                         const nodeId = params.nodes[0];
-                        highlightConnectedEdges(nodeId);
+                        // Clear any hovered edges first, then highlight selected node
+                        restoreEdgeColors(true);
+                        highlightConnectedEdges(nodeId, true);
                     }
                 });
                 
@@ -3045,8 +3047,10 @@ Remember: You're helping someone explore and understand their social network dat
             
             let originalEdgeColors = new Map();
             let currentlyHighlightedEdges = new Set();
+            let selectedNodeEdges = new Set(); // Track edges belonging to selected node
+            let hoveredNodeEdges = new Set(); // Track edges belonging to currently hovered node
             
-            function highlightConnectedEdges(nodeId) {
+            function highlightConnectedEdges(nodeId, isSelection = false) {
                 const connectedEdges = edges.get().filter(edge => 
                     edge.from === nodeId || edge.to === nodeId
                 );
@@ -3063,22 +3067,47 @@ Remember: You're helping someone explore and understand their social network dat
                         });
                         currentlyHighlightedEdges.add(edge.id);
                     }
+                    
+                    // Track which edges belong to selection vs hover
+                    if (isSelection) {
+                        selectedNodeEdges.add(edge.id);
+                    } else {
+                        hoveredNodeEdges.add(edge.id);
+                    }
                 });
             }
             
-            function restoreEdgeColors() {
-                currentlyHighlightedEdges.forEach(edgeId => {
-                    const originalColor = originalEdgeColors.get(edgeId);
-                    if (originalColor) {
-                        edges.update({
-                            id: edgeId,
-                            color: originalColor
-                        });
-                    }
-                });
-                
-                currentlyHighlightedEdges.clear();
-                originalEdgeColors.clear();
+            function restoreEdgeColors(onlyHovered = false) {
+                if (onlyHovered) {
+                    // Only restore hovered edges, keep selected node edges
+                    hoveredNodeEdges.forEach(edgeId => {
+                        const originalColor = originalEdgeColors.get(edgeId);
+                        if (originalColor) {
+                            edges.update({
+                                id: edgeId,
+                                color: originalColor
+                            });
+                        }
+                        currentlyHighlightedEdges.delete(edgeId);
+                    });
+                    hoveredNodeEdges.clear();
+                } else {
+                    // Restore all edges
+                    currentlyHighlightedEdges.forEach(edgeId => {
+                        const originalColor = originalEdgeColors.get(edgeId);
+                        if (originalColor) {
+                            edges.update({
+                                id: edgeId,
+                                color: originalColor
+                            });
+                        }
+                    });
+                    
+                    currentlyHighlightedEdges.clear();
+                    originalEdgeColors.clear();
+                    selectedNodeEdges.clear();
+                    hoveredNodeEdges.clear();
+                }
             }
         
             // Search functionality
