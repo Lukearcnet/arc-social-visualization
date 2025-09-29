@@ -3027,7 +3027,11 @@ Remember: You're helping someone explore and understand their social network dat
                         const nodeId = params.nodes[0];
                         // Clear any hovered edges first, then highlight selected node
                         restoreEdgeColors(true);
-                        highlightConnectedEdges(nodeId, true);
+                        
+                        // Add delay to ensure highlighting happens after timeline updates
+                        setTimeout(() => {
+                            highlightConnectedEdges(nodeId, true);
+                        }, 100);
                     }
                 });
                 
@@ -3075,6 +3079,19 @@ Remember: You're helping someone explore and understand their social network dat
                         hoveredNodeEdges.add(edge.id);
                     }
                 });
+            }
+            
+            // Function to re-apply highlighting after timeline updates
+            function reapplyHighlighting() {
+                if (selectedNodeEdges.size > 0) {
+                    // Re-highlight selected node edges
+                    selectedNodeEdges.forEach(edgeId => {
+                        edges.update({
+                            id: edgeId,
+                            color: '#03DAEE'
+                        });
+                    });
+                }
             }
             
             function restoreEdgeColors(onlyHovered = false) {
@@ -4282,6 +4299,8 @@ Remember: You're helping someone explore and understand their social network dat
                 // Reset update flag and allow smooth transitions
                 setTimeout(() => {
                     isUpdating = false;
+                    // Re-apply edge highlighting after timeline updates
+                    reapplyHighlighting();
                 }, 50); // Small delay to ensure smooth transitions
             }
             
