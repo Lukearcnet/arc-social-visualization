@@ -625,23 +625,23 @@ DO NOT use file:// URLs with this version
             
             /* Edge highlighting on hover and selection - more specific selectors */
             .vis-network .vis-edge:hover {
-                stroke: #54E7FD !important;
+                stroke: #AFDDF7 !important;
                 stroke-width: 3px !important;
             }
             
             .vis-network .vis-edge.vis-selected {
-                stroke: #54E7FD !important;
+                stroke: #AFDDF7 !important;
                 stroke-width: 3px !important;
             }
             
             /* Target SVG line elements directly */
             .vis-network svg .vis-edge:hover {
-                stroke: #54E7FD !important;
+                stroke: #AFDDF7 !important;
                 stroke-width: 3px !important;
             }
             
             .vis-network svg .vis-edge.vis-selected {
-                stroke: #54E7FD !important;
+                stroke: #AFDDF7 !important;
                 stroke-width: 3px !important;
             }
             
@@ -2880,8 +2880,8 @@ Remember: You're helping someone explore and understand their social network dat
                         shadow: false,
                         color: { 
                             inherit: false,
-                            highlight: '#54E7FD',
-                            hover: '#54E7FD'
+                            highlight: '#AFDDF7',
+                            hover: '#AFDDF7'
                         }
                     },
                     interaction: {
@@ -3047,7 +3047,7 @@ Remember: You're helping someone explore and understand their social network dat
                     if (!currentlyHighlightedEdges.has(edge.id)) {
                         edges.update({
                             id: edge.id,
-                            color: '#54E7FD'
+                            color: '#AFDDF7'
                         });
                         currentlyHighlightedEdges.add(edge.id);
                     }
