@@ -623,14 +623,6 @@ DO NOT use file:// URLs with this version
                 transition: all 0.3s ease;
             }
             
-            /* Custom edge highlighting color */
-            .vis-edge.vis-hover {
-                stroke: #54E7FD !important;
-            }
-            
-            .vis-edge.vis-selected {
-                stroke: #54E7FD !important;
-            }
             
             /* Removed duplicate vis-network text color rules - handled by JavaScript */
             
@@ -2864,7 +2856,11 @@ Remember: You're helping someone explore and understand their social network dat
                     edges: {
                         smooth: { type: 'continuous', forceDirection: 'none' },
                         shadow: false,
-                        color: { inherit: false }
+                        color: { 
+                            inherit: false,
+                            highlight: '#54E7FD',
+                            hover: '#54E7FD'
+                        }
                     },
                     interaction: {
                         hover: true,
