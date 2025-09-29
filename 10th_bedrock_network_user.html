@@ -3016,7 +3016,10 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 
                 network.on('blurNode', function(params) {
-                    restoreEdgeColors();
+                    // Only restore if no node is currently selected
+                    if (!network.getSelectedNodes().length) {
+                        restoreEdgeColors();
+                    }
                 });
                 
                 network.on('selectNode', function(params) {
@@ -3027,7 +3030,16 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 
                 network.on('deselectNode', function(params) {
+                    // Only restore when explicitly deselecting
                     restoreEdgeColors();
+                });
+                
+                // Handle clicking on empty space to clear selection
+                network.on('click', function(params) {
+                    if (params.nodes.length === 0 && params.edges.length === 0) {
+                        // Clicked on empty space - clear highlighting
+                        restoreEdgeColors();
+                    }
                 });
             }
             
