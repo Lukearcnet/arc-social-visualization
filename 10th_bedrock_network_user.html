@@ -3847,15 +3847,28 @@ Remember: You're helping someone explore and understand their social network dat
                                 
                                 console.log(`🎚️ Slider values: Left=${leftValue}%, Right=${rightValue}%`);
                                 
-                                // Ensure left slider doesn't go past right slider
-                                if (this === leftSlider && leftValue >= rightValue) {
-                                    this.value = rightValue - 1;
-                                    console.log(`🎚️ Left slider constrained to ${this.value}%`);
+                                // Calculate minimum gap based on actual date difference
+                                const minGap = 1; // Minimum 1% gap
+                                const actualDaysDiff = getDateDifferenceInDays(leftValue, rightValue);
+                                
+                                console.log(`📅 Date difference: ${actualDaysDiff} days`);
+                                
+                                // Handle left slider movement
+                                if (this === leftSlider) {
+                                    // Left slider cannot go past right slider minus minimum gap
+                                    if (leftValue >= rightValue - minGap) {
+                                        leftSlider.value = rightValue - minGap;
+                                        console.log(`🎚️ Left slider constrained to ${leftSlider.value}% (min gap: ${minGap}%)`);
+                                    }
                                 }
-                                // Ensure right slider doesn't go before left slider
-                                if (this === rightSlider && rightValue <= leftValue) {
-                                    this.value = leftValue + 1;
-                                    console.log(`🎚️ Right slider constrained to ${this.value}%`);
+                                
+                                // Handle right slider movement  
+                                if (this === rightSlider) {
+                                    // Right slider cannot go before left slider plus minimum gap
+                                    if (rightValue <= leftValue + minGap) {
+                                        rightSlider.value = leftValue + minGap;
+                                        console.log(`🎚️ Right slider constrained to ${rightSlider.value}% (min gap: ${minGap}%)`);
+                                    }
                                 }
                                 
                                 updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
@@ -3924,6 +3937,18 @@ Remember: You're helping someone explore and understand their social network dat
                 });
             }
             
+            function getDateDifferenceInDays(startPercentage, endPercentage) {
+                if (timeSequence.length === 0) return 0;
+                
+                const startDate = getDateFromPercentage(startPercentage);
+                const endDate = getDateFromPercentage(endPercentage);
+                
+                const timeDiff = endDate.getTime() - startDate.getTime();
+                const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                
+                return daysDiff;
+            }
+            
             // Update dual timeline display
             function updateDualTimelineDisplay(startPercentage, endPercentage) {
                 if (timeSequence.length === 0) {
@@ -3971,9 +3996,16 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update network display based on filtered events
                 updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled);
                 
-                // Update connection count
+                // Update connection count and date range
                 const visibleNodes = Object.values(allNodes).filter(node => !node.hidden).length;
-                document.getElementById('connectionCount').textContent = `${visibleNodes} users in range`;
+                const daysDiff = getDateDifferenceInDays(startPercentage, endPercentage);
+                
+                let rangeText = `${visibleNodes} users`;
+                if (daysDiff > 0) {
+                    rangeText += ` (${daysDiff} days)`;
+                }
+                
+                document.getElementById('connectionCount').textContent = rangeText;
                 
                 // Reset update flag
                 setTimeout(() => {
