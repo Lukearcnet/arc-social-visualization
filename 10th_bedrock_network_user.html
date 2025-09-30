@@ -1725,6 +1725,12 @@ DO NOT use file:// URLs with this version
             // Dynamic data loading functions
             async function loadData() {
                 try {
+                    // If we're in an iframe, wait a bit for parent to load data first
+                    if (window !== window.top) {
+                        console.log('🔄 Iframe context detected - waiting for parent to load data first...');
+                        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for parent
+                    }
+                    
                     console.log('🔄 Loading dynamic data from API...');
                     const response = await fetch('/api/data?t=' + Date.now());
                     if (!response.ok) {
@@ -2904,6 +2910,7 @@ Remember: You're helping someone explore and understand their social network dat
                     chatInput.disabled = false;
                 }
             }
+            
             
             // Initialize the network
             async function initNetwork() {
