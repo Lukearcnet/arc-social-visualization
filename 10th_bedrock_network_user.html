@@ -3160,6 +3160,20 @@ Remember: You're helping someone explore and understand their social network dat
                             });
                         }, 1200);
                         
+                        // CRITICAL: Re-apply timeline update after stabilization to ensure edges are visible
+                        setTimeout(() => {
+                            console.log('🔧 Stabilization complete - re-applying timeline update to ensure edge visibility...');
+                            // Re-trigger the timeline update to ensure edges are visible after stabilization
+                            const leftSlider = document.getElementById('timelineSliderLeft');
+                            const rightSlider = document.getElementById('timelineSliderRight');
+                            if (leftSlider && rightSlider) {
+                                const leftValue = parseInt(leftSlider.value);
+                                const rightValue = parseInt(rightSlider.value);
+                                console.log(`🔧 Re-applying timeline: ${leftValue}% - ${rightValue}%`);
+                                updateDualTimelineDisplay(leftValue, rightValue);
+                            }
+                        }, 2000); // Wait for all animations to complete
+                        
                     }, 500);
                     
                     // Force white text for all node labels
