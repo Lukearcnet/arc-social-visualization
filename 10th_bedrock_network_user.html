@@ -3060,10 +3060,10 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Debug: Check edge visibility after network creation
                 console.log('🔍 Debug: Checking edge visibility after network creation...');
-                const allEdges = edges.get();
-                const visibleEdges = allEdges.filter(edge => !edge.hidden);
-                const hiddenEdges = allEdges.filter(edge => edge.hidden);
-                console.log(`🔍 Total edges: ${allEdges.length}, Visible: ${visibleEdges.length}, Hidden: ${hiddenEdges.length}`);
+                const allEdgesData = edges.get();
+                const visibleEdges = allEdgesData.filter(edge => !edge.hidden);
+                const hiddenEdges = allEdgesData.filter(edge => edge.hidden);
+                console.log(`🔍 Total edges: ${allEdgesData.length}, Visible: ${visibleEdges.length}, Hidden: ${hiddenEdges.length}`);
                 
                 // Force network to redraw after a short delay to ensure proper rendering
                 setTimeout(() => {
