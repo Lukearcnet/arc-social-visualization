@@ -525,6 +525,7 @@ DO NOT use file:// URLs with this version
                 flex: 1;
                 text-align: center;
                 font-weight: 500;
+                white-space: pre-line; /* Allow newlines to display */
             }
             
             .timeline-info {
@@ -1576,7 +1577,7 @@ DO NOT use file:// URLs with this version
                                 <span id="startDate">Start Date</span>
                             </div>
                             <div class="timeline-center">
-                                <span id="connectionCount">246 total users</span>
+                            <span id="connectionCount">246 total users</span>
                             </div>
                             <div class="timeline-date-right">
                                 <span id="endDate">End Date</span>
@@ -1959,15 +1960,15 @@ DO NOT use file:// URLs with this version
                     }
                     
                     return {
-                        id: index,
-                        from: pair.user1,
-                        to: pair.user2,
+                    id: index,
+                    from: pair.user1,
+                    to: pair.user2,
                         color: color,
                         width: thickness,
-                        title: `${pair.count} tap${pair.count === 1 ? '' : 's'}`, // Correct pluralization
-                        tap_count: pair.count,
-                        physics: true,
-                        smooth: false
+                    title: `${pair.count} tap${pair.count === 1 ? '' : 's'}`, // Correct pluralization
+                    tap_count: pair.count,
+                    physics: true,
+                    smooth: false
                     };
                 });
                 
@@ -3741,8 +3742,8 @@ Remember: You're helping someone explore and understand their social network dat
                         }
                         
                         return {
-                            id: edge.id,
-                            hidden: false,
+                        id: edge.id,
+                        hidden: false,
                             color: color,
                             width: thickness
                         };
@@ -3987,14 +3988,14 @@ Remember: You're helping someone explore and understand their social network dat
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
                         
-                        // Clear any pending update
-                        if (updateTimeout) {
-                            clearTimeout(updateTimeout);
-                        }
-                        
-                        // Debounce the update to reduce choppiness
-                        updateTimeout = setTimeout(() => {
-                            if (!isUpdating) {
+                    // Clear any pending update
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    
+                    // Debounce the update to reduce choppiness
+                    updateTimeout = setTimeout(() => {
+                        if (!isUpdating) {
                                 const leftValue = parseInt(leftSlider.value);
                                 const rightValue = parseInt(rightSlider.value);
                                 
@@ -4030,33 +4031,33 @@ Remember: You're helping someone explore and understand their social network dat
                                 
                                 updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                                 updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                            }
-                        }, 16); // ~60fps update rate
-                    });
-                    
+                        }
+                    }, 16); // ~60fps update rate
+                });
+                
                     slider.addEventListener('mousedown', function() {
-                        isSliderDragging = true;
-                    });
-                    
+                    isSliderDragging = true;
+                });
+                
                     slider.addEventListener('mouseup', function() {
-                        isSliderDragging = false;
-                        // Force immediate update when dragging ends
-                        if (updateTimeout) {
-                            clearTimeout(updateTimeout);
-                        }
+                    isSliderDragging = false;
+                    // Force immediate update when dragging ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
                         updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                    });
-                    
+                });
+                
                     slider.addEventListener('touchstart', function() {
-                        isSliderDragging = true;
-                    });
-                    
+                    isSliderDragging = true;
+                });
+                
                     slider.addEventListener('touchend', function() {
-                        isSliderDragging = false;
-                        // Force immediate update when touch ends
-                        if (updateTimeout) {
-                            clearTimeout(updateTimeout);
-                        }
+                    isSliderDragging = false;
+                    // Force immediate update when touch ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
                         updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                     });
                 });
@@ -4173,9 +4174,10 @@ Remember: You're helping someone explore and understand their social network dat
                 const visibleNodes = Object.values(allNodes).filter(node => !node.hidden).length;
                 const daysDiff = getDateDifferenceInDays(startPercentage, endPercentage);
                 
+                // Format as stacked lines without parentheses
                 let rangeText = `${visibleNodes} users`;
                 if (daysDiff > 0) {
-                    rangeText += ` (${daysDiff} days)`;
+                    rangeText += `\n${daysDiff} days`;
                 }
                 
                 document.getElementById('connectionCount').textContent = rangeText;
@@ -4520,14 +4522,14 @@ Remember: You're helping someone explore and understand their social network dat
                             degreeFilteredConnections.add(selectedUserId);
                             
                             // Add connections based on what degrees are actually enabled
-                            if (degree1Enabled) {
-                                degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                            }
-                            if (degree2Enabled) {
-                                degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                            }
-                            if (degree3Enabled) {
-                                degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                if (degree1Enabled) {
+                                    degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                                if (degree2Enabled) {
+                                    degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                                if (degree3Enabled) {
+                                    degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
                             }
                         
                         
@@ -5001,7 +5003,7 @@ Remember: You're helping someone explore and understand their social network dat
                     console.log('🔗 Iframe context detected - applying mobile control adjustments');
                 }
             }
-
+            
             // Initialize everything when the page loads
             document.addEventListener('DOMContentLoaded', async function() {
                 detectIframeContext();
