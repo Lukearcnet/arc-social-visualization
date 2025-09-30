@@ -4164,6 +4164,11 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update network display based on filtered events
                 updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled);
                 
+                // Update profile stats if a user is selected
+                if (isUserCentric && selectedUserId) {
+                    updateProfileStatsForTimeline(selectedUserId, filteredEvents);
+                }
+                
                 // Update connection count and date range
                 const visibleNodes = Object.values(allNodes).filter(node => !node.hidden).length;
                 const daysDiff = getDateDifferenceInDays(startPercentage, endPercentage);
@@ -4362,6 +4367,30 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update the profile stats display
                 document.getElementById('profileTaps').textContent = timelineProps.taps;
                 document.getElementById('profileConnections').textContent = timelineProps.connections;
+            }
+            
+            // Update profile stats for dual timeline system
+            function updateProfileStatsForTimeline(userId, filteredEvents) {
+                // Calculate stats based on filtered events within the timeline range
+                let timelineTaps = 0;
+                let timelineConnections = new Set();
+                
+                // Count taps and connections from filtered events
+                filteredEvents.forEach(event => {
+                    if (event.user1_id === userId || event.user2_id === userId) {
+                        timelineTaps++;
+                        timelineConnections.add(event.user1_id);
+                        timelineConnections.add(event.user2_id);
+                    }
+                });
+                
+                // Remove the user themselves from connections count
+                timelineConnections.delete(userId);
+                const connectionCount = timelineConnections.size;
+                
+                // Update the profile stats display
+                document.getElementById('profileTaps').textContent = timelineTaps;
+                document.getElementById('profileConnections').textContent = connectionCount;
             }
             
             function updateTimelineDisplay(percentage) {
