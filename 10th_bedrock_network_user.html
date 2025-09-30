@@ -4171,11 +4171,17 @@ Remember: You're helping someone explore and understand their social network dat
                 }
                 
                 // Update connection count and date range
-                const visibleNodes = Object.values(allNodes).filter(node => !node.hidden).length;
+                // Count unique users from filtered events in timeline range
+                const uniqueUsers = new Set();
+                filteredEvents.forEach(event => {
+                    if (event.user1_id) uniqueUsers.add(event.user1_id);
+                    if (event.user2_id) uniqueUsers.add(event.user2_id);
+                });
+                const userCount = uniqueUsers.size;
                 const daysDiff = getDateDifferenceInDays(startPercentage, endPercentage);
                 
                 // Format as stacked lines without parentheses
-                let rangeText = `${visibleNodes} users`;
+                let rangeText = `${userCount} users`;
                 if (daysDiff > 0) {
                     rangeText += `\n${daysDiff} days`;
                 }
