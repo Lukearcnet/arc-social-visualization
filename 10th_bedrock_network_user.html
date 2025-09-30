@@ -458,7 +458,7 @@ DO NOT use file:// URLs with this version
             }
             
             .timeline-slider-right {
-                z-index: 1;
+                z-index: 3; /* Higher z-index to ensure it's clickable */
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -2983,12 +2983,7 @@ Remember: You're helping someone explore and understand their social network dat
                         tooltipDelay: 200,
                         zoomView: true,
                         dragView: true,
-                        mouseWheel: {
-                            enabled: true,
-                            scaleSpeed: 0.2,    // 2x faster than previous 0.105
-                            zoomSpeed: 0.2      // 2x faster than previous 0.105
-                        },
-                        zoomSpeed: 0.3          // 2x faster than previous 0.15
+                        zoomSpeed: 0.2          // 2x faster than previous 0.105
                     },
                     layout: {
                         improvedLayout: false,
@@ -3829,7 +3824,7 @@ Remember: You're helping someone explore and understand their social network dat
                 const rightSlider = document.getElementById('timelineSliderRight');
                 if (!leftSlider || !rightSlider) return;
                 
-                // Set initial state to full range (0-100%)
+                // Set initial state to full range (0-100%) - show all connections initially
                 leftSlider.value = 0;
                 rightSlider.value = 100;
                 updateDualTimelineDisplay(0, 100);
@@ -3925,15 +3920,22 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Update dual timeline display
             function updateDualTimelineDisplay(startPercentage, endPercentage) {
-                if (timeSequence.length === 0) return;
+                if (timeSequence.length === 0) {
+                    console.log('⚠️ Timeline: timeSequence is empty');
+                    return;
+                }
                 
                 // Prevent multiple simultaneous updates
                 if (isUpdating) return;
                 isUpdating = true;
                 
+                console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
+                
                 // Calculate start and end event indices
                 const startIndex = Math.floor((startPercentage / 100) * timeSequence.length);
                 const endIndex = Math.floor((endPercentage / 100) * timeSequence.length);
+                
+                console.log(`📊 Timeline: Event indices ${startIndex} - ${endIndex} (total: ${timeSequence.length})`);
                 
                 // Get date range
                 const startDate = getDateFromPercentage(startPercentage);
@@ -3976,7 +3978,11 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Update network with filtered time range events
             function updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled) {
+                console.log(`🔗 Network: Updating with ${filteredEvents.length} filtered events`);
+                console.log(`🔗 Network: User-centric: ${isUserCentric}, Selected: ${selectedUserId}`);
+                
                 if (filteredEvents.length === 0) {
+                    console.log('⚠️ Network: No events in range - hiding all');
                     // Hide all nodes and edges if no events in range
                     const allNodeUpdates = Object.keys(allNodes).map(nodeId => ({
                         id: nodeId,
