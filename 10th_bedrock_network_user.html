@@ -434,13 +434,15 @@ DO NOT use file:// URLs with this version
             .dual-slider-container {
                 position: relative;
                 width: 100%;
-                height: 6px;
+                height: 20px; /* Increased height to accommodate both sliders */
                 background: rgba(255, 255, 255, 0.1);
                 border-radius: 3px;
+                display: flex;
+                align-items: center;
             }
             
             .timeline-slider {
-                position: absolute;
+                position: relative;
                 width: 100%;
                 height: 6px;
                 border-radius: 3px;
@@ -454,11 +456,15 @@ DO NOT use file:// URLs with this version
             }
             
             .timeline-slider-left {
-                z-index: 2; /* Default: behind right slider */
+                /* Left slider takes up left 50% of container */
+                width: 50%;
+                margin-right: 0;
             }
             
             .timeline-slider-right {
-                z-index: 3; /* Default: on top, clickable */
+                /* Right slider takes up right 50% of container */
+                width: 50%;
+                margin-left: 0;
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -3829,51 +3835,28 @@ Remember: You're helping someone explore and understand their social network dat
                 rightSlider.value = 100;
                 updateDualTimelineDisplay(0, 100);
                 
-                // Add dynamic z-index management for both sliders
-                leftSlider.addEventListener('mouseenter', function() {
-                    leftSlider.style.zIndex = '3';
-                    rightSlider.style.zIndex = '2';
-                    console.log('🎚️ Left slider brought to front');
-                });
-                
-                rightSlider.addEventListener('mouseenter', function() {
-                    rightSlider.style.zIndex = '3';
-                    leftSlider.style.zIndex = '2';
-                    console.log('🎚️ Right slider brought to front');
-                });
-                
-                // Reset z-index when mouse leaves the slider area
-                const dualSliderContainer = document.querySelector('.dual-slider-container');
-                dualSliderContainer.addEventListener('mouseleave', function() {
-                    // Reset to default: right slider on top
-                    rightSlider.style.zIndex = '3';
-                    leftSlider.style.zIndex = '2';
-                    console.log('🎚️ Reset to default z-index (right slider on top)');
-                });
-                
                 // Add debugging for click events
                 leftSlider.addEventListener('mousedown', function(e) {
-                    console.log('🖱️ Left slider mousedown - z-index:', leftSlider.style.zIndex, 'event target:', e.target.id);
+                    console.log('🖱️ Left slider mousedown - event target:', e.target.id);
                 });
                 
                 rightSlider.addEventListener('mousedown', function(e) {
-                    console.log('🖱️ Right slider mousedown - z-index:', rightSlider.style.zIndex, 'event target:', e.target.id);
+                    console.log('🖱️ Right slider mousedown - event target:', e.target.id);
                 });
                 
                 // Add debugging for input events
                 leftSlider.addEventListener('input', function(e) {
-                    console.log('📊 Left slider input event - value:', e.target.value, 'z-index:', leftSlider.style.zIndex);
+                    console.log('📊 Left slider input event - value:', e.target.value);
                 });
                 
                 rightSlider.addEventListener('input', function(e) {
-                    console.log('📊 Right slider input event - value:', e.target.value, 'z-index:', rightSlider.style.zIndex);
+                    console.log('📊 Right slider input event - value:', e.target.value);
                 });
                 
                 // Add event listeners for both sliders
                 [leftSlider, rightSlider].forEach(slider => {
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
-                        console.log(`🎚️ Event details - target: ${this.id}, z-index: ${this.style.zIndex}, computed z-index: ${window.getComputedStyle(this).zIndex}`);
                         
                         // Clear any pending update
                         if (updateTimeout) {
