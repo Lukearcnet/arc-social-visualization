@@ -3851,10 +3851,29 @@ Remember: You're helping someone explore and understand their social network dat
                     console.log('🎚️ Reset to default z-index (right slider on top)');
                 });
                 
+                // Add debugging for click events
+                leftSlider.addEventListener('mousedown', function(e) {
+                    console.log('🖱️ Left slider mousedown - z-index:', leftSlider.style.zIndex, 'event target:', e.target.id);
+                });
+                
+                rightSlider.addEventListener('mousedown', function(e) {
+                    console.log('🖱️ Right slider mousedown - z-index:', rightSlider.style.zIndex, 'event target:', e.target.id);
+                });
+                
+                // Add debugging for input events
+                leftSlider.addEventListener('input', function(e) {
+                    console.log('📊 Left slider input event - value:', e.target.value, 'z-index:', leftSlider.style.zIndex);
+                });
+                
+                rightSlider.addEventListener('input', function(e) {
+                    console.log('📊 Right slider input event - value:', e.target.value, 'z-index:', rightSlider.style.zIndex);
+                });
+                
                 // Add event listeners for both sliders
                 [leftSlider, rightSlider].forEach(slider => {
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                        console.log(`🎚️ Event details - target: ${this.id}, z-index: ${this.style.zIndex}, computed z-index: ${window.getComputedStyle(this).zIndex}`);
                         
                         // Clear any pending update
                         if (updateTimeout) {
@@ -3875,23 +3894,27 @@ Remember: You're helping someone explore and understand their social network dat
                                 
                                 console.log(`📅 Date difference: ${actualDaysDiff} days`);
                                 
-                                // Handle left slider movement
-                                if (this === leftSlider) {
-                                    // Left slider cannot go past right slider minus minimum gap
-                                    if (leftValue >= rightValue - minGap) {
-                                        leftSlider.value = rightValue - minGap;
-                                        console.log(`🎚️ Left slider constrained to ${leftSlider.value}% (min gap: ${minGap}%)`);
-                                    }
+                            // Handle left slider movement
+                            if (this === leftSlider) {
+                                console.log(`🎚️ Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
+                                // Left slider cannot go past right slider minus minimum gap
+                                if (leftValue >= rightValue - minGap) {
+                                    const newValue = rightValue - minGap;
+                                    leftSlider.value = newValue;
+                                    console.log(`🎚️ Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
-                                
-                                // Handle right slider movement  
-                                if (this === rightSlider) {
-                                    // Right slider cannot go before left slider plus minimum gap
-                                    if (rightValue <= leftValue + minGap) {
-                                        rightSlider.value = leftValue + minGap;
-                                        console.log(`🎚️ Right slider constrained to ${rightSlider.value}% (min gap: ${minGap}%)`);
-                                    }
+                            }
+                            
+                            // Handle right slider movement  
+                            if (this === rightSlider) {
+                                console.log(`🎚️ Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
+                                // Right slider cannot go before left slider plus minimum gap
+                                if (rightValue <= leftValue + minGap) {
+                                    const newValue = leftValue + minGap;
+                                    rightSlider.value = newValue;
+                                    console.log(`🎚️ Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
+                            }
                                 
                                 updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                             }
