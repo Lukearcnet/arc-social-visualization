@@ -4255,6 +4255,7 @@ Remember: You're helping someone explore and understand their social network dat
                     nodes.update(nodeUpdates);
                     
                     // Update edges - show edges between visible nodes that are in time range
+                    // Note: Edge styling will be handled later in the function, so we just set visibility here
                     const edgeUpdates = [];
                     Object.entries(allEdges).forEach(([edgeId, edge]) => {
                         const fromVisible = !allNodes[edge.from].hidden;
@@ -4266,7 +4267,7 @@ Remember: You're helping someone explore and understand their social network dat
                             hidden: !(fromVisible && toVisible && inTimeRange)
                         });
                     });
-                    edges.update(edgeUpdates);
+                    // Don't call edges.update() here - it will be called later with styling
                     
                 } else {
                     // Global view mode - show all nodes and edges in time range
@@ -4279,15 +4280,8 @@ Remember: You're helping someone explore and understand their social network dat
                     });
                     nodes.update(nodeUpdates);
                     
-                    const edgeUpdates = [];
-                    Object.entries(allEdges).forEach(([edgeId, edge]) => {
-                        const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
-                        edgeUpdates.push({
-                            id: edgeId,
-                            hidden: !inTimeRange
-                        });
-                    });
-                    edges.update(edgeUpdates);
+                    // Edge updates will be handled later with styling
+                    // Don't call edges.update() here to avoid duplication
                 }
                 
                 // Update node properties based on filtered events
@@ -4613,8 +4607,27 @@ Remember: You're helping someone explore and understand their social network dat
                             if (!shouldShow) hiddenCount++;
                         });
                         
+                        // Combine visibility and styling updates
+                        const combinedEdgeUpdates = [];
+                        Object.entries(allEdges).forEach(([edgeId, edge]) => {
+                            const fromVisible = !allNodes[edge.from].hidden;
+                            const toVisible = !allNodes[edge.to].hidden;
+                            const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                            const shouldShow = fromVisible && toVisible && inTimeRange;
+                            
+                            // Find the styling update for this edge
+                            const stylingUpdate = userCentricTimelineEdgeUpdates.find(update => update.id === edgeId);
+                            
+                            combinedEdgeUpdates.push({
+                                id: edgeId,
+                                hidden: !shouldShow,
+                                width: stylingUpdate ? stylingUpdate.width : 0.5,
+                                color: stylingUpdate ? stylingUpdate.color : "#E0E0E0"
+                            });
+                        });
+                        
                         // Apply all edge updates in batch
-                        edges.update(userCentricTimelineEdgeUpdates);
+                        edges.update(combinedEdgeUpdates);
                         
                         // Debug: Check what edges are being counted as degree-filtered
                         
@@ -4643,14 +4656,41 @@ Remember: You're helping someone explore and understand their social network dat
 
                         
                     } else {
-                        // Global mode - hide edges not in timeline (batch update)
+                        // Global mode - combine visibility and styling updates
                         let hiddenCount = 0;
                         const globalModeEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
                             const shouldHide = !visibleEdgeIds.has(edge.id);
+                            const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                            
+                            // Calculate styling based on timeline tap count
+                            const timelineTapCount = edge.tap_count || 1;
+                            let thickness, color;
+                            if (timelineTapCount === 1) {
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                                thickness = 1.5;
+                                color = "#D0D0D0";
+                            } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                                thickness = 2.5;
+                                color = "#C0C0C0";
+                            } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                                thickness = 3.5;
+                                color = "#F0F0F0";
+                            } else if (timelineTapCount >= 9) {
+                                thickness = 5.0;
+                                color = "#FFFFFF";
+                            } else {
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            }
+                            
                             globalModeEdgeUpdates.push({
                                 id: edge.id, 
-                                hidden: shouldHide
+                                hidden: shouldHide,
+                                width: thickness,
+                                color: color
                             });
                             if (shouldHide) hiddenCount++;
                         });
