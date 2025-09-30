@@ -3058,11 +3058,24 @@ Remember: You're helping someone explore and understand their social network dat
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
                 
+                // Debug: Check edge visibility after network creation
+                console.log('🔍 Debug: Checking edge visibility after network creation...');
+                const allEdges = edges.get();
+                const visibleEdges = allEdges.filter(edge => !edge.hidden);
+                const hiddenEdges = allEdges.filter(edge => edge.hidden);
+                console.log(`🔍 Total edges: ${allEdges.length}, Visible: ${visibleEdges.length}, Hidden: ${hiddenEdges.length}`);
+                
                 // Force network to redraw after a short delay to ensure proper rendering
                 setTimeout(() => {
                     if (network) {
                         console.log('🔄 Forcing network redraw to ensure proper rendering...');
                         network.redraw();
+                        
+                        // Debug: Check edge visibility after redraw
+                        console.log('🔍 Debug: Checking edge visibility after redraw...');
+                        const allEdgesAfter = edges.get();
+                        const visibleEdgesAfter = allEdgesAfter.filter(edge => !edge.hidden);
+                        console.log(`🔍 After redraw - Total edges: ${allEdgesAfter.length}, Visible: ${visibleEdgesAfter.length}`);
                     }
                 }, 100);
                 
@@ -3556,20 +3569,26 @@ Remember: You're helping someone explore and understand their social network dat
                 const button = document.querySelector('button[onclick="hideConnections()"]');
                 const isCurrentlyHidden = button.textContent.includes('Show');
                 
+                console.log('🔍 Hide Connections clicked - isCurrentlyHidden:', isCurrentlyHidden);
+                
                 if (isCurrentlyHidden) {
                     // Show all connections
+                    console.log('🔍 Showing all connections...');
                     edges.forEach(edge => {
                         edges.update({id: edge.id, hidden: false});
                     });
                     button.textContent = 'Hide Connections';
                     button.className = 'control-btn'; // Keep consistent floating control styling
+                    console.log('🔍 All connections shown');
                 } else {
                     // Hide all connections
+                    console.log('🔍 Hiding all connections...');
                     edges.forEach(edge => {
                         edges.update({id: edge.id, hidden: true});
                     });
                     button.textContent = 'Show Connections';
                     button.className = 'control-btn'; // Keep consistent floating control styling
+                    console.log('🔍 All connections hidden');
                 }
                 
                 // Update the user count display
