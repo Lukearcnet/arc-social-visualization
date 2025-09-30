@@ -431,15 +431,34 @@ DO NOT use file:// URLs with this version
                 gap: 8px;
             }
             
+            .dual-slider-container {
+                position: relative;
+                width: 100%;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
+            }
+            
             .timeline-slider {
+                position: absolute;
                 width: 100%;
                 height: 6px;
                 border-radius: 3px;
-                background: rgba(255, 255, 255, 0.1);
+                background: transparent;
                 outline: none;
                 -webkit-appearance: none;
                 appearance: none;
                 cursor: pointer;
+                margin: 0;
+                pointer-events: auto;
+            }
+            
+            .timeline-slider-left {
+                z-index: 2;
+            }
+            
+            .timeline-slider-right {
+                z-index: 1;
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -468,6 +487,27 @@ DO NOT use file:// URLs with this version
                 justify-content: space-between;
                 font-size: var(--text-sm);
                 color: #cccccc;
+                font-weight: 500;
+            }
+            
+            .timeline-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 8px;
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+            
+            .timeline-date-left,
+            .timeline-date-right {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .timeline-center {
+                flex: 1;
+                text-align: center;
                 font-weight: 500;
             }
             
@@ -1511,10 +1551,20 @@ DO NOT use file:// URLs with this version
                 <div class="timeline-control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
-                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
+                        <div class="dual-slider-container">
+                            <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
+                            <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
+                        </div>
                         <div class="timeline-info">
-                            <span id="currentTime">All connections shown</span>
-                            <span id="connectionCount">246 total users</span>
+                            <div class="timeline-date-left">
+                                <span id="startDate">Start Date</span>
+                            </div>
+                            <div class="timeline-center">
+                                <span id="connectionCount">246 total users</span>
+                            </div>
+                            <div class="timeline-date-right">
+                                <span id="endDate">End Date</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3775,74 +3825,285 @@ Remember: You're helping someone explore and understand their social network dat
             let isUpdating = false;
             
             function initTimelineSlider() {
-                timelineSlider = document.getElementById('timelineSlider');
-                if (!timelineSlider) return;
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                if (!leftSlider || !rightSlider) return;
                 
-                // Set initial state to blank (no connections shown)
-                timelineSlider.value = 0;
-                updateTimelineDisplay(0);
+                // Set initial state to full range (0-100%)
+                leftSlider.value = 0;
+                rightSlider.value = 100;
+                updateDualTimelineDisplay(0, 100);
                 
-                // Add event listeners with debouncing
-                timelineSlider.addEventListener('input', function() {
-                    // Clear any pending update
-                    if (updateTimeout) {
-                        clearTimeout(updateTimeout);
-                    }
-                    
-                    // Debounce the update to reduce choppiness
-                    updateTimeout = setTimeout(() => {
-                        if (!isUpdating) {
-                            updateTimelineDisplay(this.value);
+                // Add event listeners for both sliders
+                [leftSlider, rightSlider].forEach(slider => {
+                    slider.addEventListener('input', function() {
+                        // Clear any pending update
+                        if (updateTimeout) {
+                            clearTimeout(updateTimeout);
                         }
-                    }, 16); // ~60fps update rate
-                });
-                
-                timelineSlider.addEventListener('mousedown', function() {
-                    isSliderDragging = true;
-                });
-                
-                timelineSlider.addEventListener('mouseup', function() {
-                    isSliderDragging = false;
-                    // Force immediate update when dragging ends
-                    if (updateTimeout) {
-                        clearTimeout(updateTimeout);
-                    }
-                    updateTimelineDisplay(this.value);
-                });
-                
-                timelineSlider.addEventListener('touchstart', function() {
-                    isSliderDragging = true;
-                });
-                
-                timelineSlider.addEventListener('touchend', function() {
-                    isSliderDragging = false;
-                    // Force immediate update when touch ends
-                    if (updateTimeout) {
-                        clearTimeout(updateTimeout);
-                    }
-                    updateTimelineDisplay(this.value);
+                        
+                        // Debounce the update to reduce choppiness
+                        updateTimeout = setTimeout(() => {
+                            if (!isUpdating) {
+                                const leftValue = parseInt(leftSlider.value);
+                                const rightValue = parseInt(rightSlider.value);
+                                
+                                // Ensure left slider doesn't go past right slider
+                                if (this === leftSlider && leftValue >= rightValue) {
+                                    this.value = rightValue - 1;
+                                }
+                                // Ensure right slider doesn't go before left slider
+                                if (this === rightSlider && rightValue <= leftValue) {
+                                    this.value = leftValue + 1;
+                                }
+                                
+                                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                            }
+                        }, 16); // ~60fps update rate
+                    });
+                    
+                    slider.addEventListener('mousedown', function() {
+                        isSliderDragging = true;
+                    });
+                    
+                    slider.addEventListener('mouseup', function() {
+                        isSliderDragging = false;
+                        // Force immediate update when dragging ends
+                        if (updateTimeout) {
+                            clearTimeout(updateTimeout);
+                        }
+                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                    });
+                    
+                    slider.addEventListener('touchstart', function() {
+                        isSliderDragging = true;
+                    });
+                    
+                    slider.addEventListener('touchend', function() {
+                        isSliderDragging = false;
+                        // Force immediate update when touch ends
+                        if (updateTimeout) {
+                            clearTimeout(updateTimeout);
+                        }
+                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                    });
                 });
             }
             
-            // Calculate node properties based on timeline position (total activity, not filtered by selected user)
-            function calculateTimelineNodeProperties(nodeId, eventIndex) {
+            // Date conversion functions
+            function getDateFromPercentage(percentage) {
+                if (timeSequence.length === 0) return new Date();
+                const index = Math.floor((percentage / 100) * timeSequence.length);
+                const event = timeSequence[Math.min(index, timeSequence.length - 1)];
+                return new Date(event.time);
+            }
+            
+            function getPercentageFromDate(date) {
+                if (timeSequence.length === 0) return 0;
+                const targetTime = new Date(date).getTime();
+                let closestIndex = 0;
+                let minDiff = Math.abs(new Date(timeSequence[0].time).getTime() - targetTime);
+                
+                for (let i = 1; i < timeSequence.length; i++) {
+                    const diff = Math.abs(new Date(timeSequence[i].time).getTime() - targetTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIndex = i;
+                    }
+                }
+                
+                return Math.round((closestIndex / timeSequence.length) * 100);
+            }
+            
+            function formatDate(date) {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            }
+            
+            // Update dual timeline display
+            function updateDualTimelineDisplay(startPercentage, endPercentage) {
+                if (timeSequence.length === 0) return;
+                
+                // Prevent multiple simultaneous updates
+                if (isUpdating) return;
+                isUpdating = true;
+                
+                // Calculate start and end event indices
+                const startIndex = Math.floor((startPercentage / 100) * timeSequence.length);
+                const endIndex = Math.floor((endPercentage / 100) * timeSequence.length);
+                
+                // Get date range
+                const startDate = getDateFromPercentage(startPercentage);
+                const endDate = getDateFromPercentage(endPercentage);
+                
+                // Update date displays
+                document.getElementById('startDate').textContent = formatDate(startDate);
+                document.getElementById('endDate').textContent = formatDate(endDate);
+                
+                // Determine if we're in user-centric mode
+                let isUserCentric = false;
+                let selectedUserId = null;
+                
+                if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== null) {
+                    isUserCentric = true;
+                    selectedUserId = currentFilterUser;
+                }
+                
+                // Get degree filter settings
+                const degree1Enabled = document.getElementById('degree1').checked;
+                const degree2Enabled = document.getElementById('degree2').checked;
+                const degree3Enabled = document.getElementById('degree3').checked;
+                
+                // Filter events within the time range
+                const filteredEvents = timeSequence.slice(startIndex, endIndex + 1);
+                
+                // Update network display based on filtered events
+                updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled);
+                
+                // Update connection count
+                const visibleNodes = Object.values(allNodes).filter(node => !node.hidden).length;
+                document.getElementById('connectionCount').textContent = `${visibleNodes} users in range`;
+                
+                // Reset update flag
+                setTimeout(() => {
+                    isUpdating = false;
+                    reapplyHighlighting();
+                }, 50);
+            }
+            
+            // Update network with filtered time range events
+            function updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled) {
+                if (filteredEvents.length === 0) {
+                    // Hide all nodes and edges if no events in range
+                    const allNodeUpdates = Object.keys(allNodes).map(nodeId => ({
+                        id: nodeId,
+                        hidden: true
+                    }));
+                    const allEdgeUpdates = Object.keys(allEdges).map(edgeId => ({
+                        id: edgeId,
+                        hidden: true
+                    }));
+                    nodes.update(allNodeUpdates);
+                    edges.update(allEdgeUpdates);
+                    return;
+                }
+                
+                // Create a set of all nodes involved in the filtered events
+                const nodesInTimeRange = new Set();
+                filteredEvents.forEach(event => {
+                    if (event.user1_id) nodesInTimeRange.add(event.user1_id);
+                    if (event.user2_id) nodesInTimeRange.add(event.user2_id);
+                });
+                
+                if (isUserCentric && selectedUserId) {
+                    // User-centric mode with degree filters
+                    const userNode = allNodes[selectedUserId];
+                    if (!userNode || !userNode.profile_data) return;
+                    
+                    const profileData = userNode.profile_data;
+                    const degree1Connections = profileData.degree_1_connections || [];
+                    const degree2Connections = profileData.degree_2_connections || [];
+                    const degree3Connections = profileData.degree_3_connections || [];
+                    
+                    // Build set of degree-filtered connections
+                    const degreeFilteredConnections = new Set();
+                    if (degree1Enabled) {
+                        degree1Connections.forEach(conn => degreeFilteredConnections.add(conn));
+                    }
+                    if (degree2Enabled) {
+                        degree2Connections.forEach(conn => degreeFilteredConnections.add(conn));
+                    }
+                    if (degree3Enabled) {
+                        degree3Connections.forEach(conn => degreeFilteredConnections.add(conn));
+                    }
+                    
+                    // Update nodes - show selected user + degree-filtered connections that are in time range
+                    const nodeUpdates = [];
+                    Object.keys(allNodes).forEach(nodeId => {
+                        const shouldShow = nodeId === selectedUserId || 
+                                         (degreeFilteredConnections.has(nodeId) && nodesInTimeRange.has(nodeId));
+                        nodeUpdates.push({
+                            id: nodeId,
+                            hidden: !shouldShow
+                        });
+                    });
+                    nodes.update(nodeUpdates);
+                    
+                    // Update edges - show edges between visible nodes that are in time range
+                    const edgeUpdates = [];
+                    Object.entries(allEdges).forEach(([edgeId, edge]) => {
+                        const fromVisible = !allNodes[edge.from].hidden;
+                        const toVisible = !allNodes[edge.to].hidden;
+                        const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                        
+                        edgeUpdates.push({
+                            id: edgeId,
+                            hidden: !(fromVisible && toVisible && inTimeRange)
+                        });
+                    });
+                    edges.update(edgeUpdates);
+                    
+                } else {
+                    // Global view mode - show all nodes and edges in time range
+                    const nodeUpdates = [];
+                    Object.keys(allNodes).forEach(nodeId => {
+                        nodeUpdates.push({
+                            id: nodeId,
+                            hidden: !nodesInTimeRange.has(nodeId)
+                        });
+                    });
+                    nodes.update(nodeUpdates);
+                    
+                    const edgeUpdates = [];
+                    Object.entries(allEdges).forEach(([edgeId, edge]) => {
+                        const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                        edgeUpdates.push({
+                            id: edgeId,
+                            hidden: !inTimeRange
+                        });
+                    });
+                    edges.update(edgeUpdates);
+                }
+                
+                // Update node properties based on filtered events
+                const nodePropsUpdates = [];
+                Object.keys(allNodes).forEach(nodeId => {
+                    if (!allNodes[nodeId].hidden) {
+                        const nodeProps = calculateTimelineNodeProperties(nodeId, filteredEvents);
+                        nodePropsUpdates.push({
+                            id: nodeId,
+                            size: nodeProps.size,
+                            color: nodeProps.color,
+                            title: `${allNodes[nodeId].label} - ${nodeProps.taps} taps, ${nodeProps.connections} connections`
+                        });
+                    }
+                });
+                if (nodePropsUpdates.length > 0) {
+                    nodes.update(nodePropsUpdates);
+                }
+            }
+            
+            // Calculate node properties based on filtered events
+            function calculateTimelineNodeProperties(nodeId, filteredEvents) {
                 const node = allNodes[nodeId];
                 if (!node) return { size: 10, color: "#87CEEB" }; // Default values
                 
-                // Count ALL events involving this node up to the current timeline point (not filtered by degree)
+                // Count events involving this node in the filtered time range
                 let timelineTaps = 0;
                 let timelineConnections = new Set();
                 
-                // Count events involving this node up to the current timeline point
-                for (let i = 0; i < eventIndex; i++) {
-                    const event = timeSequence[i];
+                // Count events involving this node in the filtered events
+                filteredEvents.forEach(event => {
                     if (event.user1_id === nodeId || event.user2_id === nodeId) {
                         // Include ALL events involving this node (no degree filtering for styling)
                         timelineTaps++;
                         timelineConnections.add(event.user1_id);
                         timelineConnections.add(event.user2_id);
                     }
-                }
+                });
                 
                 // Remove the node itself from connections count
                 timelineConnections.delete(nodeId);
