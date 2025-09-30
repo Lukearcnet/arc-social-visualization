@@ -623,27 +623,61 @@ DO NOT use file:// URLs with this version
                 transition: all 0.3s ease;
             }
             
-            /* Edge highlighting on hover and selection - more specific selectors */
-            .vis-network .vis-edge:hover {
-                stroke: #03DAEE !important;
-                stroke-width: 3px !important;
-            }
-            
-            .vis-network .vis-edge.vis-selected {
-                stroke: #03DAEE !important;
-                stroke-width: 3px !important;
-            }
-            
-            /* Target SVG line elements directly */
-            .vis-network svg .vis-edge:hover {
-                stroke: #03DAEE !important;
-                stroke-width: 3px !important;
-            }
-            
-            .vis-network svg .vis-edge.vis-selected {
-                stroke: #03DAEE !important;
-                stroke-width: 3px !important;
-            }
+        /* Edge highlighting on hover and selection - more specific selectors */
+        .vis-network .vis-edge:hover {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+        
+        .vis-network .vis-edge.vis-selected {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+        
+        /* Target SVG line elements directly */
+        .vis-network svg .vis-edge:hover {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+        
+        .vis-network svg .vis-edge.vis-selected {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+
+        /* Node popup card styles (from 8th bedrock) */
+        .custom-popup {
+            background: rgba(0, 0, 0, 0.95);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 9px;
+            color: #ffffff;
+            padding: 15px;
+            font-size: 13.5px;
+            max-width: 300px;
+            min-width: 225px;
+            line-height: 1.4;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .popup-title {
+            font-weight: 600;
+            margin-bottom: 7.5px;
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        
+        .popup-info {
+            color: #cccccc;
+            font-size: 12px;
+            margin-bottom: 3.75px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
             
             
             /* Removed duplicate vis-network text color rules - handled by JavaScript */
@@ -1794,7 +1828,12 @@ DO NOT use file:// URLs with this version
                             degree_1_connections: [],
                             degree_2_connections: [],
                             degree_3_connections: []
-                        }
+                        },
+                        // Add enriched data fields from GCP
+                        home_location: user.home_location?.geographic_context || user.home_location?.home_location || 'No location specified',
+                        bio: user.bio_analysis?.bio_text || user.bio_analysis?.bio_summary || 'No bio provided',
+                        linkedin: user.social_urls?.linkedin || null,
+                        username: user.basic_info.username || ''
                     };
                 });
                 
@@ -3187,6 +3226,68 @@ Remember: You're helping someone explore and understand their social network dat
                 selectNode(nodeId);
                 document.getElementById('searchResults').style.display = 'none';
                 document.getElementById('searchInput').value = '';
+                
+                // Show popup with user data
+                showUserPopup(nodeId);
+            }
+            
+            function showUserPopup(nodeId) {
+                const node = allNodes[nodeId];
+                if (!node) return;
+                
+                // Create popup content
+                let popupContent = `
+                    <div class="popup-title">${node.label}</div>
+                    <div class="popup-info"><strong>Username:</strong> @${node.username || 'N/A'}</div>
+                    <div class="popup-info"><strong>Home Location:</strong> ${node.home_location || 'No location specified'}</div>
+                    <div class="popup-info"><strong>Bio:</strong> ${node.bio || 'No bio provided'}</div>
+                `;
+                
+                // Add LinkedIn if available
+                if (node.linkedin) {
+                    popupContent += `<div class="popup-info"><strong>LinkedIn:</strong> <a href="${node.linkedin}" target="_blank" style="color: #03DAEE;">${node.linkedin}</a></div>`;
+                }
+                
+                // Add activity stats
+                popupContent += `
+                    <div class="popup-info"><strong>Taps:</strong> ${node.taps || 0}</div>
+                    <div class="popup-info"><strong>Connections:</strong> ${node.connections || 0}</div>
+                `;
+                
+                // Create and show popup
+                const popup = document.createElement('div');
+                popup.className = 'custom-popup';
+                popup.innerHTML = popupContent;
+                popup.style.position = 'fixed';
+                popup.style.top = '50%';
+                popup.style.left = '50%';
+                popup.style.transform = 'translate(-50%, -50%)';
+                popup.style.zIndex = '10000';
+                
+                // Add close button
+                const closeButton = document.createElement('button');
+                closeButton.innerHTML = '×';
+                closeButton.style.position = 'absolute';
+                closeButton.style.top = '10px';
+                closeButton.style.right = '10px';
+                closeButton.style.background = 'none';
+                closeButton.style.border = 'none';
+                closeButton.style.color = '#ffffff';
+                closeButton.style.fontSize = '20px';
+                closeButton.style.cursor = 'pointer';
+                closeButton.onclick = () => popup.remove();
+                
+                popup.appendChild(closeButton);
+                document.body.appendChild(popup);
+                
+                // Close popup when clicking outside
+                const closePopup = (e) => {
+                    if (!popup.contains(e.target)) {
+                        popup.remove();
+                        document.removeEventListener('click', closePopup);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closePopup), 100);
             }
         
             function selectNode(nodeId) {
