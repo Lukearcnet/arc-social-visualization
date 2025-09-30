@@ -454,11 +454,11 @@ DO NOT use file:// URLs with this version
             }
             
             .timeline-slider-left {
-                z-index: 2;
+                z-index: 3; /* Higher z-index to ensure it's clickable */
             }
             
             .timeline-slider-right {
-                z-index: 3; /* Higher z-index to ensure it's clickable */
+                z-index: 2;
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -3832,6 +3832,8 @@ Remember: You're helping someone explore and understand their social network dat
                 // Add event listeners for both sliders
                 [leftSlider, rightSlider].forEach(slider => {
                     slider.addEventListener('input', function() {
+                        console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                        
                         // Clear any pending update
                         if (updateTimeout) {
                             clearTimeout(updateTimeout);
@@ -3843,13 +3845,17 @@ Remember: You're helping someone explore and understand their social network dat
                                 const leftValue = parseInt(leftSlider.value);
                                 const rightValue = parseInt(rightSlider.value);
                                 
+                                console.log(`🎚️ Slider values: Left=${leftValue}%, Right=${rightValue}%`);
+                                
                                 // Ensure left slider doesn't go past right slider
                                 if (this === leftSlider && leftValue >= rightValue) {
                                     this.value = rightValue - 1;
+                                    console.log(`🎚️ Left slider constrained to ${this.value}%`);
                                 }
                                 // Ensure right slider doesn't go before left slider
                                 if (this === rightSlider && rightValue <= leftValue) {
                                     this.value = leftValue + 1;
+                                    console.log(`🎚️ Right slider constrained to ${this.value}%`);
                                 }
                                 
                                 updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
