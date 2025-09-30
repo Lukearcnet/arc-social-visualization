@@ -3868,21 +3868,11 @@ Remember: You're helping someone explore and understand their social network dat
                     });
                 });
                 
-                // Batch collect all edge updates
-                const edgeUpdates = [];
-                Object.entries(allEdges).forEach(([edgeId, edge]) => {
-                    const fromIncluded = nodesToShow.has(edge.from);
-                    const toIncluded = nodesToShow.has(edge.to);
-                    edgeUpdates.push({
-                        id: edgeId,
-                        hidden: !(fromIncluded && toIncluded)
-                    });
-                });
-                
-                // Apply all updates in single batch operations
+                // Apply node updates only - let timeline system handle edge visibility
                 nodes.update(nodeUpdates);
                 
-                edges.update(edgeUpdates);
+                // Don't update edges here - let the timeline system handle edge visibility
+                // The timeline system will properly integrate with degree filters
                 
             }
             
