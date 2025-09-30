@@ -3596,24 +3596,60 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 console.log('🔍 Hide Connections clicked - isCurrentlyHidden:', isCurrentlyHidden);
                 
+                // Debug: Check edge state before action
+                const edgesBefore = edges.get();
+                const visibleBefore = edgesBefore.filter(edge => !edge.hidden);
+                const hiddenBefore = edgesBefore.filter(edge => edge.hidden);
+                console.log(`🔍 Before action - Total: ${edgesBefore.length}, Visible: ${visibleBefore.length}, Hidden: ${hiddenBefore.length}`);
+                
                 if (isCurrentlyHidden) {
                     // Show all connections
                     console.log('🔍 Showing all connections...');
+                    console.log('🔍 About to call edges.update() for each edge...');
+                    
+                    let updateCount = 0;
                     edges.forEach(edge => {
+                        console.log(`🔍 Updating edge ${edge.id}: from=${edge.from}, to=${edge.to}, hidden=false`);
                         edges.update({id: edge.id, hidden: false});
+                        updateCount++;
                     });
+                    
+                    console.log(`🔍 Called edges.update() ${updateCount} times`);
                     button.textContent = 'Hide Connections';
                     button.className = 'control-btn'; // Keep consistent floating control styling
-                    console.log('🔍 All connections shown');
+                    
+                    // Debug: Check edge state after action
+                    setTimeout(() => {
+                        const edgesAfter = edges.get();
+                        const visibleAfter = edgesAfter.filter(edge => !edge.hidden);
+                        const hiddenAfter = edgesAfter.filter(edge => edge.hidden);
+                        console.log(`🔍 After action - Total: ${edgesAfter.length}, Visible: ${visibleAfter.length}, Hidden: ${hiddenAfter.length}`);
+                        console.log('🔍 All connections shown');
+                    }, 50);
                 } else {
                     // Hide all connections
                     console.log('🔍 Hiding all connections...');
+                    console.log('🔍 About to call edges.update() for each edge...');
+                    
+                    let updateCount = 0;
                     edges.forEach(edge => {
+                        console.log(`🔍 Updating edge ${edge.id}: from=${edge.from}, to=${edge.to}, hidden=true`);
                         edges.update({id: edge.id, hidden: true});
+                        updateCount++;
                     });
+                    
+                    console.log(`🔍 Called edges.update() ${updateCount} times`);
                     button.textContent = 'Show Connections';
                     button.className = 'control-btn'; // Keep consistent floating control styling
-                    console.log('🔍 All connections hidden');
+                    
+                    // Debug: Check edge state after action
+                    setTimeout(() => {
+                        const edgesAfter = edges.get();
+                        const visibleAfter = edgesAfter.filter(edge => !edge.hidden);
+                        const hiddenAfter = edgesAfter.filter(edge => edge.hidden);
+                        console.log(`🔍 After action - Total: ${edgesAfter.length}, Visible: ${visibleAfter.length}, Hidden: ${hiddenAfter.length}`);
+                        console.log('🔍 All connections hidden');
+                    }, 50);
                 }
                 
                 // Update the user count display
