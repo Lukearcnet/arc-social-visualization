@@ -3015,8 +3015,49 @@ Remember: You're helping someone explore and understand their social network dat
                 const containerRect = container.getBoundingClientRect();
                 console.log('📐 Container dimensions:', containerRect.width, 'x', containerRect.height);
                 
+                // Check if container has proper dimensions
+                if (containerRect.width === 0 || containerRect.height === 0) {
+                    console.log('⚠️ Container has zero dimensions - waiting for proper sizing...');
+                    
+                    // Wait for container to get proper dimensions
+                    const waitForDimensions = () => {
+                        return new Promise((resolve) => {
+                            let attempts = 0;
+                            const maxAttempts = 20; // 20 attempts * 50ms = 1 second max wait
+                            
+                            const checkDimensions = () => {
+                                const rect = container.getBoundingClientRect();
+                                console.log('📐 Checking dimensions:', rect.width, 'x', rect.height);
+                                
+                                if (rect.width > 0 && rect.height > 0) {
+                                    console.log('✅ Container now has proper dimensions');
+                                    resolve();
+                                } else if (attempts >= maxAttempts) {
+                                    console.log('⚠️ Max attempts reached - proceeding with zero dimensions');
+                                    resolve();
+                                } else {
+                                    attempts++;
+                                    // Wait a bit more and try again
+                                    setTimeout(checkDimensions, 50);
+                                }
+                            };
+                            checkDimensions();
+                        });
+                    };
+                    
+                    await waitForDimensions();
+                }
+                
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
+                
+                // Force network to redraw after a short delay to ensure proper rendering
+                setTimeout(() => {
+                    if (network) {
+                        console.log('🔄 Forcing network redraw to ensure proper rendering...');
+                        network.redraw();
+                    }
+                }, 100);
                 
                 
                 // Force white text for all nodes after network creation
