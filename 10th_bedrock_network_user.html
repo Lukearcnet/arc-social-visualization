@@ -454,11 +454,11 @@ DO NOT use file:// URLs with this version
             }
             
             .timeline-slider-left {
-                z-index: 3; /* Higher z-index to ensure it's clickable */
+                z-index: 2; /* Default: behind right slider */
             }
             
             .timeline-slider-right {
-                z-index: 2;
+                z-index: 3; /* Default: on top, clickable */
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -3828,6 +3828,28 @@ Remember: You're helping someone explore and understand their social network dat
                 leftSlider.value = 0;
                 rightSlider.value = 100;
                 updateDualTimelineDisplay(0, 100);
+                
+                // Add dynamic z-index management for both sliders
+                leftSlider.addEventListener('mouseenter', function() {
+                    leftSlider.style.zIndex = '3';
+                    rightSlider.style.zIndex = '2';
+                    console.log('🎚️ Left slider brought to front');
+                });
+                
+                rightSlider.addEventListener('mouseenter', function() {
+                    rightSlider.style.zIndex = '3';
+                    leftSlider.style.zIndex = '2';
+                    console.log('🎚️ Right slider brought to front');
+                });
+                
+                // Reset z-index when mouse leaves the slider area
+                const dualSliderContainer = document.querySelector('.dual-slider-container');
+                dualSliderContainer.addEventListener('mouseleave', function() {
+                    // Reset to default: right slider on top
+                    rightSlider.style.zIndex = '3';
+                    leftSlider.style.zIndex = '2';
+                    console.log('🎚️ Reset to default z-index (right slider on top)');
+                });
                 
                 // Add event listeners for both sliders
                 [leftSlider, rightSlider].forEach(slider => {
