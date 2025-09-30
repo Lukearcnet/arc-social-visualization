@@ -434,15 +434,27 @@ DO NOT use file:// URLs with this version
             .dual-slider-container {
                 position: relative;
                 width: 100%;
-                height: 20px; /* Increased height to accommodate both sliders */
+                height: 6px;
                 background: rgba(255, 255, 255, 0.1);
                 border-radius: 3px;
-                display: flex;
-                align-items: center;
+            }
+            
+            /* Range highlighting between handles */
+            .dual-slider-container::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: var(--range-left, 0%);
+                width: var(--range-width, 100%);
+                height: 6px;
+                background: rgba(3, 218, 238, 0.3);
+                border-radius: 3px;
+                pointer-events: none;
+                z-index: 1;
             }
             
             .timeline-slider {
-                position: relative;
+                position: absolute;
                 width: 100%;
                 height: 6px;
                 border-radius: 3px;
@@ -452,19 +464,15 @@ DO NOT use file:// URLs with this version
                 appearance: none;
                 cursor: pointer;
                 margin: 0;
-                pointer-events: auto;
+                pointer-events: none; /* Key: Input elements don't intercept events */
             }
             
             .timeline-slider-left {
-                /* Left slider takes up left 50% of container */
-                width: 50%;
-                margin-right: 0;
+                z-index: 2; /* Left slider behind right slider */
             }
             
             .timeline-slider-right {
-                /* Right slider takes up right 50% of container */
-                width: 50%;
-                margin-left: 0;
+                z-index: 3; /* Right slider on top */
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -476,6 +484,7 @@ DO NOT use file:// URLs with this version
                 background: #ffffff;
                 cursor: pointer;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+                pointer-events: auto; /* Key: Thumbs are interactive */
             }
             
             .timeline-slider::-moz-range-thumb {
@@ -486,6 +495,7 @@ DO NOT use file:// URLs with this version
                 cursor: pointer;
                 border: none;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+                pointer-events: auto; /* Key: Thumbs are interactive */
             }
             
             .timeline-labels {
@@ -3834,6 +3844,7 @@ Remember: You're helping someone explore and understand their social network dat
                 leftSlider.value = 0;
                 rightSlider.value = 100;
                 updateDualTimelineDisplay(0, 100);
+                updateRangeHighlighting(0, 100);
                 
                 // Add debugging for click events
                 leftSlider.addEventListener('mousedown', function(e) {
@@ -3882,7 +3893,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 console.log(`🎚️ Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Left slider cannot go past right slider minus minimum gap
                                 if (leftValue >= rightValue - minGap) {
-                                    const newValue = rightValue - minGap;
+                                    const newValue = Math.max(0, rightValue - minGap);
                                     leftSlider.value = newValue;
                                     console.log(`🎚️ Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
@@ -3893,13 +3904,14 @@ Remember: You're helping someone explore and understand their social network dat
                                 console.log(`🎚️ Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Right slider cannot go before left slider plus minimum gap
                                 if (rightValue <= leftValue + minGap) {
-                                    const newValue = leftValue + minGap;
+                                    const newValue = Math.min(100, leftValue + minGap);
                                     rightSlider.value = newValue;
                                     console.log(`🎚️ Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                                 
                                 updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                                updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
                             }
                         }, 16); // ~60fps update rate
                     });
@@ -3978,6 +3990,16 @@ Remember: You're helping someone explore and understand their social network dat
             }
             
             // Update dual timeline display
+            function updateRangeHighlighting(startPercentage, endPercentage) {
+                const container = document.querySelector('.dual-slider-container');
+                if (container) {
+                    const rangeWidth = endPercentage - startPercentage;
+                    container.style.setProperty('--range-left', startPercentage + '%');
+                    container.style.setProperty('--range-width', rangeWidth + '%');
+                    console.log(`🎨 Range highlighting: ${startPercentage}% to ${endPercentage}% (width: ${rangeWidth}%)`);
+                }
+            }
+            
             function updateDualTimelineDisplay(startPercentage, endPercentage) {
                 if (timeSequence.length === 0) {
                     console.log('⚠️ Timeline: timeSequence is empty');
