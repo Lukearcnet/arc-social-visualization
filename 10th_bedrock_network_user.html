@@ -3076,6 +3076,17 @@ Remember: You're helping someone explore and understand their social network dat
                         const allEdgesAfter = edges.get();
                         const visibleEdgesAfter = allEdgesAfter.filter(edge => !edge.hidden);
                         console.log(`🔍 After redraw - Total edges: ${allEdgesAfter.length}, Visible: ${visibleEdgesAfter.length}`);
+                        
+                        // If no edges are visible, force them to be visible
+                        if (visibleEdgesAfter.length === 0 && allEdgesAfter.length > 0) {
+                            console.log('🔧 No edges visible - forcing all edges to be visible...');
+                            const edgeUpdates = allEdgesAfter.map(edge => ({
+                                id: edge.id,
+                                hidden: false
+                            }));
+                            edges.update(edgeUpdates);
+                            console.log('🔧 All edges forced to visible');
+                        }
                     }
                 }, 100);
                 
