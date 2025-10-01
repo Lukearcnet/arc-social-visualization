@@ -4411,6 +4411,75 @@ Remember: You're helping someone explore and understand their social network dat
                     // Apply all edge updates in batch
                     edges.update(userCentricTimelineEdgeUpdates);
                     console.log(`🔍 DEBUG: Applied edge thickness updates to ${userCentricTimelineEdgeUpdates.length} edges`);
+                } else if (timelinePercentage >= 100 && isUserCentric && selectedUserId) {
+                    console.log(`🔍 DEBUG: Timeline percentage >= 100, applying degree filter logic for 100% timeline`);
+                    
+                    // At 100% timeline, show all degree-filtered connections
+                    // Get the user's degree-filtered connections
+                    const userNode = allNodes[selectedUserId];
+                    const profileData = userNode.profile_data;
+                    const degree1Connections = profileData.degree_1_connections || [];
+                    const degree2Connections = profileData.degree_2_connections || [];
+                    const degree3Connections = profileData.degree_3_connections || [];
+                    
+                    // Collect all degree-filtered connections
+                    const degreeFilteredConnections = new Set();
+                    
+                    // At 100% timeline, always use checkbox states
+                    // Always include the selected user themselves
+                    degreeFilteredConnections.add(selectedUserId);
+                    
+                    if (degree1Enabled) {
+                        degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree2Enabled) {
+                        degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree3Enabled) {
+                        degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                
+                    // Apply degree filtering to all edges (same logic for all timeline positions)
+                    const hundredPercentEdgeUpdates = [];
+                    Object.values(allEdges).forEach(edge => {
+                        let isInDegreeFilter = false;
+                        
+                        // Simple node-based degree filtering: show edges between visible nodes
+                        isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
+                        
+                        hundredPercentEdgeUpdates.push({
+                            id: edge.id, 
+                            hidden: !isInDegreeFilter,
+                            width: 0.5, // Reset to default thickness
+                            color: "#E0E0E0" // Reset to default color
+                        });
+                    });
+                    edges.update(hundredPercentEdgeUpdates);
+                    
+                    // Show nodes that are part of the degree-filtered connections AND have visible edges
+                    let visibleNodeCount = 0;
+                    const nodesWithVisibleEdges = new Set();
+                    
+                    // First, collect all nodes that have visible edges
+                    edges.get().forEach(edge => {
+                        if (!edge.hidden) {
+                            nodesWithVisibleEdges.add(edge.from);
+                            nodesWithVisibleEdges.add(edge.to);
+                        }
+                    });
+                    
+                    const hundredPercentNodeUpdates = [];
+                    nodes.forEach(node => {
+                        const shouldShow = node.id === selectedUserId || (degreeFilteredConnections.has(node.id) && nodesWithVisibleEdges.has(node.id));
+                        hundredPercentNodeUpdates.push({
+                            id: node.id, 
+                            hidden: !shouldShow
+                        });
+                        if (shouldShow) visibleNodeCount++;
+                    });
+                    nodes.update(hundredPercentNodeUpdates);
+                    
+                    console.log(`🔍 DEBUG: Applied 100% timeline logic - ${visibleNodeCount} nodes visible, ${hundredPercentEdgeUpdates.length} edges processed`);
                 } else {
                     console.log(`🔍 DEBUG: Timeline percentage >= 100 or not user-centric, skipping edge thickness calculation`);
                 }
