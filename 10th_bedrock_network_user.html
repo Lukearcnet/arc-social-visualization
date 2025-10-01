@@ -3467,26 +3467,27 @@ Remember: You're helping someone explore and understand their social network dat
                     return;
                 }
                 
-                // Get connections based on current filter
+                // Get only 1st degree connections for the connection details section
                 let connections = [];
-                if (currentDegreeFilter[1] && node.profile_data.degree_1_connections) {
+                if (node.profile_data.degree_1_connections) {
                     connections = connections.concat(node.profile_data.degree_1_connections);
                 }
-                if (currentDegreeFilter[2] && node.profile_data.degree_2_connections) {
-                    connections = connections.concat(node.profile_data.degree_2_connections);
-                }
-                if (currentDegreeFilter[3] && node.profile_data.degree_3_connections) {
-                    connections = connections.concat(node.profile_data.degree_3_connections);
-                }
                 
-                // Create connection objects with tap count for sorting
+                // Create connection objects with tap count between selected user and each connection
                 const connectionObjects = connections.map(connId => {
                     const connNode = allNodes[connId];
                     if (!connNode) return null;
+                    
+                    // Calculate taps between the selected user and this connection
+                    const tapsBetweenUsers = timeSequence.filter(event => 
+                        (event.user1_id === nodeId && event.user2_id === connId) ||
+                        (event.user1_id === connId && event.user2_id === nodeId)
+                    ).length;
+                    
                     return {
                         id: connId,
                         label: connNode.label,
-                        taps: connNode.taps || 0
+                        taps: tapsBetweenUsers
                     };
                 }).filter(conn => conn !== null);
                 
