@@ -4163,7 +4163,7 @@ Remember: You're helping someone explore and understand their social network dat
                 const filteredEvents = timeSequence.slice(startIndex, endIndex + 1);
                 
                 // Update network display based on filtered events
-                updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled);
+                updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled, startPercentage, endPercentage);
                 
                 // Update profile stats if a user is selected
                 if (isUserCentric && selectedUserId) {
@@ -4196,7 +4196,7 @@ Remember: You're helping someone explore and understand their social network dat
             }
             
             // Update network with filtered time range events
-            function updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled) {
+            function updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled, startPercentage, endPercentage) {
                 console.log(`🔗 Network: Updating with ${filteredEvents.length} filtered events`);
                 console.log(`🔗 Network: User-centric: ${isUserCentric}, Selected: ${selectedUserId}`);
                 console.log(`🔍 DEBUG: About to enter updateNetworkWithTimeRange logic...`);
@@ -4313,6 +4313,106 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 if (nodePropsUpdates.length > 0) {
                     nodes.update(nodePropsUpdates);
+                }
+                
+                // Apply edge thickness calculation for timeline < 100%
+                const timelinePercentage = (endPercentage - startPercentage) * 100;
+                console.log(`🔍 DEBUG: Timeline percentage check - startPercentage: ${startPercentage}, endPercentage: ${endPercentage}, calculated timelinePercentage: ${timelinePercentage}, isUserCentric: ${isUserCentric}, selectedUserId: ${selectedUserId}`);
+                
+                if (timelinePercentage < 100 && isUserCentric && selectedUserId) {
+                    console.log(`🔍 DEBUG: Taking percentage < 100 path for edge thickness calculation`);
+                    
+                    // Create edge ID mapping
+                    const edgeMapping = createEdgeIdMapping();
+                    
+                    // Create a set of edges that should be visible based on timeline
+                    const visibleEdgeIds = new Set();
+                    const eventIndex = Math.floor((endPercentage / 100) * timeSequence.length);
+                    for (let i = 0; i < eventIndex; i++) {
+                        const event = timeSequence[i];
+                        // Map time sequence edge to graph edge using user1/user2
+                        const key = `${event.user1_id}-${event.user2_id}`;
+                        const reverseKey = `${event.user2_id}-${event.user1_id}`;
+                        
+                        const graphEdgeId = edgeMapping.get(key) || edgeMapping.get(reverseKey);
+                        if (graphEdgeId !== undefined) {
+                            visibleEdgeIds.add(graphEdgeId);
+                        }
+                    }
+                    
+                    // Get the user's degree-filtered connections
+                    const userNode = allNodes[selectedUserId];
+                    const profileData = userNode.profile_data;
+                    const degree1Connections = profileData.degree_1_connections || [];
+                    const degree2Connections = profileData.degree_2_connections || [];
+                    const degree3Connections = profileData.degree_3_connections || [];
+                    
+                    // Collect degree-filtered connections based on actual user selections
+                    const degreeFilteredConnections = new Set();
+                    degreeFilteredConnections.add(selectedUserId);
+                    
+                    if (degree1Enabled) {
+                        degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree2Enabled) {
+                        degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree3Enabled) {
+                        degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    
+                    // Apply edge thickness calculation
+                    console.log(`🔍 DEBUG: About to start edge thickness calculation...`);
+                    const userCentricTimelineEdgeUpdates = [];
+                    Object.values(allEdges).forEach(edge => {
+                        const isInTimeline = visibleEdgeIds.has(edge.id);
+                        const isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
+                        const shouldShow = isInTimeline && isInDegreeFilter;
+                        
+                        // Calculate total tap count between these users within the timeline range
+                        const user1Id = edge.from;
+                        const user2Id = edge.to;
+                        const timelineTapCount = filteredEvents.filter(tap => 
+                            (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                            (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                        ).length;
+                        
+                        // Apply 5-segment styling based on timeline tap count
+                        let thickness, color;
+                        if (timelineTapCount === 1) {
+                            thickness = 0.5;
+                            color = "#E0E0E0"; // Light grey
+                        } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                            thickness = 1.5;
+                            color = "#D0D0D0"; // Medium-light grey
+                        } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                            thickness = 2.5;
+                            color = "#C0C0C0"; // Medium grey
+                        } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                            thickness = 3.5;
+                            color = "#F0F0F0"; // Light white
+                        } else if (timelineTapCount >= 9) {
+                            thickness = 5.0;
+                            color = "#FFFFFF"; // White
+                        } else {
+                            // Fallback for no taps or edge cases
+                            thickness = 0.5;
+                            color = "#E0E0E0";
+                        }
+                        
+                        userCentricTimelineEdgeUpdates.push({
+                            id: edge.id, 
+                            hidden: !shouldShow,
+                            width: thickness,
+                            color: color
+                        });
+                    });
+                    
+                    // Apply all edge updates in batch
+                    edges.update(userCentricTimelineEdgeUpdates);
+                    console.log(`🔍 DEBUG: Applied edge thickness updates to ${userCentricTimelineEdgeUpdates.length} edges`);
+                } else {
+                    console.log(`🔍 DEBUG: Timeline percentage >= 100 or not user-centric, skipping edge thickness calculation`);
                 }
             }
             
