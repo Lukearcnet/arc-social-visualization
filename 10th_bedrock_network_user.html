@@ -4199,8 +4199,6 @@ Remember: You're helping someone explore and understand their social network dat
             // Update network with filtered time range events
             function updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled, startPercentage, endPercentage) {
                 console.log(`🔗 Network: Updating with ${filteredEvents.length} filtered events`);
-                console.log(`🔗 Network: User-centric: ${isUserCentric}, Selected: ${selectedUserId}`);
-                console.log(`🔍 DEBUG: About to enter updateNetworkWithTimeRange logic...`);
                 
                 if (filteredEvents.length === 0) {
                     console.log('⚠️ Network: No events in range - hiding all');
@@ -4226,14 +4224,11 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 
                 if (isUserCentric && selectedUserId) {
-                    console.log(`🔍 DEBUG: Entering user-centric mode with selectedUserId: ${selectedUserId}`);
                     // User-centric mode with degree filters
                     const userNode = allNodes[selectedUserId];
                     if (!userNode || !userNode.profile_data) {
-                        console.log(`🔍 DEBUG: Early return - userNode or profile_data missing`);
                         return;
                     }
-                    console.log(`🔍 DEBUG: User node found, continuing with user-centric logic...`);
                     
                     const profileData = userNode.profile_data;
                     const degree1Connections = profileData.degree_1_connections || [];
@@ -4252,7 +4247,6 @@ Remember: You're helping someone explore and understand their social network dat
                         degree3Connections.forEach(conn => degreeFilteredConnections.add(conn));
                     }
                     
-                    console.log(`🔍 DEBUG: About to update nodes and edges...`);
                     // Update nodes - show selected user + degree-filtered connections that are in time range
                     const nodeUpdates = [];
                     Object.keys(allNodes).forEach(nodeId => {
@@ -4295,10 +4289,6 @@ Remember: You're helping someone explore and understand their social network dat
                     // Don't call edges.update() here to avoid duplication
                 }
                 
-                console.log(`🔍 DEBUG: About to continue to edge thickness calculation...`);
-                console.log(`🔍 DEBUG: Code flow - about to check timeline percentage logic`);
-                console.log(`🔍 DEBUG: Code flow - about to start node properties update`);
-                
                 // Update node properties based on filtered events
                 const nodePropsUpdates = [];
                 Object.keys(allNodes).forEach(nodeId => {
@@ -4318,10 +4308,8 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Apply edge thickness calculation for timeline < 100%
                 const timelinePercentage = (endPercentage - startPercentage);
-                console.log(`🔍 DEBUG: Timeline percentage check - startPercentage: ${startPercentage}, endPercentage: ${endPercentage}, calculated timelinePercentage: ${timelinePercentage}, isUserCentric: ${isUserCentric}, selectedUserId: ${selectedUserId}`);
                 
                 if (timelinePercentage < 100 && isUserCentric && selectedUserId) {
-                    console.log(`🔍 DEBUG: Taking percentage < 100 path for edge thickness calculation`);
                     
                     // Create edge ID mapping
                     const edgeMapping = createEdgeIdMapping();
@@ -4362,9 +4350,8 @@ Remember: You're helping someone explore and understand their social network dat
                         degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
                     }
                     
-                    // Apply edge thickness calculation
-                    console.log(`🔍 DEBUG: About to start edge thickness calculation...`);
-                    const userCentricTimelineEdgeUpdates = [];
+                        // Apply edge thickness calculation
+                        const userCentricTimelineEdgeUpdates = [];
                     Object.values(allEdges).forEach(edge => {
                         const isInTimeline = visibleEdgeIds.has(edge.id);
                         const isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
@@ -4411,9 +4398,7 @@ Remember: You're helping someone explore and understand their social network dat
                     
                     // Apply all edge updates in batch
                     edges.update(userCentricTimelineEdgeUpdates);
-                    console.log(`🔍 DEBUG: Applied edge thickness updates to ${userCentricTimelineEdgeUpdates.length} edges`);
                 } else if (timelinePercentage >= 100 && isUserCentric && selectedUserId) {
-                    console.log(`🔍 DEBUG: Timeline percentage >= 100, applying degree filter logic for 100% timeline`);
                     
                     // At 100% timeline, show all degree-filtered connections
                     // Get the user's degree-filtered connections
@@ -4510,10 +4495,6 @@ Remember: You're helping someone explore and understand their social network dat
                         if (shouldShow) visibleNodeCount++;
                     });
                     nodes.update(hundredPercentNodeUpdates);
-                    
-                    console.log(`🔍 DEBUG: Applied 100% timeline logic - ${visibleNodeCount} nodes visible, ${hundredPercentEdgeUpdates.length} edges processed`);
-                } else {
-                    console.log(`🔍 DEBUG: Timeline percentage >= 100 or not user-centric, skipping edge thickness calculation`);
                 }
             }
             
