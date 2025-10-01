@@ -184,6 +184,9 @@ DO NOT use file:// URLs with this version
                 min-width: 300px !important;
                 padding: 8px 12px !important;
                 justify-content: flex-start;
+                position: absolute;
+                right: 0;
+                z-index: 1001;
             }
             
             .search-toggle-btn.expanded svg {
@@ -3445,7 +3448,7 @@ Remember: You're helping someone explore and understand their social network dat
                 expandableSearchInput.addEventListener('input', function() {
                     const query = this.value.toLowerCase();
                     if (query.length < 2) {
-                        expandableSearchResults.style.display = 'none';
+                        expandableSearchResults.classList.remove('show');
                         return;
                     }
                     
@@ -3457,9 +3460,16 @@ Remember: You're helping someone explore and understand their social network dat
                     displayExpandableSearchResults(results);
                 });
                 
+                // Prevent space key from collapsing search
+                expandableSearchInput.addEventListener('keydown', function(e) {
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
+                    }
+                });
+                
                 expandableSearchInput.addEventListener('focus', function() {
                     if (this.value.length >= 2) {
-                        expandableSearchResults.style.display = 'block';
+                        expandableSearchResults.classList.add('show');
                     }
                 });
                 
