@@ -3590,11 +3590,16 @@ Remember: You're helping someone explore and understand their social network dat
                 const expandableSearchResults = document.getElementById('expandableSearchResults');
                 
                 expandableSearchInput.addEventListener('input', function() {
+                    console.log('🔍 INPUT EVENT - recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
-                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    setTimeout(() => { 
+                        console.log('🔍 INPUT TIMEOUT - resetting recentKeyboardActivity to false');
+                        recentKeyboardActivity = false; 
+                    }, 100);
                     
                     const query = this.value.toLowerCase();
+                    console.log('🔍 INPUT - query:', query, 'length:', query.length);
                     if (query.length < 2) {
                         expandableSearchResults.classList.remove('show');
                         return;
@@ -3610,33 +3615,48 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Prevent space key from collapsing search and track keyboard activity
                 expandableSearchInput.addEventListener('keydown', function(e) {
+                    console.log('🔍 KEYDOWN EVENT - code:', e.code, 'key:', e.key, 'recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
-                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    setTimeout(() => { 
+                        console.log('🔍 KEYDOWN TIMEOUT - resetting recentKeyboardActivity to false');
+                        recentKeyboardActivity = false; 
+                    }, 100);
                     
                     if (e.code === 'Space') {
+                        console.log('🔍 KEYDOWN SPACE - stopping propagation');
                         e.stopPropagation();
                         e.stopImmediatePropagation();
                     }
                 });
                 
                 expandableSearchInput.addEventListener('keyup', function(e) {
+                    console.log('🔍 KEYUP EVENT - code:', e.code, 'key:', e.key, 'recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
-                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    setTimeout(() => { 
+                        console.log('🔍 KEYUP TIMEOUT - resetting recentKeyboardActivity to false');
+                        recentKeyboardActivity = false; 
+                    }, 100);
                     
                     if (e.code === 'Space') {
+                        console.log('🔍 KEYUP SPACE - stopping propagation');
                         e.stopPropagation();
                         e.stopImmediatePropagation();
                     }
                 });
                 
                 expandableSearchInput.addEventListener('keypress', function(e) {
+                    console.log('🔍 KEYPRESS EVENT - code:', e.code, 'key:', e.key, 'recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
-                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    setTimeout(() => { 
+                        console.log('🔍 KEYPRESS TIMEOUT - resetting recentKeyboardActivity to false');
+                        recentKeyboardActivity = false; 
+                    }, 100);
                     
                     if (e.code === 'Space') {
+                        console.log('🔍 KEYPRESS SPACE - stopping propagation');
                         e.stopPropagation();
                         e.stopImmediatePropagation();
                     }
@@ -3651,14 +3671,19 @@ Remember: You're helping someone explore and understand their social network dat
                 // Hide results when clicking outside (but not during keyboard activity)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
+                    console.log('🔍 DOCUMENT CLICK - type:', e.type, 'target:', e.target, 'contains:', searchToggleBtn.contains(e.target), 'recentKeyboardActivity:', recentKeyboardActivity, 'detail:', e.detail);
+                    
                     // Only close if it's a mouse click, not during recent keyboard activity, and not from space key
                     if (e.type === 'click' && !searchToggleBtn.contains(e.target) && !recentKeyboardActivity) {
+                        console.log('🔍 DOCUMENT CLICK - CLOSING SEARCH');
                         expandableSearchResults.classList.remove('show');
                         if (searchToggleBtn.classList.contains('expanded')) {
                             searchToggleBtn.classList.remove('expanded');
                             expandableSearchInput.value = '';
                             expandableSearchResults.innerHTML = '';
                         }
+                    } else {
+                        console.log('🔍 DOCUMENT CLICK - NOT CLOSING SEARCH - recentKeyboardActivity:', recentKeyboardActivity, 'contains:', searchToggleBtn.contains(e.target));
                     }
                 });
             }
@@ -3669,14 +3694,18 @@ Remember: You're helping someone explore and understand their social network dat
                 const searchInput = document.getElementById('expandableSearchInput');
                 const searchResults = document.getElementById('expandableSearchResults');
                 
+                console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'));
+                
                 if (searchToggleBtn.classList.contains('expanded')) {
                     // Close search
+                    console.log('🔍 TOGGLE SEARCH - CLOSING');
                     searchToggleBtn.classList.remove('expanded');
                     searchInput.value = '';
                     searchResults.classList.remove('show');
                     searchResults.innerHTML = '';
                 } else {
                     // Open search
+                    console.log('🔍 TOGGLE SEARCH - OPENING');
                     searchToggleBtn.classList.add('expanded');
                     setTimeout(() => {
                         searchInput.focus();
