@@ -199,44 +199,6 @@ DO NOT use file:// URLs with this version
                 transform: translateX(0);
             }
             
-            .search-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px 16px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            .search-header label {
-                font-size: var(--text-md);
-                font-weight: 500;
-                color: var(--fg);
-                margin: 0;
-            }
-            
-            .close-search-btn {
-                background: none;
-                border: none;
-                color: var(--fg-muted);
-                cursor: pointer;
-                padding: 4px;
-                border-radius: var(--radius-1);
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .close-search-btn:hover {
-                background: rgba(255, 255, 255, 0.1);
-                color: var(--fg);
-            }
-            
-            .close-search-btn svg {
-                width: 16px;
-                height: 16px;
-            }
-            
             .expandable-search .search-input {
                 width: 100%;
                 padding: 12px 16px;
@@ -1751,15 +1713,6 @@ DO NOT use file:// URLs with this version
                 
                 <!-- Expandable Search Interface -->
                 <div class="expandable-search" id="expandableSearch">
-                    <div class="search-header">
-                        <label for="expandableSearchInput">Search Users</label>
-                        <button class="close-search-btn" onclick="toggleSearch()" title="Close Search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
                     <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username...">
                     <div id="expandableSearchResults" class="search-results" style="display: none;"></div>
                 </div>
@@ -3498,8 +3451,14 @@ Remember: You're helping someone explore and understand their social network dat
                 // Hide results when clicking outside
                 document.addEventListener('click', function(e) {
                     const expandableSearch = document.getElementById('expandableSearch');
-                    if (!expandableSearch.contains(e.target) && !expandableSearch.classList.contains('expanded')) {
+                    const searchToggleBtn = document.querySelector('.search-toggle-btn');
+                    if (!expandableSearch.contains(e.target) && !searchToggleBtn.contains(e.target)) {
                         expandableSearchResults.style.display = 'none';
+                        if (expandableSearch.classList.contains('expanded')) {
+                            expandableSearch.classList.remove('expanded');
+                            expandableSearchInput.value = '';
+                            expandableSearchResults.innerHTML = '';
+                        }
                     }
                 });
             }
