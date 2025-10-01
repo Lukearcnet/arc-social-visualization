@@ -4316,7 +4316,7 @@ Remember: You're helping someone explore and understand their social network dat
                 }
                 
                 // Apply edge thickness calculation for timeline < 100%
-                const timelinePercentage = (endPercentage - startPercentage) * 100;
+                const timelinePercentage = (endPercentage - startPercentage);
                 console.log(`🔍 DEBUG: Timeline percentage check - startPercentage: ${startPercentage}, endPercentage: ${endPercentage}, calculated timelinePercentage: ${timelinePercentage}, isUserCentric: ${isUserCentric}, selectedUserId: ${selectedUserId}`);
                 
                 if (timelinePercentage < 100 && isUserCentric && selectedUserId) {
