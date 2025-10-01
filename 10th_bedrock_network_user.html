@@ -4294,6 +4294,8 @@ Remember: You're helping someone explore and understand their social network dat
                     // Don't call edges.update() here to avoid duplication
                 }
                 
+                console.log(`🔍 DEBUG: About to continue to edge thickness calculation...`);
+                
                 // Update node properties based on filtered events
                 const nodePropsUpdates = [];
                 Object.keys(allNodes).forEach(nodeId => {
