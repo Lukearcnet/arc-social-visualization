@@ -265,14 +265,19 @@ DO NOT use file:// URLs with this version
             }
             
             .search-result-item {
-                padding: 12px 16px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                padding: var(--space-1) var(--space-2); /* Match connection details */
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: background-color 0.2s ease;
+                color: #ffffff;
+                font-size: 0.72rem; /* Match connection details font size */
                 cursor: pointer;
-                transition: background 0.2s ease;
             }
             
             .search-result-item:hover {
-                background: rgba(255, 255, 255, 0.1);
+                background-color: rgba(255, 255, 255, 0.1);
             }
             
             .search-result-item:last-child {
@@ -3491,14 +3496,6 @@ Remember: You're helping someone explore and understand their social network dat
                 expandableSearchInput.addEventListener('keydown', function(e) {
                     if (e.code === 'Space') {
                         e.stopPropagation();
-                        e.preventDefault();
-                    }
-                });
-                
-                // Also prevent space key on keyup
-                expandableSearchInput.addEventListener('keyup', function(e) {
-                    if (e.code === 'Space') {
-                        e.stopPropagation();
                     }
                 });
                 
@@ -3552,10 +3549,9 @@ Remember: You're helping someone explore and understand their social network dat
                     searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
                 } else {
                     searchResults.innerHTML = results.map(item => `
-                        <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')" style="cursor: pointer;">
-                            <strong>${item.name}</strong><br>
-                            <small>${item.taps} taps • ${item.connections} connections • 
-                            <span class="activity-${item.activity_level}">${item.activity_level}</span></small>
+                        <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')">
+                            <span>${item.name}</span>
+                            <span>${item.taps} taps</span>
                         </div>
                     `).join('');
                 }
