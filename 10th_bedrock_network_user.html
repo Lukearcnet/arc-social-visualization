@@ -143,6 +143,16 @@ DO NOT use file:// URLs with this version
                 gap: 8px;
             }
             
+            /* Search Control - Separate Container */
+            .search-control-floating {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+            }
+            
             .network-controls-floating .control-btn {
                 background: rgba(20, 20, 20, 0.9);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -170,6 +180,21 @@ DO NOT use file:// URLs with this version
                 min-width: auto !important;
                 position: relative;
                 transition: all 0.3s ease;
+            }
+            
+            /* Search button in its own container */
+            .search-control-floating .search-toggle-btn {
+                background: rgba(20, 20, 20, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: var(--fg);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                backdrop-filter: blur(10px);
+            }
+            
+            .search-control-floating .search-toggle-btn:hover {
+                background: rgba(40, 40, 40, 0.9);
+                border-color: rgba(255, 255, 255, 0.4);
             }
             
             .search-toggle-btn svg {
@@ -1723,6 +1748,10 @@ DO NOT use file:// URLs with this version
                 <div class="network-controls-floating">
                     <button class="control-btn" onclick="stabilize()">Stabilize</button>
                     <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
+                </div>
+                
+                <!-- Search Button - Separate Container -->
+                <div class="search-control-floating">
                     <button class="control-btn search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()" title="Search Users">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
