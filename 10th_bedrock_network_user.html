@@ -4493,9 +4493,9 @@ Remember: You're helping someone explore and understand their social network dat
                 }
                 
                 // Apply timeline filtering (or show all connections at 100%)
-                const percentage = (endPercentage - startPercentage) * 100;
-                console.log(`🔍 DEBUG: Timeline percentage check - startPercentage: ${startPercentage}, endPercentage: ${endPercentage}, calculated percentage: ${percentage}, isUserCentric: ${isUserCentric}, selectedUserId: ${selectedUserId}`);
-                if (percentage < 100) {
+                const timelinePercentage = (endPercentage - startPercentage) * 100;
+                console.log(`🔍 DEBUG: Timeline percentage check - startPercentage: ${startPercentage}, endPercentage: ${endPercentage}, calculated timelinePercentage: ${timelinePercentage}, isUserCentric: ${isUserCentric}, selectedUserId: ${selectedUserId}`);
+                if (timelinePercentage < 100) {
                     console.log(`🔍 DEBUG: Taking percentage < 100 path`);
                     // Create edge ID mapping
                     const edgeMapping = createEdgeIdMapping();
