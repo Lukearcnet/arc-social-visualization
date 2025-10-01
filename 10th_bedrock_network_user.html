@@ -3496,6 +3496,21 @@ Remember: You're helping someone explore and understand their social network dat
                 expandableSearchInput.addEventListener('keydown', function(e) {
                     if (e.code === 'Space') {
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    }
+                });
+                
+                expandableSearchInput.addEventListener('keyup', function(e) {
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    }
+                });
+                
+                expandableSearchInput.addEventListener('keypress', function(e) {
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
                     }
                 });
                 
@@ -3508,8 +3523,8 @@ Remember: You're helping someone explore and understand their social network dat
                 // Hide results when clicking outside (but not on keyboard events)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
-                    // Only close if it's a mouse click, not keyboard events
-                    if (e.type === 'click' && !searchToggleBtn.contains(e.target)) {
+                    // Only close if it's a mouse click, not keyboard events, and not from space key
+                    if (e.type === 'click' && !searchToggleBtn.contains(e.target) && e.detail !== 0) {
                         expandableSearchResults.classList.remove('show');
                         if (searchToggleBtn.classList.contains('expanded')) {
                             searchToggleBtn.classList.remove('expanded');
