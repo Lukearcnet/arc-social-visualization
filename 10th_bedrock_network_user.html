@@ -3491,6 +3491,14 @@ Remember: You're helping someone explore and understand their social network dat
                 expandableSearchInput.addEventListener('keydown', function(e) {
                     if (e.code === 'Space') {
                         e.stopPropagation();
+                        e.preventDefault();
+                    }
+                });
+                
+                // Also prevent space key on keyup
+                expandableSearchInput.addEventListener('keyup', function(e) {
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
                     }
                 });
                 
@@ -3500,10 +3508,11 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 });
                 
-                // Hide results when clicking outside
+                // Hide results when clicking outside (but not on keyboard events)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
-                    if (!searchToggleBtn.contains(e.target)) {
+                    // Only close if it's a mouse click, not keyboard events
+                    if (e.type === 'click' && !searchToggleBtn.contains(e.target)) {
                         expandableSearchResults.classList.remove('show');
                         if (searchToggleBtn.classList.contains('expanded')) {
                             searchToggleBtn.classList.remove('expanded');
