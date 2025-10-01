@@ -3694,22 +3694,25 @@ Remember: You're helping someone explore and understand their social network dat
                 const searchInput = document.getElementById('expandableSearchInput');
                 const searchResults = document.getElementById('expandableSearchResults');
                 
-                console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'));
+                console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'), 'recentKeyboardActivity:', recentKeyboardActivity);
                 
-                if (searchToggleBtn.classList.contains('expanded')) {
+                // Don't close if there's recent keyboard activity (prevents space key from closing)
+                if (searchToggleBtn.classList.contains('expanded') && !recentKeyboardActivity) {
                     // Close search
                     console.log('🔍 TOGGLE SEARCH - CLOSING');
                     searchToggleBtn.classList.remove('expanded');
                     searchInput.value = '';
                     searchResults.classList.remove('show');
                     searchResults.innerHTML = '';
-                } else {
+                } else if (!searchToggleBtn.classList.contains('expanded')) {
                     // Open search
                     console.log('🔍 TOGGLE SEARCH - OPENING');
                     searchToggleBtn.classList.add('expanded');
                     setTimeout(() => {
                         searchInput.focus();
                     }, 300);
+                } else {
+                    console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
                 }
             }
             
