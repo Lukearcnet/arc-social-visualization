@@ -4370,7 +4370,7 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Update profile stats based on timeline position
             function updateProfileStats(userId, eventIndex) {
-                const timelineProps = calculateTimelineNodeProperties(userId, filteredEvents);
+                const timelineProps = calculateTimelineNodeProperties(userId, eventIndex);
                 
                 // Update the profile stats display
                 document.getElementById('profileTaps').textContent = timelineProps.taps;
@@ -4645,6 +4645,13 @@ Remember: You're helping someone explore and understand their social network dat
                             // Find the styling update for this edge
                             const stylingUpdate = userCentricTimelineEdgeUpdates.find(update => update.id === edgeId);
                             
+                            // Debug: Log styling update
+                            if (stylingUpdate) {
+                                console.log(`🔍 Edge ${edgeId}: Found styling update - width: ${stylingUpdate.width}, color: ${stylingUpdate.color}`);
+                            } else {
+                                console.log(`🔍 Edge ${edgeId}: No styling update found`);
+                            }
+                            
                             combinedEdgeUpdates.push({
                                 id: edgeId,
                                 hidden: !shouldShow,
@@ -4652,6 +4659,10 @@ Remember: You're helping someone explore and understand their social network dat
                                 color: stylingUpdate ? stylingUpdate.color : "#E0E0E0"
                             });
                         });
+                        
+                        // Debug: Log userCentricTimelineEdgeUpdates
+                        console.log(`🔍 userCentricTimelineEdgeUpdates length: ${userCentricTimelineEdgeUpdates.length}`);
+                        console.log(`🔍 Sample userCentricTimelineEdgeUpdates:`, userCentricTimelineEdgeUpdates.slice(0, 3));
                         
                         // Apply all edge updates in batch
                         edges.update(combinedEdgeUpdates);
