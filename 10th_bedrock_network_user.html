@@ -3364,6 +3364,8 @@ Remember: You're helping someone explore and understand their social network dat
             let currentlyHighlightedEdges = new Set();
             let selectedNodeEdges = new Set(); // Track edges belonging to selected node
             let hoveredNodeEdges = new Set(); // Track edges belonging to currently hovered node
+            let pathHighlightedEdges = new Set(); // Track edges in highlighted path
+            let currentPath = []; // Track current path between users
             
             function highlightConnectedEdges(nodeId, isSelection = false) {
                 const connectedEdges = edges.get().filter(edge => 
@@ -3435,7 +3437,116 @@ Remember: You're helping someone explore and understand their social network dat
                     originalEdgeColors.clear();
                     selectedNodeEdges.clear();
                     hoveredNodeEdges.clear();
+                    pathHighlightedEdges.clear();
+                    currentPath = [];
                 }
+            }
+            
+            // Find shortest path between two users using BFS
+            function findPathBetweenUsers(sourceUserId, targetUserId) {
+                if (sourceUserId === targetUserId) {
+                    return [sourceUserId];
+                }
+                
+                // Create adjacency map from all edges
+                const adjacencyMap = {};
+                Object.values(allEdges).forEach(edge => {
+                    if (!adjacencyMap[edge.from]) adjacencyMap[edge.from] = new Set();
+                    if (!adjacencyMap[edge.to]) adjacencyMap[edge.to] = new Set();
+                    adjacencyMap[edge.from].add(edge.to);
+                    adjacencyMap[edge.to].add(edge.from);
+                });
+                
+                // BFS to find shortest path
+                const queue = [[sourceUserId]];
+                const visited = new Set([sourceUserId]);
+                
+                while (queue.length > 0) {
+                    const path = queue.shift();
+                    const currentNode = path[path.length - 1];
+                    
+                    if (currentNode === targetUserId) {
+                        return path;
+                    }
+                    
+                    const neighbors = adjacencyMap[currentNode] || new Set();
+                    neighbors.forEach(neighbor => {
+                        if (!visited.has(neighbor)) {
+                            visited.add(neighbor);
+                            queue.push([...path, neighbor]);
+                        }
+                    });
+                }
+                
+                return null; // No path found
+            }
+            
+            // Highlight path between current user and target user
+            function highlightPathToUser(targetUserId) {
+                // Get current user (the one who is logged in/selected)
+                const currentUserId = currentFilterUser || selectedNode;
+                
+                if (!currentUserId) {
+                    console.log('No current user selected for path highlighting');
+                    return;
+                }
+                
+                // Clear any existing path highlighting
+                clearPathHighlighting();
+                
+                // Find path between users
+                const path = findPathBetweenUsers(currentUserId, targetUserId);
+                
+                if (!path || path.length < 2) {
+                    console.log('No path found between users');
+                    return;
+                }
+                
+                currentPath = path;
+                console.log('Path found:', path.map(id => allNodes[id]?.label || id));
+                
+                // Highlight edges in the path
+                for (let i = 0; i < path.length - 1; i++) {
+                    const fromUserId = path[i];
+                    const toUserId = path[i + 1];
+                    
+                    // Find edge between these users
+                    const edge = Object.values(allEdges).find(e => 
+                        (e.from === fromUserId && e.to === toUserId) ||
+                        (e.from === toUserId && e.to === fromUserId)
+                    );
+                    
+                    if (edge) {
+                        // Store original color if not already stored
+                        if (!originalEdgeColors.has(edge.id)) {
+                            originalEdgeColors.set(edge.id, edge.color);
+                        }
+                        
+                        // Highlight edge in teal/cyan
+                        edges.update({
+                            id: edge.id,
+                            color: '#03DAEE'
+                        });
+                        
+                        pathHighlightedEdges.add(edge.id);
+                        currentlyHighlightedEdges.add(edge.id);
+                    }
+                }
+            }
+            
+            // Clear path highlighting
+            function clearPathHighlighting() {
+                pathHighlightedEdges.forEach(edgeId => {
+                    if (originalEdgeColors.has(edgeId)) {
+                        edges.update({
+                            id: edgeId,
+                            color: originalEdgeColors.get(edgeId)
+                        });
+                    }
+                    currentlyHighlightedEdges.delete(edgeId);
+                });
+                pathHighlightedEdges.clear();
+                currentPath = [];
             }
         
             // Search functionality
@@ -3563,12 +3674,28 @@ Remember: You're helping someone explore and understand their social network dat
                 if (results.length === 0) {
                     searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
                 } else {
-                    searchResults.innerHTML = results.map(item => `
-                        <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')">
-                            <span>${item.name}</span>
-                            <span>${item.taps} taps</span>
-                        </div>
-                    `).join('');
+                    searchResults.innerHTML = results.map(item => {
+                        // Calculate path distance for each result
+                        const currentUserId = currentFilterUser || selectedNode;
+                        let pathInfo = '';
+                        
+                        if (currentUserId && currentUserId !== item.id) {
+                            const path = findPathBetweenUsers(currentUserId, item.id);
+                            if (path && path.length > 1) {
+                                const distance = path.length - 1;
+                                pathInfo = ` • ${distance} degree${distance > 1 ? 's' : ''} away`;
+                            } else {
+                                pathInfo = ' • No path found';
+                            }
+                        }
+                        
+                        return `
+                            <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')">
+                                <span>${item.name}</span>
+                                <span>${item.taps} taps${pathInfo}</span>
+                            </div>
+                        `;
+                    }).join('');
                 }
                 
                 searchResults.classList.add('show');
@@ -3576,11 +3703,12 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Select node from expandable search
             function selectNodeByIdExpandable(nodeId) {
-                // Filter the network to show only connections from this user's perspective
-                filterNetworkByUser(nodeId);
+                // NEW BEHAVIOR: Highlight path from current user to searched user
+                highlightPathToUser(nodeId);
+                
+                // Focus on the target user
                 network.selectNodes([nodeId]);
                 network.focus(nodeId, { scale: 0.4, animation: true }); // Zoomed out view
-                selectNode(nodeId);
                 
                 // Close the expandable search
                 const searchToggleBtn = document.getElementById('searchToggleBtn');
