@@ -4593,10 +4593,10 @@ Remember: You're helping someone explore and understand their social network dat
                             // Collect edge update for batch processing
                             const shouldShow = isInTimeline && isInDegreeFilter;
                             
-                            // Calculate total tap count between these users up to timeline position (not filtered by selected user)
+                            // Calculate total tap count between these users within the timeline range
                             const user1Id = edge.from;
                             const user2Id = edge.to;
-                            const timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
+                            const timelineTapCount = filteredEvents.filter(tap => 
                                 (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
                                 (tap.user1_id === user2Id && tap.user2_id === user1Id)
                             ).length;
@@ -4862,10 +4862,10 @@ Remember: You're helping someone explore and understand their social network dat
                         // Show all edges with timeline-based styling (batch update)
                         const globalModeEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
-                            // Calculate total tap count between these users up to timeline position (not filtered by selected user)
+                            // Calculate total tap count between these users within the timeline range
                             const user1Id = edge.from;
                             const user2Id = edge.to;
-                            const timelineTapCount = timeSequence.slice(0, eventIndex).filter(tap => 
+                            const timelineTapCount = filteredEvents.filter(tap => 
                                 (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
                                 (tap.user1_id === user2Id && tap.user2_id === user1Id)
                             ).length;
