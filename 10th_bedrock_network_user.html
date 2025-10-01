@@ -4251,6 +4251,7 @@ Remember: You're helping someone explore and understand their social network dat
                         degree3Connections.forEach(conn => degreeFilteredConnections.add(conn));
                     }
                     
+                    console.log(`🔍 DEBUG: About to update nodes and edges...`);
                     // Update nodes - show selected user + degree-filtered connections that are in time range
                     const nodeUpdates = [];
                     Object.keys(allNodes).forEach(nodeId => {
@@ -4516,6 +4517,7 @@ Remember: You're helping someone explore and understand their social network dat
                         // 1. Not in the timeline visible set AND
                         // 2. Not part of the user's degree-filtered connections
                         if (isUserCentric && selectedUserId) {
+                            console.log(`🔍 DEBUG: Entering nested user-centric mode for edge processing...`);
                             // Get the user's degree-filtered connections
                             const userNode = allNodes[selectedUserId];
                             const profileData = userNode.profile_data;
