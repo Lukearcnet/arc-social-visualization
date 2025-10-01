@@ -4941,6 +4941,54 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 }
                 
+                // Apply edge thickness calculation regardless of timeline percentage
+                console.log(`🔍 DEBUG: About to start edge thickness calculation...`);
+                const edgeThicknessUpdates = [];
+                Object.values(allEdges).forEach(edge => {
+                    // Calculate total tap count between these users within the timeline range
+                    const user1Id = edge.from;
+                    const user2Id = edge.to;
+                    const timelineTapCount = filteredEvents.filter(tap => 
+                        (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                        (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                    ).length;
+                    
+                    // Apply 5-segment styling based on timeline tap count
+                    let thickness, color;
+                    if (timelineTapCount === 1) {
+                        thickness = 0.5;
+                        color = "#E0E0E0"; // Light grey
+                    } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                        thickness = 1.5;
+                        color = "#D0D0D0"; // Medium-light grey
+                    } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                        thickness = 2.5;
+                        color = "#C0C0C0"; // Medium grey
+                    } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                        thickness = 3.5;
+                        color = "#F0F0F0"; // Light white
+                    } else if (timelineTapCount >= 9) {
+                        thickness = 5.0;
+                        color = "#FFFFFF"; // White
+                    } else {
+                        // Fallback for no taps or edge cases
+                        thickness = 0.5;
+                        color = "#E0E0E0";
+                    }
+                    
+                    edgeThicknessUpdates.push({
+                        id: edge.id,
+                        width: thickness,
+                        color: color
+                    });
+                });
+                
+                // Apply edge thickness updates
+                if (edgeThicknessUpdates.length > 0) {
+                    edges.update(edgeThicknessUpdates);
+                    console.log(`🔍 DEBUG: Applied edge thickness updates to ${edgeThicknessUpdates.length} edges`);
+                }
+                
                 // Update display information
                 if (eventIndex > 0) {
                     const currentEvent = timeSequence[eventIndex - 1];
