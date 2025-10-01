@@ -4370,7 +4370,7 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Update profile stats based on timeline position
             function updateProfileStats(userId, eventIndex) {
-                const timelineProps = calculateTimelineNodeProperties(userId, eventIndex);
+                const timelineProps = calculateTimelineNodeProperties(userId, filteredEvents);
                 
                 // Update the profile stats display
                 document.getElementById('profileTaps').textContent = timelineProps.taps;
