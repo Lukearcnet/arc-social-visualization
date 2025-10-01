@@ -168,69 +168,88 @@ DO NOT use file:// URLs with this version
                 justify-content: center;
                 padding: 8px !important;
                 min-width: auto !important;
+                position: relative;
+                transition: all 0.3s ease;
             }
             
             .search-toggle-btn svg {
                 width: 16px;
                 height: 16px;
+                transition: opacity 0.2s ease;
             }
             
-            /* Expandable Search Interface */
-            .expandable-search {
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                width: 0;
-                max-width: 300px;
-                background: rgba(20, 20, 20, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--radius-1);
-                backdrop-filter: blur(10px);
-                overflow: hidden;
-                transition: all 0.3s ease;
-                z-index: 1001;
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            
-            .expandable-search.expanded {
+            /* Search button expanded state */
+            .search-toggle-btn.expanded {
                 width: 300px;
-                opacity: 1;
-                transform: translateX(0);
+                min-width: 300px !important;
+                padding: 8px 12px !important;
+                justify-content: flex-start;
             }
             
-            .expandable-search .search-input {
+            .search-toggle-btn.expanded svg {
+                opacity: 0;
+            }
+            
+            /* Hidden input field that appears when expanded */
+            .search-toggle-btn .search-input {
+                position: absolute;
+                top: 0;
+                left: 0;
                 width: 100%;
-                padding: 12px 16px;
+                height: 100%;
+                padding: 8px 12px;
                 border: none;
                 background: transparent;
                 color: var(--fg);
                 font-size: var(--text-md);
                 outline: none;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
             }
             
-            .expandable-search .search-input::placeholder {
+            .search-toggle-btn.expanded .search-input {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            .search-toggle-btn .search-input::placeholder {
                 color: var(--fg-muted);
             }
             
-            .expandable-search .search-results {
+            /* Search results dropdown */
+            .search-results {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(20, 20, 20, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-top: none;
+                border-radius: 0 0 var(--radius-1) var(--radius-1);
+                backdrop-filter: blur(10px);
                 max-height: 200px;
                 overflow-y: auto;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                z-index: 1002;
+                display: none;
             }
             
-            .expandable-search .search-result-item {
+            .search-results.show {
+                display: block;
+            }
+            
+            .search-result-item {
                 padding: 12px 16px;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                 cursor: pointer;
                 transition: background 0.2s ease;
             }
             
-            .expandable-search .search-result-item:hover {
+            .search-result-item:hover {
                 background: rgba(255, 255, 255, 0.1);
             }
             
-            .expandable-search .search-result-item:last-child {
+            .search-result-item:last-child {
                 border-bottom: none;
             }
             
@@ -1703,18 +1722,14 @@ DO NOT use file:// URLs with this version
                 <div class="network-controls-floating">
                     <button class="control-btn" onclick="stabilize()">Stabilize</button>
                     <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
-                    <button class="control-btn search-toggle-btn" onclick="toggleSearch()" title="Search Users">
+                    <button class="control-btn search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()" title="Search Users">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
+                        <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username...">
+                        <div id="expandableSearchResults" class="search-results"></div>
                     </button>
-                </div>
-                
-                <!-- Expandable Search Interface -->
-                <div class="expandable-search" id="expandableSearch">
-                    <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username...">
-                    <div id="expandableSearchResults" class="search-results" style="display: none;"></div>
                 </div>
             </div>
             
@@ -3450,12 +3465,11 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Hide results when clicking outside
                 document.addEventListener('click', function(e) {
-                    const expandableSearch = document.getElementById('expandableSearch');
-                    const searchToggleBtn = document.querySelector('.search-toggle-btn');
-                    if (!expandableSearch.contains(e.target) && !searchToggleBtn.contains(e.target)) {
-                        expandableSearchResults.style.display = 'none';
-                        if (expandableSearch.classList.contains('expanded')) {
-                            expandableSearch.classList.remove('expanded');
+                    const searchToggleBtn = document.getElementById('searchToggleBtn');
+                    if (!searchToggleBtn.contains(e.target)) {
+                        expandableSearchResults.classList.remove('show');
+                        if (searchToggleBtn.classList.contains('expanded')) {
+                            searchToggleBtn.classList.remove('expanded');
                             expandableSearchInput.value = '';
                             expandableSearchResults.innerHTML = '';
                         }
@@ -3465,19 +3479,19 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Toggle search interface
             function toggleSearch() {
-                const expandableSearch = document.getElementById('expandableSearch');
+                const searchToggleBtn = document.getElementById('searchToggleBtn');
                 const searchInput = document.getElementById('expandableSearchInput');
                 const searchResults = document.getElementById('expandableSearchResults');
                 
-                if (expandableSearch.classList.contains('expanded')) {
+                if (searchToggleBtn.classList.contains('expanded')) {
                     // Close search
-                    expandableSearch.classList.remove('expanded');
+                    searchToggleBtn.classList.remove('expanded');
                     searchInput.value = '';
-                    searchResults.style.display = 'none';
+                    searchResults.classList.remove('show');
                     searchResults.innerHTML = '';
                 } else {
                     // Open search
-                    expandableSearch.classList.add('expanded');
+                    searchToggleBtn.classList.add('expanded');
                     setTimeout(() => {
                         searchInput.focus();
                     }, 300);
@@ -3500,7 +3514,7 @@ Remember: You're helping someone explore and understand their social network dat
                     `).join('');
                 }
                 
-                searchResults.style.display = 'block';
+                searchResults.classList.add('show');
             }
             
             // Select node from expandable search
@@ -3512,13 +3526,13 @@ Remember: You're helping someone explore and understand their social network dat
                 selectNode(nodeId);
                 
                 // Close the expandable search
-                const expandableSearch = document.getElementById('expandableSearch');
+                const searchToggleBtn = document.getElementById('searchToggleBtn');
                 const searchInput = document.getElementById('expandableSearchInput');
                 const searchResults = document.getElementById('expandableSearchResults');
                 
-                expandableSearch.classList.remove('expanded');
+                searchToggleBtn.classList.remove('expanded');
                 searchInput.value = '';
-                searchResults.style.display = 'none';
+                searchResults.classList.remove('show');
                 searchResults.innerHTML = '';
                 
                 // Show popup with user data
