@@ -161,6 +161,117 @@ DO NOT use file:// URLs with this version
                 border-color: rgba(255, 255, 255, 0.4);
             }
             
+            /* Search Toggle Button */
+            .search-toggle-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px !important;
+                min-width: auto !important;
+            }
+            
+            .search-toggle-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            /* Expandable Search Interface */
+            .expandable-search {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                width: 0;
+                max-width: 300px;
+                background: rgba(20, 20, 20, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: var(--radius-1);
+                backdrop-filter: blur(10px);
+                overflow: hidden;
+                transition: all 0.3s ease;
+                z-index: 1001;
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            
+            .expandable-search.expanded {
+                width: 300px;
+                opacity: 1;
+                transform: translateX(0);
+            }
+            
+            .search-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 16px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .search-header label {
+                font-size: var(--text-md);
+                font-weight: 500;
+                color: var(--fg);
+                margin: 0;
+            }
+            
+            .close-search-btn {
+                background: none;
+                border: none;
+                color: var(--fg-muted);
+                cursor: pointer;
+                padding: 4px;
+                border-radius: var(--radius-1);
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .close-search-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--fg);
+            }
+            
+            .close-search-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            .expandable-search .search-input {
+                width: 100%;
+                padding: 12px 16px;
+                border: none;
+                background: transparent;
+                color: var(--fg);
+                font-size: var(--text-md);
+                outline: none;
+            }
+            
+            .expandable-search .search-input::placeholder {
+                color: var(--fg-muted);
+            }
+            
+            .expandable-search .search-results {
+                max-height: 200px;
+                overflow-y: auto;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .expandable-search .search-result-item {
+                padding: 12px 16px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                cursor: pointer;
+                transition: background 0.2s ease;
+            }
+            
+            .expandable-search .search-result-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .expandable-search .search-result-item:last-child {
+                border-bottom: none;
+            }
+            
             /* Timeline Slider Section (moved outside profile-section) */
             .animation-section {
                 padding: calc(var(--space-4) / 2 * 0.6) 16px;
@@ -1630,6 +1741,27 @@ DO NOT use file:// URLs with this version
                 <div class="network-controls-floating">
                     <button class="control-btn" onclick="stabilize()">Stabilize</button>
                     <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
+                    <button class="control-btn search-toggle-btn" onclick="toggleSearch()" title="Search Users">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Expandable Search Interface -->
+                <div class="expandable-search" id="expandableSearch">
+                    <div class="search-header">
+                        <label for="expandableSearchInput">Search Users</label>
+                        <button class="close-search-btn" onclick="toggleSearch()" title="Close Search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username...">
+                    <div id="expandableSearchResults" class="search-results" style="display: none;"></div>
                 </div>
             </div>
             
@@ -3335,6 +3467,103 @@ Remember: You're helping someone explore and understand their social network dat
                         searchResults.style.display = 'none';
                     }
                 });
+            }
+            
+            // Expandable Search functionality
+            function initExpandableSearch() {
+                const expandableSearchInput = document.getElementById('expandableSearchInput');
+                const expandableSearchResults = document.getElementById('expandableSearchResults');
+                
+                expandableSearchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase();
+                    if (query.length < 2) {
+                        expandableSearchResults.style.display = 'none';
+                        return;
+                    }
+                    
+                    const results = searchIndex.filter(item => 
+                        item.name.toLowerCase().includes(query) ||
+                        (item.username && item.username.toLowerCase().includes(query))
+                    ).slice(0, 10);
+                    
+                    displayExpandableSearchResults(results);
+                });
+                
+                expandableSearchInput.addEventListener('focus', function() {
+                    if (this.value.length >= 2) {
+                        expandableSearchResults.style.display = 'block';
+                    }
+                });
+                
+                // Hide results when clicking outside
+                document.addEventListener('click', function(e) {
+                    const expandableSearch = document.getElementById('expandableSearch');
+                    if (!expandableSearch.contains(e.target) && !expandableSearch.classList.contains('expanded')) {
+                        expandableSearchResults.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Toggle search interface
+            function toggleSearch() {
+                const expandableSearch = document.getElementById('expandableSearch');
+                const searchInput = document.getElementById('expandableSearchInput');
+                const searchResults = document.getElementById('expandableSearchResults');
+                
+                if (expandableSearch.classList.contains('expanded')) {
+                    // Close search
+                    expandableSearch.classList.remove('expanded');
+                    searchInput.value = '';
+                    searchResults.style.display = 'none';
+                    searchResults.innerHTML = '';
+                } else {
+                    // Open search
+                    expandableSearch.classList.add('expanded');
+                    setTimeout(() => {
+                        searchInput.focus();
+                    }, 300);
+                }
+            }
+            
+            // Display expandable search results
+            function displayExpandableSearchResults(results) {
+                const searchResults = document.getElementById('expandableSearchResults');
+                
+                if (results.length === 0) {
+                    searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                } else {
+                    searchResults.innerHTML = results.map(item => `
+                        <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')" style="cursor: pointer;">
+                            <strong>${item.name}</strong><br>
+                            <small>${item.taps} taps • ${item.connections} connections • 
+                            <span class="activity-${item.activity_level}">${item.activity_level}</span></small>
+                        </div>
+                    `).join('');
+                }
+                
+                searchResults.style.display = 'block';
+            }
+            
+            // Select node from expandable search
+            function selectNodeByIdExpandable(nodeId) {
+                // Filter the network to show only connections from this user's perspective
+                filterNetworkByUser(nodeId);
+                network.selectNodes([nodeId]);
+                network.focus(nodeId, { scale: 0.4, animation: true }); // Zoomed out view
+                selectNode(nodeId);
+                
+                // Close the expandable search
+                const expandableSearch = document.getElementById('expandableSearch');
+                const searchInput = document.getElementById('expandableSearchInput');
+                const searchResults = document.getElementById('expandableSearchResults');
+                
+                expandableSearch.classList.remove('expanded');
+                searchInput.value = '';
+                searchResults.style.display = 'none';
+                searchResults.innerHTML = '';
+                
+                // Show popup with user data
+                showUserPopup(nodeId);
             }
         
             function displaySearchResults(results) {
@@ -5275,6 +5504,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Initialize network (which will load data)
                 await initNetwork();
                 initSearch();
+                initExpandableSearch();
                 initTimelineSlider();
                 
                 // Check for userName parameter and auto-select user
