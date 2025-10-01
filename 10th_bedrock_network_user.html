@@ -3366,6 +3366,7 @@ Remember: You're helping someone explore and understand their social network dat
             let hoveredNodeEdges = new Set(); // Track edges belonging to currently hovered node
             let pathHighlightedEdges = new Set(); // Track edges in highlighted path
             let currentPath = []; // Track current path between users
+            let recentKeyboardActivity = false; // Track recent keyboard activity in search
             
             function highlightConnectedEdges(nodeId, isSelection = false) {
                 const connectedEdges = edges.get().filter(edge => 
@@ -3589,6 +3590,10 @@ Remember: You're helping someone explore and understand their social network dat
                 const expandableSearchResults = document.getElementById('expandableSearchResults');
                 
                 expandableSearchInput.addEventListener('input', function() {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    
                     const query = this.value.toLowerCase();
                     if (query.length < 2) {
                         expandableSearchResults.classList.remove('show');
@@ -3603,8 +3608,12 @@ Remember: You're helping someone explore and understand their social network dat
                     displayExpandableSearchResults(results);
                 });
                 
-                // Prevent space key from collapsing search
+                // Prevent space key from collapsing search and track keyboard activity
                 expandableSearchInput.addEventListener('keydown', function(e) {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    
                     if (e.code === 'Space') {
                         e.stopPropagation();
                         e.stopImmediatePropagation();
@@ -3612,6 +3621,10 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 
                 expandableSearchInput.addEventListener('keyup', function(e) {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    
                     if (e.code === 'Space') {
                         e.stopPropagation();
                         e.stopImmediatePropagation();
@@ -3619,6 +3632,10 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 
                 expandableSearchInput.addEventListener('keypress', function(e) {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { recentKeyboardActivity = false; }, 100);
+                    
                     if (e.code === 'Space') {
                         e.stopPropagation();
                         e.stopImmediatePropagation();
@@ -3631,11 +3648,11 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 });
                 
-                // Hide results when clicking outside (but not on keyboard events)
+                // Hide results when clicking outside (but not during keyboard activity)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
-                    // Only close if it's a mouse click, not keyboard events, and not from space key
-                    if (e.type === 'click' && !searchToggleBtn.contains(e.target) && e.detail !== 0) {
+                    // Only close if it's a mouse click, not during recent keyboard activity, and not from space key
+                    if (e.type === 'click' && !searchToggleBtn.contains(e.target) && !recentKeyboardActivity) {
                         expandableSearchResults.classList.remove('show');
                         if (searchToggleBtn.classList.contains('expanded')) {
                             searchToggleBtn.classList.remove('expanded');
