@@ -1485,6 +1485,32 @@
                 console.log('📊 Right slider input event - value:', e.target.value);
             });
             
+            // Dynamic z-index switching to fix event targeting
+            leftSlider.addEventListener('mousedown', function() {
+                console.log('🖱️ Left slider mousedown - bringing to front');
+                leftSlider.style.zIndex = '4';
+                rightSlider.style.zIndex = '2';
+            });
+            
+            rightSlider.addEventListener('mousedown', function() {
+                console.log('🖱️ Right slider mousedown - bringing to front');
+                rightSlider.style.zIndex = '4';
+                leftSlider.style.zIndex = '2';
+            });
+            
+            // Reset z-index after interaction
+            leftSlider.addEventListener('mouseup', function() {
+                console.log('🖱️ Left slider mouseup - resetting z-index');
+                leftSlider.style.zIndex = '2';
+                rightSlider.style.zIndex = '3';
+            });
+            
+            rightSlider.addEventListener('mouseup', function() {
+                console.log('🖱️ Right slider mouseup - resetting z-index');
+                rightSlider.style.zIndex = '3';
+                leftSlider.style.zIndex = '2';
+            });
+            
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
                 slider.addEventListener('input', function() {
