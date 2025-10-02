@@ -2721,6 +2721,16 @@
             searchInput.addEventListener('touchstart', function() {
                 this.focus();
             });
+            
+            // Prevent clicks inside search input from bubbling up
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Prevent clicks inside search results from bubbling up
+            searchResults.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
         }
         
         // Initialize user search functionality
