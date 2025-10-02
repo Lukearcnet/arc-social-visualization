@@ -1565,55 +1565,39 @@
                 });
             })();
             
-            // Add event listeners for both sliders with throttling
+            // Add event listeners for both sliders - optimized for maximum responsiveness
             [leftSlider, rightSlider].forEach(slider => {
-                // Throttle slider updates to max 10fps (100ms) for better performance
-                let sliderThrottle = null;
-                
                 slider.addEventListener('input', function() {
-                    // Store current slider values immediately for responsive UI
-                    const currentLeftValue = parseInt(leftSlider.value);
-                    const currentRightValue = parseInt(rightSlider.value);
-                    
-                    // Clear any pending throttled update
-                    if (sliderThrottle) {
-                        clearTimeout(sliderThrottle);
-                    }
-                    
-                    // Throttle the actual processing to reduce lag
-                    sliderThrottle = setTimeout(() => {
-                        if (!isUpdating) {
-                            const leftValue = parseInt(leftSlider.value);
-                            const rightValue = parseInt(rightSlider.value);
-                            
-                            // Calculate minimum gap
-                            const minGap = 1; // Minimum 1% gap
-                            
-                            // Handle left slider movement
-                            if (this === leftSlider) {
-                                // Left slider cannot go past right slider minus minimum gap
-                                if (leftValue >= rightValue - minGap) {
-                                    const newValue = Math.max(0, rightValue - minGap);
-                                    leftSlider.value = newValue;
-                                }
+                    // Immediate processing for maximum responsiveness
+                    if (!isUpdating) {
+                        const leftValue = parseInt(leftSlider.value);
+                        const rightValue = parseInt(rightSlider.value);
+                        
+                        // Calculate minimum gap
+                        const minGap = 1; // Minimum 1% gap
+                        
+                        // Handle left slider movement
+                        if (this === leftSlider) {
+                            // Left slider cannot go past right slider minus minimum gap
+                            if (leftValue >= rightValue - minGap) {
+                                const newValue = Math.max(0, rightValue - minGap);
+                                leftSlider.value = newValue;
                             }
-                            
-                            // Handle right slider movement  
-                            if (this === rightSlider) {
-                                // Right slider cannot go before left slider plus minimum gap
-                                if (rightValue <= leftValue + minGap) {
-                                    const newValue = Math.min(100, leftValue + minGap);
-                                    rightSlider.value = newValue;
-                                }
-                            }
-                            
-                            // Update timeline and range highlighting
-                            updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                            updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
                         }
                         
-                        sliderThrottle = null;
-                    }, 100); // 100ms = 10fps max update rate
+                        // Handle right slider movement  
+                        if (this === rightSlider) {
+                            // Right slider cannot go before left slider plus minimum gap
+                            if (rightValue <= leftValue + minGap) {
+                                const newValue = Math.min(100, leftValue + minGap);
+                                rightSlider.value = newValue;
+                            }
+                        }
+                        
+                        // Immediate timeline and range updates for maximum responsiveness
+                        updateDualTimelineDisplay(leftValue, rightValue);
+                        updateRangeHighlighting(leftValue, rightValue);
+                    }
                 });
                 
                 slider.addEventListener('mousedown', function() {
@@ -1687,10 +1671,10 @@
                 clearTimeout(window.timelineUpdateTimeout);
             }
             
-            // Debounce timeline updates to reduce lag
+            // Minimal debounce for maximum responsiveness
             window.timelineUpdateTimeout = setTimeout(() => {
                 performTimelineUpdate(startPercentage, endPercentage);
-            }, 50); // 50ms debounce
+            }, 16); // 16ms = ~60fps for maximum responsiveness
         }
         
         // Separate function for the actual timeline update logic
@@ -1809,8 +1793,14 @@
                 
                 // Apply degree filtering after time filtering (like develop branch)
                 if (currentMode === 'user' && selectedUserId) {
-                    // Calculate degree connections for the selected user
-                    const degreeConnections = calculateDegreeConnections(selectedUserId);
+                    // Use cached degree connections for better performance
+                    if (!window.cachedDegreeConnections || window.cachedDegreeConnections.userId !== selectedUserId) {
+                        window.cachedDegreeConnections = {
+                            userId: selectedUserId,
+                            connections: calculateDegreeConnections(selectedUserId)
+                        };
+                    }
+                    const degreeConnections = window.cachedDegreeConnections.connections;
                     
                     // Filter events based on selected degree filters
                     filteredEvents = filteredEvents.filter(event => {
