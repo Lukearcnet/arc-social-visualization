@@ -273,14 +273,14 @@
             pointer-events: none;
         }
         
-        /* Left slider positioning - behind right slider */
+        /* Left slider positioning - on top of right slider */
         .timeline-slider-left {
-            z-index: 2;
+            z-index: 3;
         }
         
-        /* Right slider positioning - on top of left slider */
+        /* Right slider positioning - behind left slider */
         .timeline-slider-right {
-            z-index: 3;
+            z-index: 2;
         }
         
         .timeline-slider::-webkit-slider-thumb {
@@ -1493,14 +1493,14 @@
             // Reset z-index after interaction
             leftSlider.addEventListener('mouseup', function() {
                 console.log('🖱️ Left slider mouseup - resetting z-index');
-                leftSlider.style.zIndex = '2';
-                rightSlider.style.zIndex = '3';
+                leftSlider.style.zIndex = '3';
+                rightSlider.style.zIndex = '2';
             });
             
             rightSlider.addEventListener('mouseup', function() {
                 console.log('🖱️ Right slider mouseup - resetting z-index');
-                rightSlider.style.zIndex = '3';
-                leftSlider.style.zIndex = '2';
+                rightSlider.style.zIndex = '2';
+                leftSlider.style.zIndex = '3';
             });
             
             // Add event listeners for both sliders
