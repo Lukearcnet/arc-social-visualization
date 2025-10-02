@@ -1455,23 +1455,7 @@
             updateDualTimelineDisplay(0, 100);
             updateRangeHighlighting(0, 100);
             
-            // Add debugging for click events
-            leftSlider.addEventListener('mousedown', function(e) {
-                console.log('🖱️ Left slider mousedown - event target:', e.target.id);
-            });
             
-            rightSlider.addEventListener('mousedown', function(e) {
-                console.log('🖱️ Right slider mousedown - event target:', e.target.id);
-            });
-            
-            // Add debugging for input events
-            leftSlider.addEventListener('input', function(e) {
-                console.log('📊 Left slider input event - value:', e.target.value);
-            });
-            
-            rightSlider.addEventListener('input', function(e) {
-                console.log('📊 Right slider input event - value:', e.target.value);
-            });
             
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
