@@ -213,6 +213,7 @@
             overflow-y: auto;
             z-index: 1003;
             display: none;
+            border-radius: var(--radius-1); /* Add rounded corners to entire container */
         }
         
         .search-results.show {
@@ -225,7 +226,7 @@
             margin-bottom: var(--space-1);
             border-radius: var(--radius-1);
             cursor: pointer;
-            font-size: var(--text-md);
+            font-size: 0.63rem; /* 30% smaller than var(--text-md) */
             color: var(--fg);
             transition: background 0.2s ease;
             display: flex;
