@@ -70,8 +70,8 @@ DO NOT use file:// URLs with this version
                 --bg-2: #141414;
                 --bg-3: #1c1c1c;
                 --bg-4: #2a2a2a;
-                --stroke: rgba(255, 255, 255, 0.3);
-                --stroke-muted: rgba(255, 255, 255, 0.4);
+                --stroke: rgba(255, 255, 255, 0.1);
+                --stroke-muted: rgba(255, 255, 255, 0.2);
                 
                 /* Standard border radius (matching 8th bedrock) */
                 --radius-1: 6px;
@@ -1745,7 +1745,7 @@ DO NOT use file:// URLs with this version
                 <div class="global-view-section">
                     <label>View Options</label>
                     <div class="mode-toggle">
-                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See Full Arc Network</button>
                     </div>
                 </div>
                 
@@ -4199,7 +4199,7 @@ Remember: You're helping someone explore and understand their social network dat
                     document.querySelector('.search-control-floating').style.display = 'none';
                 } else {
                     globalViewBtn.classList.remove('active');
-                    globalViewBtn.textContent = 'See full Arc Network';
+                    globalViewBtn.textContent = 'See Full Arc Network';
                     // Show user-specific elements
                     document.getElementById('profileSection').style.display = 'block';
                     // Show search functionality in user mode
