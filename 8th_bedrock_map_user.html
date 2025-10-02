@@ -1712,7 +1712,16 @@
             // Create markers for filtered events
             console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
-                addTapMarker(event.location, event);
+                if (event.latitude && event.longitude) {
+                    const location = {
+                        latitude: event.latitude,
+                        longitude: event.longitude,
+                        location: event.location || 'Unknown location'
+                    };
+                    addTapMarker(location, event);
+                } else {
+                    console.log('Event missing latitude/longitude:', event);
+                }
             });
         }
         
