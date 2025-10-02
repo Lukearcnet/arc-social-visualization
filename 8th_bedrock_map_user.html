@@ -220,30 +220,33 @@
         }
         
         .search-result-item {
-            padding: 8px 12px;
-            cursor: pointer;
+            padding: var(--space-1) var(--space-2); /* Match connection details */
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease;
+            color: #ffffff;
+            font-size: 0.72rem; /* Match connection details font size */
+            cursor: pointer;
         }
         
         .search-result-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.3);
         }
         
         .search-result-item:last-child {
             border-bottom: none;
         }
         
-        .search-result-item .user-name {
-            font-weight: 500;
-            color: var(--fg);
-            font-size: var(--text-sm);
+        .search-result-name {
+            text-align: left;
+            line-height: 1.2;
         }
         
-        .search-result-item .user-location {
-            font-size: var(--text-xs);
-            color: var(--fg-muted);
-            margin-top: 2px;
+        .search-result-info {
+            text-align: right;
+            white-space: nowrap;
         }
         
         /* Header Styling - Normalized from bedrock 5 */
@@ -2525,24 +2528,30 @@
             const searchInput = document.getElementById('expandableSearchInput');
             const searchResults = document.getElementById('expandableSearchResults');
             
-            console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'));
+            console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'), 'recentKeyboardActivity:', recentKeyboardActivity);
             
-            if (searchToggleBtn.classList.contains('expanded')) {
+            // Don't close if there's recent keyboard activity (prevents space key from closing)
+            if (searchToggleBtn.classList.contains('expanded') && !recentKeyboardActivity) {
                 // Close search
                 console.log('🔍 TOGGLE SEARCH - CLOSING');
                 searchToggleBtn.classList.remove('expanded');
                 searchInput.value = '';
                 searchResults.classList.remove('show');
                 searchResults.innerHTML = '';
-            } else {
+            } else if (!searchToggleBtn.classList.contains('expanded')) {
                 // Open search
                 console.log('🔍 TOGGLE SEARCH - OPENING');
                 searchToggleBtn.classList.add('expanded');
                 setTimeout(() => {
                     searchInput.focus();
                 }, 100);
+            } else {
+                console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
             }
         }
+        
+        // Track recent keyboard activity to prevent space key from closing search
+        let recentKeyboardActivity = false;
         
         // Initialize floating search functionality
         function initFloatingSearch() {
@@ -2550,6 +2559,11 @@
             const searchResults = document.getElementById('expandableSearchResults');
             
             searchInput.addEventListener('input', function() {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
                 const query = this.value.toLowerCase().trim();
                 
                 if (query.length < 2) {
@@ -2623,8 +2637,8 @@
                 if (matches.length > 0) {
                     searchResults.innerHTML = matches.slice(0, 10).map(user => `
                         <div class="search-result-item" onclick="selectSearchedUser('${user.id}', '${user.name}')">
-                            <div class="user-name">${user.name}</div>
-                            <div class="user-location">${user.location} • ${user.degree} degree</div>
+                            <div class="search-result-name">${user.name}</div>
+                            <div class="search-result-info">${user.location} • ${user.degree} degree</div>
                         </div>
                     `).join('');
                     searchResults.classList.add('show');
@@ -2634,15 +2648,39 @@
                 }
             });
             
-            // Hide results when clicking outside
+            // Hide results when clicking outside (but not during keyboard activity)
             document.addEventListener('click', function(e) {
-                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                const searchToggleBtn = document.getElementById('searchToggleBtn');
+                
+                // Check if click is inside search area
+                const isInsideSearchArea = searchToggleBtn.contains(e.target) || 
+                                        searchInput.contains(e.target) || 
+                                        searchResults.contains(e.target);
+                
+                // Only close if it's a mouse click, not during recent keyboard activity, and not inside search area
+                if (e.type === 'click' && !isInsideSearchArea && !recentKeyboardActivity) {
                     searchResults.classList.remove('show');
+                    if (searchToggleBtn.classList.contains('expanded')) {
+                        searchToggleBtn.classList.remove('expanded');
+                        searchInput.value = '';
+                        searchResults.innerHTML = '';
+                    }
                 }
             });
             
             // Keyboard handling
             searchInput.addEventListener('keydown', function(e) {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                
+                if (e.code === 'Space') {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+                
                 if (e.key === 'Escape') {
                     // Close search on escape
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
@@ -2650,6 +2688,32 @@
                     this.value = '';
                     searchResults.classList.remove('show');
                     searchResults.innerHTML = '';
+                }
+            });
+            
+            searchInput.addEventListener('keyup', function(e) {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                
+                if (e.code === 'Space') {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+            });
+            
+            searchInput.addEventListener('keypress', function(e) {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                
+                if (e.code === 'Space') {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                 }
             });
             
