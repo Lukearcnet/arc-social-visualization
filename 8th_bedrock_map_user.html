@@ -272,7 +272,8 @@
             margin: 0;
             pointer-events: none;
             padding: 12px 0; /* Extra vertical hit area */
-            top: -19px; /* Precisely center 20px thumbs on 6px track: (20-6)/2 + 12 = 19px */
+            top: -12px; /* Offset padding, then use transform for precise centering */
+            transform: translateY(7px); /* Center 20px thumbs on 6px track: (20-6)/2 = 7px */
         }
         
         /* Left slider positioning - on top of right slider */
