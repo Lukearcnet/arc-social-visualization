@@ -5736,21 +5736,32 @@ Remember: You're helping someone explore and understand their social network dat
                 const userName = urlParams.get('userName');
                 if (userName) {
                     console.log('🎯 Auto-selecting user from URL:', userName);
-                    // Simulate typing in search and selecting the user
+                    // Find exact match in search index instead of using fuzzy search
                     setTimeout(() => {
-                        const searchInput = document.getElementById('searchInput');
-                        if (searchInput) {
-                            searchInput.value = userName;
-                            // Trigger search
-                            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            // After a brief delay, select the first result (should be the user)
-                            setTimeout(() => {
-                                const searchResults = document.getElementById('searchResults');
-                                const firstResult = searchResults.querySelector('.search-result-item');
-                                if (firstResult) {
-                                    firstResult.click();
-                                }
-                            }, 500);
+                        // Look for exact match in searchIndex
+                        const exactMatch = searchIndex.find(user => 
+                            user.name.toLowerCase() === userName.toLowerCase()
+                        );
+                        
+                        if (exactMatch) {
+                            console.log('✅ Found exact match for user:', exactMatch.name, 'ID:', exactMatch.id);
+                            // Directly select the user without going through search
+                            selectNodeById(exactMatch.id);
+                        } else {
+                            console.log('❌ No exact match found for:', userName);
+                            // Fallback to original search method if no exact match
+                            const searchInput = document.getElementById('searchInput');
+                            if (searchInput) {
+                                searchInput.value = userName;
+                                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                setTimeout(() => {
+                                    const searchResults = document.getElementById('searchResults');
+                                    const firstResult = searchResults.querySelector('.search-result-item');
+                                    if (firstResult) {
+                                        firstResult.click();
+                                    }
+                                }, 500);
+                            }
                         }
                     }, 2000); // Wait longer for network to stabilize
                 }
