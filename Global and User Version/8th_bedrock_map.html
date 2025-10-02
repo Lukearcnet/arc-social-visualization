@@ -222,6 +222,52 @@
             color: var(--fg-muted);
         }
         
+        /* Dual Slider Container - Adapted from 10th bedrock */
+        .dual-slider-container {
+            position: relative;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        /* Range highlighting between handles */
+        .dual-slider-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: var(--range-left, 0%);
+            width: var(--range-width, 100%);
+            height: 6px;
+            background: rgba(3, 218, 238, 0.3);
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Dual slider positioning */
+        .timeline-slider-left {
+            z-index: 2; /* Left slider behind right slider */
+        }
+        
+        .timeline-slider-right {
+            z-index: 3; /* Right slider on top */
+        }
+        
+        /* Timeline info layout for dual slider */
+        .timeline-date-left,
+        .timeline-date-right {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .timeline-center {
+            flex: 1;
+            text-align: center;
+            font-weight: 500;
+            white-space: pre-line; /* Allow newlines to display */
+        }
+        
         /* Mode Toggle - Normalized from bedrock 5 */
         .mode-toggle {
             display: flex;
@@ -607,10 +653,20 @@
                 <div class="control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
-                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
+                        <div class="dual-slider-container">
+                            <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
+                            <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
+                        </div>
                         <div class="timeline-info">
-                            <span id="timelineValue">100%</span>
-                            <span id="currentTime">All taps shown</span>
+                            <div class="timeline-date-left">
+                                <span id="startDate">Start Date</span>
+                            </div>
+                            <div class="timeline-center">
+                                <span id="connectionCount">246 total users</span>
+                            </div>
+                            <div class="timeline-date-right">
+                                <span id="endDate">End Date</span>
+                            </div>
                         </div>
                         <div class="timeline-options" style="margin-top: 24px;">
                             <label class="degree-checkbox">
@@ -707,6 +763,9 @@
         let edgesData = [];
         let timelineSlider;
         let clusteringEnabled = true;
+        let updateTimeout = null;
+        let isUpdating = false;
+        let isSliderDragging = false;
         let completeLocationData = []; // Make this global
         let showAllEnabled = false; // Track Show All toggle state
         let cumulativeEnabled = true; // Track Cumulative toggle state
@@ -1034,12 +1093,84 @@
             
         }
         
-        // Initialize timeline slider
+        // Initialize dual timeline slider
         function initTimeline() {
-            timelineSlider = document.getElementById('timelineSlider');
-            timelineSlider.addEventListener('input', function() {
-                // Always update timeline display, but handle Show All mode differently
-                updateTimelineDisplay();
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (!leftSlider || !rightSlider) return;
+            
+            // Set initial state to full range (0-100%) - show all connections initially
+            leftSlider.value = 0;
+            rightSlider.value = 100;
+            updateDualTimelineDisplay(0, 100);
+            updateRangeHighlighting(0, 100);
+            
+            // Add event listeners for both sliders
+            [leftSlider, rightSlider].forEach(slider => {
+                slider.addEventListener('input', function() {
+                    // Clear any pending update
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    
+                    // Debounce the update to reduce choppiness
+                    updateTimeout = setTimeout(() => {
+                        if (!isUpdating) {
+                            const leftValue = parseInt(leftSlider.value);
+                            const rightValue = parseInt(rightSlider.value);
+                            
+                            // Calculate minimum gap
+                            const minGap = 1; // Minimum 1% gap
+                            
+                            // Handle left slider movement
+                            if (this === leftSlider) {
+                                // Left slider cannot go past right slider minus minimum gap
+                                if (leftValue >= rightValue - minGap) {
+                                    const newValue = Math.max(0, rightValue - minGap);
+                                    leftSlider.value = newValue;
+                                }
+                            }
+                            
+                            // Handle right slider movement  
+                            if (this === rightSlider) {
+                                // Right slider cannot go before left slider plus minimum gap
+                                if (rightValue <= leftValue + minGap) {
+                                    const newValue = Math.min(100, leftValue + minGap);
+                                    rightSlider.value = newValue;
+                                }
+                            }
+                            
+                            updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                            updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                        }
+                    }, 16); // ~60fps update rate
+                });
+                
+                slider.addEventListener('mousedown', function() {
+                    isSliderDragging = true;
+                });
+                
+                slider.addEventListener('mouseup', function() {
+                    isSliderDragging = false;
+                    // Force immediate update when dragging ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                });
+                
+                slider.addEventListener('touchstart', function() {
+                    isSliderDragging = true;
+                });
+                
+                slider.addEventListener('touchend', function() {
+                    isSliderDragging = false;
+                    // Force immediate update when touch ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                });
             });
             
             // Add cumulative checkbox event listener (works in both global and user modes)
@@ -1049,27 +1180,196 @@
                 
                 // Force update markers to reflect the new cumulative setting
                 if (!showAllEnabled) {
-                    // Normal timeline mode - updateTimelineDisplay will handle marker updates
-                    updateTimelineDisplay();
+                    // Normal timeline mode - updateDualTimelineDisplay will handle marker updates
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                 } else {
-                    // When Show All is enabled, force update with current timeline value
-                    const timelineValue = document.getElementById('timelineSlider').value;
-                    if (timelineData.length > 0) {
-                        const earliestTime = timelineData[0].timestamp;
-                        const latestTime = timelineData[timelineData.length - 1].timestamp;
-                        const currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                        updateMarkers(currentTime);
-                    } else {
-                        updateMarkers(0);
-                    }
+                    // When Show All is enabled, force update with current timeline values
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                 }
             });
             
-            // Set initial value to 0%
-            timelineSlider.value = 0;
-            updateTimelineDisplay();
+            console.log('Dual timeline initialized');
+        }
+        
+        // Update range highlighting for dual slider
+        function updateRangeHighlighting(startPercentage, endPercentage) {
+            const container = document.querySelector('.dual-slider-container');
+            if (container) {
+                const rangeWidth = endPercentage - startPercentage;
+                container.style.setProperty('--range-left', startPercentage + '%');
+                container.style.setProperty('--range-width', rangeWidth + '%');
+            }
+        }
+        
+        // Update dual timeline display
+        function updateDualTimelineDisplay(startPercentage, endPercentage) {
+            if (completeLocationData.length === 0) {
+                console.log('⚠️ Timeline: completeLocationData is empty');
+                return;
+            }
             
-            console.log('Timeline initialized');
+            // Prevent multiple simultaneous updates
+            if (isUpdating) return;
+            isUpdating = true;
+            
+            console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
+            
+            // Calculate start and end times based on complete location data
+            const timestamps = completeLocationData.map(tap => new Date(tap.time).getTime()).sort((a, b) => a - b);
+            const earliestTime = timestamps[0];
+            const latestTime = timestamps[timestamps.length - 1];
+            const timeRange = latestTime - earliestTime;
+            
+            const startTime = earliestTime + (startPercentage / 100) * timeRange;
+            const endTime = earliestTime + (endPercentage / 100) * timeRange;
+            
+            // Update date displays
+            const startDate = new Date(startTime);
+            const endDate = new Date(endTime);
+            
+            document.getElementById('startDate').textContent = startDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            document.getElementById('endDate').textContent = endDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            // Update markers with time range
+            updateMarkersWithTimeRange(startTime, endTime);
+            
+            // Update connection count
+            const filteredEvents = completeLocationData.filter(event => {
+                const eventTime = new Date(event.time).getTime();
+                return eventTime >= startTime && eventTime <= endTime;
+            });
+            
+            const uniqueUsers = new Set();
+            filteredEvents.forEach(event => {
+                if (event.user1_id) uniqueUsers.add(event.user1_id);
+                if (event.user2_id) uniqueUsers.add(event.user2_id);
+            });
+            
+            const userCount = uniqueUsers.size;
+            const daysDiff = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('connectionCount').textContent = `${userCount} users • ${daysDiff} days`;
+            
+            isUpdating = false;
+        }
+        
+        // Update markers with time range instead of single timestamp
+        function updateMarkersWithTimeRange(startTime, endTime) {
+            // Clear existing markers
+            clearMarkers();
+            
+            let filteredEvents;
+            
+            if (globalViewEnabled) {
+                // Global view mode: display all events within time range
+                filteredEvents = completeLocationData.filter(event => {
+                    const eventTime = new Date(event.time).getTime();
+                    return eventTime >= startTime && eventTime <= endTime;
+                }).map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1,
+                    timestamp: new Date(tap.time).getTime()
+                }));
+            } else if (currentMode === 'user' && selectedUserId) {
+                // User-centric mode: filter by degree connections within time range
+                const userNode = allNodes[selectedUserId];
+                if (!userNode) return;
+                
+                const profileData = userNode.profile_data;
+                const degree1Connections = profileData.degree_1_connections || [];
+                const degree2Connections = profileData.degree_2_connections || [];
+                const degree3Connections = profileData.degree_3_connections || [];
+                
+                // Collect degree-filtered connections
+                const degreeFilteredConnections = new Set();
+                degreeFilteredConnections.add(selectedUserId);
+                
+                if (degreeFilters.degree1) {
+                    degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                }
+                if (degreeFilters.degree2) {
+                    degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                }
+                if (degreeFilters.degree3) {
+                    degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                }
+                
+                // Filter events within time range and degree connections
+                filteredEvents = completeLocationData.filter(event => {
+                    const eventTime = new Date(event.time).getTime();
+                    const isInTimeRange = eventTime >= startTime && eventTime <= endTime;
+                    const isInDegreeFilter = degreeFilteredConnections.has(event.user1_id) && 
+                                           degreeFilteredConnections.has(event.user2_id);
+                    return isInTimeRange && isInDegreeFilter;
+                }).map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1,
+                    timestamp: new Date(tap.time).getTime()
+                }));
+            } else {
+                // Normal mode: filter by time range only
+                filteredEvents = completeLocationData.filter(event => {
+                    const eventTime = new Date(event.time).getTime();
+                    return eventTime >= startTime && eventTime <= endTime;
+                }).map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1,
+                    timestamp: new Date(tap.time).getTime()
+                }));
+            }
+            
+            // Apply cumulative filtering if enabled
+            if (cumulativeEnabled && !showAllEnabled) {
+                filteredEvents = filteredEvents.filter(event => {
+                    const eventTime = event.timestamp;
+                    return eventTime <= endTime; // Show all events up to end time
+                });
+            }
+            
+            // Create markers for filtered events
+            console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
+            filteredEvents.forEach(event => {
+                createMarker(event);
+            });
         }
         
         // Update timeline display
@@ -1418,11 +1718,15 @@
                 toggleShowAll(); // This will turn off Show All mode
             }
             
-            // Reset timeline slider to 0
-            timelineSlider.value = 0;
-            
-            // Update display
-            updateTimelineDisplay();
+            // Reset timeline sliders to full range (0-100%)
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                leftSlider.value = 0;
+                rightSlider.value = 100;
+                updateDualTimelineDisplay(0, 100);
+                updateRangeHighlighting(0, 100);
+            }
             
             // Don't auto-fit map when switching modes - let user control the view
         }
@@ -1461,27 +1765,39 @@
         function toggleShowAll() {
             showAllEnabled = !showAllEnabled;
             const showAllBtn = document.getElementById('showAllBtn');
-            const timelineSlider = document.getElementById('timelineSlider');
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
             
             // Update button appearance
             if (showAllEnabled) {
                 showAllBtn.classList.add('active');
                 showAllBtn.textContent = 'Show Timeline';
-                // Disable timeline slider
-                timelineSlider.disabled = true;
-                timelineSlider.style.opacity = '0.5';
-                // Set timeline to 100%
-                timelineSlider.value = 100;
+                // Disable timeline sliders
+                if (leftSlider && rightSlider) {
+                    leftSlider.disabled = true;
+                    rightSlider.disabled = true;
+                    leftSlider.style.opacity = '0.5';
+                    rightSlider.style.opacity = '0.5';
+                    // Set timeline to full range
+                    leftSlider.value = 0;
+                    rightSlider.value = 100;
+                }
             } else {
                 showAllBtn.classList.remove('active');
                 showAllBtn.textContent = 'Show All';
-                // Enable timeline slider
-                timelineSlider.disabled = false;
-                timelineSlider.style.opacity = '1';
+                // Enable timeline sliders
+                if (leftSlider && rightSlider) {
+                    leftSlider.disabled = false;
+                    rightSlider.disabled = false;
+                    leftSlider.style.opacity = '1';
+                    rightSlider.style.opacity = '1';
+                }
             }
             
             // Update display
-            updateTimelineDisplay();
+            if (leftSlider && rightSlider) {
+                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+            }
         }
         
         // Initialize user search functionality
@@ -1558,11 +1874,15 @@
             // Regenerate timeline for selected user
             createTimelineData(userId);
             
-            // Reset timeline slider to 0
-            timelineSlider.value = 0;
-            
-            // Update display
-            updateTimelineDisplay();
+            // Reset timeline sliders to full range (0-100%)
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                leftSlider.value = 0;
+                rightSlider.value = 100;
+                updateDualTimelineDisplay(0, 100);
+                updateRangeHighlighting(0, 100);
+            }
             
             // Don't auto-fit map when selecting users - let user control the view
             
@@ -1605,21 +1925,11 @@
             
             console.log('Degree filters updated:', degreeFilters);
             
-            // Update display - force a proper update regardless of Show All state
-            if (showAllEnabled) {
-                // When Show All is enabled, force update with current timeline value
-                const timelineValue = document.getElementById('timelineSlider').value;
-                if (timelineData.length > 0) {
-                    const earliestTime = timelineData[0].timestamp;
-                    const latestTime = timelineData[timelineData.length - 1].timestamp;
-                    const currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                    updateMarkers(currentTime);
-                } else {
-                    updateMarkers(0);
-                }
-            } else {
-                // Normal timeline mode
-                updateTimelineDisplay();
+            // Update display using dual timeline
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
             }
         }
         
