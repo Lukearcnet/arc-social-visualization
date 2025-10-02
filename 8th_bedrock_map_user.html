@@ -1455,50 +1455,6 @@
             updateDualTimelineDisplay(0, 100);
             updateRangeHighlighting(0, 100);
             
-            // Add click detection to the dual slider container
-            const dualSliderContainer = document.querySelector('.dual-slider-container');
-            if (dualSliderContainer) {
-                dualSliderContainer.addEventListener('click', function(e) {
-                    const rect = this.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const clickPercentage = (clickX / rect.width) * 100;
-                    
-                    const leftValue = parseInt(leftSlider.value);
-                    const rightValue = parseInt(rightSlider.value);
-                    const minGap = 1;
-                    
-                    // Determine which slider to move based on click position
-                    if (clickPercentage < leftValue) {
-                        // Click is to the left of left slider - move left slider
-                        const newValue = Math.max(0, Math.min(clickPercentage, rightValue - minGap));
-                        leftSlider.value = newValue;
-                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                        updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                    } else if (clickPercentage > rightValue) {
-                        // Click is to the right of right slider - move right slider
-                        const newValue = Math.min(100, Math.max(clickPercentage, leftValue + minGap));
-                        rightSlider.value = newValue;
-                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                        updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                    } else {
-                        // Click is between sliders - move the closer one
-                        const distanceToLeft = Math.abs(clickPercentage - leftValue);
-                        const distanceToRight = Math.abs(clickPercentage - rightValue);
-                        
-                        if (distanceToLeft < distanceToRight) {
-                            // Move left slider
-                            const newValue = Math.max(0, Math.min(clickPercentage, rightValue - minGap));
-                            leftSlider.value = newValue;
-                        } else {
-                            // Move right slider
-                            const newValue = Math.min(100, Math.max(clickPercentage, leftValue + minGap));
-                            rightSlider.value = newValue;
-                        }
-                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                        updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
-                    }
-                });
-            }
             
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
