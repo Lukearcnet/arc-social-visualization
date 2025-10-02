@@ -70,8 +70,8 @@ DO NOT use file:// URLs with this version
                 --bg-2: #141414;
                 --bg-3: #1c1c1c;
                 --bg-4: #2a2a2a;
-                --stroke: rgba(255, 255, 255, 0.1);
-                --stroke-muted: rgba(255, 255, 255, 0.2);
+                --stroke: rgba(255, 255, 255, 0.3);
+                --stroke-muted: rgba(255, 255, 255, 0.4);
                 
                 /* Standard border radius (matching 8th bedrock) */
                 --radius-1: 6px;
@@ -143,6 +143,16 @@ DO NOT use file:// URLs with this version
                 gap: 8px;
             }
             
+            /* Search Control - Separate Container */
+            .search-control-floating {
+                position: absolute;
+                top: 114px; /* Move down further to create proper visual spacing */
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+            }
+            
             .network-controls-floating .control-btn {
                 background: rgba(20, 20, 20, 0.9);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -161,6 +171,129 @@ DO NOT use file:// URLs with this version
                 border-color: rgba(255, 255, 255, 0.4);
             }
             
+            /* Search Toggle Button */
+            .search-toggle-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px !important;
+                min-width: auto !important;
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            
+            /* Search button in its own container */
+            .search-control-floating .search-toggle-btn {
+                background: rgba(20, 20, 20, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: var(--fg);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                backdrop-filter: blur(10px);
+            }
+            
+            .search-control-floating .search-toggle-btn:hover {
+                background: rgba(40, 40, 40, 0.9);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
+            .search-toggle-btn svg {
+                width: 16px;
+                height: 16px;
+                transition: opacity 0.2s ease;
+            }
+            
+            /* Search button expanded state */
+            .search-toggle-btn.expanded {
+                width: 300px;
+                min-width: 300px !important;
+                padding: 8px 12px !important;
+                justify-content: flex-start;
+                z-index: 1001;
+            }
+            
+            .search-toggle-btn.expanded svg {
+                opacity: 0;
+            }
+            
+            /* Hidden input field that appears when expanded */
+            .search-toggle-btn .search-input {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                padding: 8px 12px;
+                border: none;
+                background: transparent;
+                color: var(--fg);
+                font-size: var(--text-md);
+                outline: none;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
+            }
+            
+            .search-toggle-btn.expanded .search-input {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            .search-toggle-btn .search-input::placeholder {
+                color: var(--fg-muted);
+            }
+            
+            /* Search results dropdown */
+            .search-results {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(20, 20, 20, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-top: none;
+                border-radius: 0 0 var(--radius-1) var(--radius-1);
+                backdrop-filter: blur(10px);
+                max-height: 200px;
+                overflow-y: auto;
+                z-index: 1003;
+                display: none;
+            }
+            
+            .search-results.show {
+                display: block;
+            }
+            
+            .search-result-item {
+                padding: var(--space-1) var(--space-2); /* Match connection details */
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: background-color 0.2s ease;
+                color: #ffffff;
+                font-size: 0.72rem; /* Match connection details font size */
+                cursor: pointer;
+            }
+            
+            .search-result-item:hover {
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+            
+            .search-result-item:last-child {
+                border-bottom: none;
+            }
+            
+            .search-result-name {
+                text-align: left;
+                line-height: 1.2;
+            }
+            
+            .search-result-info {
+                text-align: right;
+                white-space: nowrap;
+            }
+            
             /* Timeline Slider Section (moved outside profile-section) */
             .animation-section {
                 padding: calc(var(--space-4) / 2 * 0.6) 16px;
@@ -169,9 +302,9 @@ DO NOT use file:// URLs with this version
             }
             
             .animation-section > label {
-                font-size: 15px !important;
-                font-weight: 500 !important;
-                margin-bottom: 16px !important;
+                font-size: var(--text-md);
+                font-weight: 500;
+                margin-bottom: var(--space-1);
             }
             
             /* Global View Section (moved outside profile-section) */
@@ -187,11 +320,20 @@ DO NOT use file:// URLs with this version
                 margin-bottom: 16px !important;
             }
             
+            /* Mode Toggle Container - Match 8th Bedrock */
+            .mode-toggle {
+                display: flex;
+                background: var(--stroke);
+                border-radius: var(--radius-2);
+                padding: 4px;
+                margin-bottom: var(--space-4);
+            }
+            
             /* Mode Button Styling - Match Activity Level Text */
             .mode-btn {
                 padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 1.2);
-                border: 1px solid var(--stroke-muted);
-                background: var(--stroke);
+                border: none;
+                background: transparent;
                 color: var(--fg-muted);
                 border-radius: var(--radius-1);
                 cursor: pointer;
@@ -303,17 +445,20 @@ DO NOT use file:// URLs with this version
             
             .search-result-item {
                 padding: var(--space-1) var(--space-2);
-                background: var(--stroke);
+                background: rgba(20, 20, 20, 0.95);
                 margin-bottom: var(--space-1);
                 border-radius: var(--radius-1);
                 cursor: pointer;
-                font-size: var(--text-md);
+                font-size: 0.63rem; /* 30% smaller than var(--text-md) */
                 color: var(--fg);
                 transition: background 0.2s ease;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
             
             .search-result-item:hover {
-                background: rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.4);
             }
             
             .search-result-item.selected {
@@ -377,12 +522,6 @@ DO NOT use file:// URLs with this version
                 font-size: 0.8rem;
             }
             
-            /* Timeline slider labels */
-            .animation-section > label {
-                font-size: var(--text-md);
-                font-weight: 500;
-                margin-bottom: var(--space-2);
-            }
             
             /* Search section labels */
             .search-section > label {
@@ -431,15 +570,48 @@ DO NOT use file:// URLs with this version
                 gap: 8px;
             }
             
+            .dual-slider-container {
+                position: relative;
+                width: 100%;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
+            }
+            
+            /* Range highlighting between handles */
+            .dual-slider-container::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: var(--range-left, 0%);
+                width: var(--range-width, 100%);
+                height: 6px;
+                background: rgba(3, 218, 238, 0.3);
+                border-radius: 3px;
+                pointer-events: none;
+                z-index: 1;
+            }
+            
             .timeline-slider {
+                position: absolute;
                 width: 100%;
                 height: 6px;
                 border-radius: 3px;
-                background: rgba(255, 255, 255, 0.1);
+                background: transparent;
                 outline: none;
                 -webkit-appearance: none;
                 appearance: none;
                 cursor: pointer;
+                margin: 0;
+                pointer-events: none; /* Key: Input elements don't intercept events */
+            }
+            
+            .timeline-slider-left {
+                z-index: 2; /* Left slider behind right slider */
+            }
+            
+            .timeline-slider-right {
+                z-index: 3; /* Right slider on top */
             }
             
             .timeline-slider::-webkit-slider-thumb {
@@ -451,6 +623,7 @@ DO NOT use file:// URLs with this version
                 background: #ffffff;
                 cursor: pointer;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+                pointer-events: auto; /* Key: Thumbs are interactive */
             }
             
             .timeline-slider::-moz-range-thumb {
@@ -461,6 +634,7 @@ DO NOT use file:// URLs with this version
                 cursor: pointer;
                 border: none;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+                pointer-events: auto; /* Key: Thumbs are interactive */
             }
             
             .timeline-labels {
@@ -474,8 +648,30 @@ DO NOT use file:// URLs with this version
             .timeline-info {
                 display: flex;
                 justify-content: space-between;
-                margin-top: var(--space-1);
-                color: var(--fg);
+                align-items: center;
+                margin-top: 0.8px; /* Additional 2x reduction from 5.6px */
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+            
+            .timeline-date-left,
+            .timeline-date-right {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .timeline-center {
+                flex: 1;
+                text-align: center;
+                font-weight: 500;
+                white-space: pre-line; /* Allow newlines to display */
+            }
+            
+            .timeline-info {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 0.4px; /* Additional 2x reduction from 2.8px */
+                color: var(--fg-muted);
                 font-size: var(--text-sm);
             }
             
@@ -495,32 +691,27 @@ DO NOT use file:// URLs with this version
             
             .timeline-control-group {
                 margin-bottom: var(--space-4);
-                background: transparent;
+            }
+            
+            .timeline-control-group > label {
+                font-size: 15px !important;
+                font-weight: 500 !important;
+                margin-bottom: 16px !important;
             }
             
             .timeline-container {
-                margin-bottom: var(--space-4);
+                margin-bottom: 0;
             }
             
             
             .control-group label {
                 display: block;
                 margin-bottom: var(--space-1);
-                font-weight: 500;
                 color: var(--fg);
+                font-weight: 500;
                 font-size: var(--text-md);
-                text-transform: none;
-                letter-spacing: 0.05em;
             }
             
-            /* Timeline, Degrees, and Connection Details labels */
-            .label-timeline {
-                display: block;
-                margin-bottom: var(--space-1);
-                color: var(--fg);
-                font-weight: 500;
-                font-size: 15px !important;
-            }
             
             .label-degrees,
             .label-connection-details {
@@ -622,6 +813,63 @@ DO NOT use file:// URLs with this version
             .vis-edge {
                 transition: all 0.3s ease;
             }
+            
+        /* Edge highlighting on hover and selection - more specific selectors */
+        .vis-network .vis-edge:hover {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+        
+        .vis-network .vis-edge.vis-selected {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+        
+        /* Target SVG line elements directly */
+        .vis-network svg .vis-edge:hover {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+        
+        .vis-network svg .vis-edge.vis-selected {
+            stroke: #03DAEE !important;
+            stroke-width: 3px !important;
+        }
+
+        /* Node popup card styles (from 8th bedrock) */
+        .custom-popup {
+            background: rgba(0, 0, 0, 0.95);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 9px;
+            color: #ffffff;
+            padding: 15px;
+            font-size: 13.5px;
+            max-width: 300px;
+            min-width: 225px;
+            line-height: 1.4;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .popup-title {
+            font-weight: 600;
+            margin-bottom: 7.5px;
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        
+        .popup-info {
+            color: #cccccc;
+            font-size: 12px;
+            margin-bottom: 3.75px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+            
             
             /* Removed duplicate vis-network text color rules - handled by JavaScript */
             
@@ -1427,7 +1675,7 @@ DO NOT use file:// URLs with this version
                     <!-- Search Section (hidden in user-centric view) -->
                     <div class="search-section" style="display: none;">
                         <label for="searchInput">Search Users</label>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
                         <div id="searchResults" class="search-results" style="display: none;"></div>
                     </div>
                     
@@ -1454,10 +1702,20 @@ DO NOT use file:// URLs with this version
                 <div class="timeline-control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
-                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
+                        <div class="dual-slider-container">
+                            <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
+                            <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
+                        </div>
                         <div class="timeline-info">
-                            <span id="currentTime">All connections shown</span>
+                            <div class="timeline-date-left">
+                                <span id="startDate">Start Date</span>
+                            </div>
+                            <div class="timeline-center">
                             <span id="connectionCount">246 total users</span>
+                            </div>
+                            <div class="timeline-date-right">
+                                <span id="endDate">End Date</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1517,6 +1775,18 @@ DO NOT use file:// URLs with this version
                 <div class="network-controls-floating">
                     <button class="control-btn" onclick="stabilize()">Stabilize</button>
                     <button class="control-btn" onclick="hideConnections()">Hide Connections</button>
+                </div>
+                
+                <!-- Search Button - Separate Container -->
+                <div class="search-control-floating">
+                    <button class="control-btn search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()" title="Search Users">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
+                        <div id="expandableSearchResults" class="search-results"></div>
+                    </button>
                 </div>
             </div>
             
@@ -1602,6 +1872,12 @@ DO NOT use file:// URLs with this version
             // Dynamic data loading functions
             async function loadData() {
                 try {
+                    // If we're in an iframe, wait a bit for parent to load data first
+                    if (window !== window.top) {
+                        console.log('🔄 Iframe context detected - waiting for parent to load data first...');
+                        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for parent
+                    }
+                    
                     console.log('🔄 Loading dynamic data from API...');
                     const response = await fetch('/api/data?t=' + Date.now());
                     if (!response.ok) {
@@ -1651,7 +1927,7 @@ DO NOT use file:// URLs with this version
                 const safeUsers = Array.isArray(users) ? users : [];
                 searchIndex = safeUsers.map(user => ({
                     id: user.user_id,
-                    name: `${user.basic_info.first_name} ${user.basic_info.last_name}`,
+                    name: `${user.basic_info.first_name} ${user.basic_info.last_name}`.trim(), // Trim whitespace
                     username: user.basic_info.username,
                     taps: user.profile_stats.tap_count,
                     connections: user.profile_stats.connections_count,
@@ -1771,7 +2047,12 @@ DO NOT use file:// URLs with this version
                             degree_1_connections: [],
                             degree_2_connections: [],
                             degree_3_connections: []
-                        }
+                        },
+                        // Add enriched data fields from GCP
+                        home_location: user.home_location?.geographic_context || user.home_location?.home_location || 'No location specified',
+                        bio: user.bio_analysis?.bio_text || user.bio_analysis?.bio_summary || 'No bio provided',
+                        linkedin: user.social_urls?.linkedin || null,
+                        username: user.basic_info.username || ''
                     };
                 });
                 
@@ -1797,17 +2078,45 @@ DO NOT use file:// URLs with this version
                 });
                 
                 // Create one edge per pair with correct tap count
-                const edgeData = Object.values(tapCounts).map((pair, index) => ({
+                const edgeData = Object.values(tapCounts).map((pair, index) => {
+                    const tapCount = pair.count;
+                    
+                    // 5-segment system for thickness and color
+                    let thickness, color;
+                    
+                    if (tapCount === 1) {
+                        thickness = 0.5;
+                        color = "#E0E0E0"; // Light grey
+                    } else if (tapCount >= 2 && tapCount <= 3) {
+                        thickness = 1.5;
+                        color = "#D0D0D0"; // Medium-light grey
+                    } else if (tapCount >= 4 && tapCount <= 5) {
+                        thickness = 2.5;
+                        color = "#C0C0C0"; // Medium grey
+                    } else if (tapCount >= 6 && tapCount <= 8) {
+                        thickness = 3.5;
+                        color = "#F0F0F0"; // Light white
+                    } else if (tapCount >= 9) {
+                        thickness = 5.0;
+                        color = "#FFFFFF"; // White
+                    } else {
+                        // Fallback for edge cases
+                        thickness = 0.5;
+                        color = "#E0E0E0";
+                    }
+                    
+                    return {
                     id: index,
                     from: pair.user1,
                     to: pair.user2,
-                    color: "#ffffff",
-                    width: 1.5,
+                        color: color,
+                        width: thickness,
                     title: `${pair.count} tap${pair.count === 1 ? '' : 's'}`, // Correct pluralization
                     tap_count: pair.count,
                     physics: true,
                     smooth: false
-                }));
+                    };
+                });
                 
                 // Update the datasets
                 nodes = new vis.DataSet(nodeData);
@@ -1863,7 +2172,7 @@ DO NOT use file:// URLs with this version
             let visibleEdges = new Set();
             let animationMode = 'global'; // 'global' or 'user-centric'
             let selectedUserForAnimation = null;
-            let timelineSlider = null;
+            // timelineSlider variable removed - now using dual slider system
             let isSliderDragging = false;
             
             // Chat functionality functions
@@ -2749,6 +3058,7 @@ Remember: You're helping someone explore and understand their social network dat
                 }
             }
             
+            
             // Initialize the network
             async function initNetwork() {
                 console.log('🚀 initNetwork() called - starting network initialization');
@@ -2827,7 +3137,11 @@ Remember: You're helping someone explore and understand their social network dat
                     edges: {
                         smooth: { type: 'continuous', forceDirection: 'none' },
                         shadow: false,
-                        color: { inherit: false }
+                        color: { 
+                            inherit: false,
+                            highlight: '#03DAEE',
+                            hover: '#03DAEE'
+                        }
                     },
                     interaction: {
                         hover: true,
@@ -2839,12 +3153,7 @@ Remember: You're helping someone explore and understand their social network dat
                         tooltipDelay: 200,
                         zoomView: true,
                         dragView: true,
-                        mouseWheel: {
-                            enabled: true,
-                            scaleSpeed: 0.2,    // 2x faster than previous 0.105
-                            zoomSpeed: 0.2      // 2x faster than previous 0.105
-                        },
-                        zoomSpeed: 0.3          // 2x faster than previous 0.15
+                        zoomSpeed: 0.2          // 2x faster than previous 0.105
                     },
                     layout: {
                         improvedLayout: false,
@@ -2860,8 +3169,73 @@ Remember: You're helping someone explore and understand their social network dat
                 const containerRect = container.getBoundingClientRect();
                 console.log('📐 Container dimensions:', containerRect.width, 'x', containerRect.height);
                 
+                // Check if container has proper dimensions
+                if (containerRect.width === 0 || containerRect.height === 0) {
+                    console.log('⚠️ Container has zero dimensions - waiting for proper sizing...');
+                    
+                    // Wait for container to get proper dimensions
+                    const waitForDimensions = () => {
+                        return new Promise((resolve) => {
+                            let attempts = 0;
+                            const maxAttempts = 20; // 20 attempts * 50ms = 1 second max wait
+                            
+                            const checkDimensions = () => {
+                                const rect = container.getBoundingClientRect();
+                                console.log('📐 Checking dimensions:', rect.width, 'x', rect.height);
+                                
+                                if (rect.width > 0 && rect.height > 0) {
+                                    console.log('✅ Container now has proper dimensions');
+                                    resolve();
+                                } else if (attempts >= maxAttempts) {
+                                    console.log('⚠️ Max attempts reached - proceeding with zero dimensions');
+                                    resolve();
+                                } else {
+                                    attempts++;
+                                    // Wait a bit more and try again
+                                    setTimeout(checkDimensions, 50);
+                                }
+                            };
+                            checkDimensions();
+                        });
+                    };
+                    
+                    await waitForDimensions();
+                }
+                
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
+                
+                // Debug: Check edge visibility after network creation
+                console.log('🔍 Debug: Checking edge visibility after network creation...');
+                const allEdgesData = edges.get();
+                const visibleEdges = allEdgesData.filter(edge => !edge.hidden);
+                const hiddenEdges = allEdgesData.filter(edge => edge.hidden);
+                console.log(`🔍 Total edges: ${allEdgesData.length}, Visible: ${visibleEdges.length}, Hidden: ${hiddenEdges.length}`);
+                
+                // Force network to redraw after a short delay to ensure proper rendering
+                setTimeout(() => {
+                    if (network) {
+                        console.log('🔄 Forcing network redraw to ensure proper rendering...');
+                        network.redraw();
+                        
+                        // Debug: Check edge visibility after redraw
+                        console.log('🔍 Debug: Checking edge visibility after redraw...');
+                        const allEdgesAfter = edges.get();
+                        const visibleEdgesAfter = allEdgesAfter.filter(edge => !edge.hidden);
+                        console.log(`🔍 After redraw - Total edges: ${allEdgesAfter.length}, Visible: ${visibleEdgesAfter.length}`);
+                        
+                        // If no edges are visible, force them to be visible
+                        if (visibleEdgesAfter.length === 0 && allEdgesAfter.length > 0) {
+                            console.log('🔧 No edges visible - forcing all edges to be visible...');
+                            const edgeUpdates = allEdgesAfter.map(edge => ({
+                                id: edge.id,
+                                hidden: false
+                            }));
+                            edges.update(edgeUpdates);
+                            console.log('🔧 All edges forced to visible');
+                        }
+                    }
+                }, 100);
                 
                 
                 // Force white text for all nodes after network creation
@@ -2933,6 +3307,20 @@ Remember: You're helping someone explore and understand their social network dat
                             });
                         }, 1200);
                         
+                        // CRITICAL: Re-apply timeline update after stabilization to ensure edges are visible
+                        setTimeout(() => {
+                            console.log('🔧 Stabilization complete - re-applying timeline update to ensure edge visibility...');
+                            // Re-trigger the timeline update to ensure edges are visible after stabilization
+                            const leftSlider = document.getElementById('timelineSliderLeft');
+                            const rightSlider = document.getElementById('timelineSliderRight');
+                            if (leftSlider && rightSlider) {
+                                const leftValue = parseInt(leftSlider.value);
+                                const rightValue = parseInt(rightSlider.value);
+                                console.log(`🔧 Re-applying timeline: ${leftValue}% - ${rightValue}%`);
+                                updateDualTimelineDisplay(leftValue, rightValue);
+                            }
+                        }, 2000); // Wait for all animations to complete
+                        
                     }, 500);
                     
                     // Force white text for all node labels
@@ -2943,7 +3331,245 @@ Remember: You're helping someone explore and understand their social network dat
                             label.style.color = '#ffffff';
                         });
                     }, 1000);
+                    
+                    // Add edge highlighting functionality
+                    setTimeout(() => {
+                        addEdgeHighlighting();
+                    }, 1500);
                 });
+            }
+            
+            // Edge highlighting functionality
+            function addEdgeHighlighting() {
+                // Add event listeners for edge highlighting
+                network.on('hoverNode', function(params) {
+                    if (params.node) {
+                        // Clear any previous hovered edges first
+                        restoreEdgeColors(true);
+                        highlightConnectedEdges(params.node, false);
+                    }
+                });
+                
+                network.on('blurNode', function(params) {
+                    // Always restore hovered edges when mouse leaves
+                    restoreEdgeColors(true);
+                });
+                
+                network.on('selectNode', function(params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        // Clear any hovered edges first, then highlight selected node
+                        restoreEdgeColors(true);
+                        
+                        // Add delay to ensure highlighting happens after timeline updates
+                        setTimeout(() => {
+                            highlightConnectedEdges(nodeId, true);
+                        }, 100);
+                    }
+                });
+                
+                network.on('deselectNode', function(params) {
+                    // Only restore when explicitly deselecting
+                    restoreEdgeColors();
+                });
+                
+                // Handle clicking on empty space to clear selection
+                network.on('click', function(params) {
+                    if (params.nodes.length === 0 && params.edges.length === 0) {
+                        // Clicked on empty space - clear highlighting
+                        restoreEdgeColors();
+                    }
+                });
+            }
+            
+            let originalEdgeColors = new Map();
+            let currentlyHighlightedEdges = new Set();
+            let selectedNodeEdges = new Set(); // Track edges belonging to selected node
+            let hoveredNodeEdges = new Set(); // Track edges belonging to currently hovered node
+            let pathHighlightedEdges = new Set(); // Track edges in highlighted path
+            let currentPath = []; // Track current path between users
+            let recentKeyboardActivity = false; // Track recent keyboard activity in search
+            
+            function highlightConnectedEdges(nodeId, isSelection = false) {
+                const connectedEdges = edges.get().filter(edge => 
+                    edge.from === nodeId || edge.to === nodeId
+                );
+                
+                connectedEdges.forEach(edge => {
+                    if (!originalEdgeColors.has(edge.id)) {
+                        originalEdgeColors.set(edge.id, edge.color);
+                    }
+                    
+                    if (!currentlyHighlightedEdges.has(edge.id)) {
+                        edges.update({
+                            id: edge.id,
+                            color: '#03DAEE'
+                        });
+                        currentlyHighlightedEdges.add(edge.id);
+                    }
+                    
+                    // Track which edges belong to selection vs hover
+                    if (isSelection) {
+                        selectedNodeEdges.add(edge.id);
+                    } else {
+                        hoveredNodeEdges.add(edge.id);
+                    }
+                });
+            }
+            
+            // Function to re-apply highlighting after timeline updates
+            function reapplyHighlighting() {
+                if (selectedNodeEdges.size > 0) {
+                    // Re-highlight selected node edges
+                    selectedNodeEdges.forEach(edgeId => {
+                        edges.update({
+                            id: edgeId,
+                            color: '#03DAEE'
+                        });
+                    });
+                }
+            }
+            
+            function restoreEdgeColors(onlyHovered = false) {
+                if (onlyHovered) {
+                    // Only restore hovered edges, keep selected node edges
+                    hoveredNodeEdges.forEach(edgeId => {
+                        const originalColor = originalEdgeColors.get(edgeId);
+                        if (originalColor) {
+                            edges.update({
+                                id: edgeId,
+                                color: originalColor
+                            });
+                        }
+                        currentlyHighlightedEdges.delete(edgeId);
+                    });
+                    hoveredNodeEdges.clear();
+                } else {
+                    // Restore all edges
+                    currentlyHighlightedEdges.forEach(edgeId => {
+                        const originalColor = originalEdgeColors.get(edgeId);
+                        if (originalColor) {
+                            edges.update({
+                                id: edgeId,
+                                color: originalColor
+                            });
+                        }
+                    });
+                    
+                    currentlyHighlightedEdges.clear();
+                    originalEdgeColors.clear();
+                    selectedNodeEdges.clear();
+                    hoveredNodeEdges.clear();
+                    pathHighlightedEdges.clear();
+                    currentPath = [];
+                }
+            }
+            
+            // Find shortest path between two users using BFS
+            function findPathBetweenUsers(sourceUserId, targetUserId) {
+                if (sourceUserId === targetUserId) {
+                    return [sourceUserId];
+                }
+                
+                // Create adjacency map from all edges
+                const adjacencyMap = {};
+                Object.values(allEdges).forEach(edge => {
+                    if (!adjacencyMap[edge.from]) adjacencyMap[edge.from] = new Set();
+                    if (!adjacencyMap[edge.to]) adjacencyMap[edge.to] = new Set();
+                    adjacencyMap[edge.from].add(edge.to);
+                    adjacencyMap[edge.to].add(edge.from);
+                });
+                
+                // BFS to find shortest path
+                const queue = [[sourceUserId]];
+                const visited = new Set([sourceUserId]);
+                
+                while (queue.length > 0) {
+                    const path = queue.shift();
+                    const currentNode = path[path.length - 1];
+                    
+                    if (currentNode === targetUserId) {
+                        return path;
+                    }
+                    
+                    const neighbors = adjacencyMap[currentNode] || new Set();
+                    neighbors.forEach(neighbor => {
+                        if (!visited.has(neighbor)) {
+                            visited.add(neighbor);
+                            queue.push([...path, neighbor]);
+                        }
+                    });
+                }
+                
+                return null; // No path found
+            }
+            
+            // Highlight path between current user and target user
+            function highlightPathToUser(targetUserId) {
+                // Get current user (the one who is logged in/selected)
+                const currentUserId = currentFilterUser || selectedNode;
+                
+                if (!currentUserId) {
+                    console.log('No current user selected for path highlighting');
+                    return;
+                }
+                
+                // Clear any existing path highlighting
+                clearPathHighlighting();
+                
+                // Find path between users
+                const path = findPathBetweenUsers(currentUserId, targetUserId);
+                
+                if (!path || path.length < 2) {
+                    console.log('No path found between users');
+                    return;
+                }
+                
+                currentPath = path;
+                console.log('Path found:', path.map(id => allNodes[id]?.label || id));
+                
+                // Highlight edges in the path
+                for (let i = 0; i < path.length - 1; i++) {
+                    const fromUserId = path[i];
+                    const toUserId = path[i + 1];
+                    
+                    // Find edge between these users
+                    const edge = Object.values(allEdges).find(e => 
+                        (e.from === fromUserId && e.to === toUserId) ||
+                        (e.from === toUserId && e.to === fromUserId)
+                    );
+                    
+                    if (edge) {
+                        // Store original color if not already stored
+                        if (!originalEdgeColors.has(edge.id)) {
+                            originalEdgeColors.set(edge.id, edge.color);
+                        }
+                        
+                        // Highlight edge in teal/cyan
+                        edges.update({
+                            id: edge.id,
+                            color: '#03DAEE'
+                        });
+                        
+                        pathHighlightedEdges.add(edge.id);
+                        currentlyHighlightedEdges.add(edge.id);
+                    }
+                }
+            }
+            
+            // Clear path highlighting
+            function clearPathHighlighting() {
+                pathHighlightedEdges.forEach(edgeId => {
+                    if (originalEdgeColors.has(edgeId)) {
+                        edges.update({
+                            id: edgeId,
+                            color: originalEdgeColors.get(edgeId)
+                        });
+                    }
+                    currentlyHighlightedEdges.delete(edgeId);
+                });
+                pathHighlightedEdges.clear();
+                currentPath = [];
             }
         
             // Search functionality
@@ -2970,6 +3596,16 @@ Remember: You're helping someone explore and understand their social network dat
                     if (this.value.length >= 2) {
                         searchResults.style.display = 'block';
                     }
+                    
+                    // Ensure keyboard appears on mobile
+                    if (this.setSelectionRange) {
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+                
+                // Mobile-specific touch handler to ensure keyboard appears
+                searchInput.addEventListener('touchstart', function() {
+                    this.focus();
                 });
                 
                 // Hide results when clicking outside
@@ -2978,6 +3614,206 @@ Remember: You're helping someone explore and understand their social network dat
                         searchResults.style.display = 'none';
                     }
                 });
+            }
+            
+            // Expandable Search functionality
+            function initExpandableSearch() {
+                const expandableSearchInput = document.getElementById('expandableSearchInput');
+                const expandableSearchResults = document.getElementById('expandableSearchResults');
+                
+                expandableSearchInput.addEventListener('input', function() {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { 
+                        recentKeyboardActivity = false; 
+                    }, 100);
+                    
+                    const query = this.value.toLowerCase();
+                    if (query.length < 2) {
+                        expandableSearchResults.classList.remove('show');
+                        return;
+                    }
+                    
+                    const results = searchIndex.filter(item => 
+                        item.name.toLowerCase().includes(query) ||
+                        (item.username && item.username.toLowerCase().includes(query))
+                    ).slice(0, 10);
+                    
+                    displayExpandableSearchResults(results);
+                });
+                
+                // Prevent space key from collapsing search and track keyboard activity
+                expandableSearchInput.addEventListener('keydown', function(e) {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { 
+                        recentKeyboardActivity = false; 
+                    }, 100);
+                    
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    }
+                });
+                
+                expandableSearchInput.addEventListener('keyup', function(e) {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { 
+                        recentKeyboardActivity = false; 
+                    }, 100);
+                    
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    }
+                });
+                
+                expandableSearchInput.addEventListener('keypress', function(e) {
+                    // Mark recent keyboard activity
+                    recentKeyboardActivity = true;
+                    setTimeout(() => { 
+                        recentKeyboardActivity = false; 
+                    }, 100);
+                    
+                    if (e.code === 'Space') {
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    }
+                });
+                
+                expandableSearchInput.addEventListener('focus', function() {
+                    if (this.value.length >= 2) {
+                        expandableSearchResults.classList.add('show');
+                    }
+                    
+                    // Ensure keyboard appears on mobile
+                    if (this.setSelectionRange) {
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+                
+                // Mobile-specific touch handler to ensure keyboard appears
+                expandableSearchInput.addEventListener('touchstart', function() {
+                    this.focus();
+                });
+                
+                // Prevent clicks inside search input from bubbling up
+                expandableSearchInput.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Prevent clicks inside search results from bubbling up
+                expandableSearchResults.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Hide results when clicking outside (but not during keyboard activity)
+                document.addEventListener('click', function(e) {
+                    const searchToggleBtn = document.getElementById('searchToggleBtn');
+                    const expandableSearchInput = document.getElementById('expandableSearchInput');
+                    const expandableSearchResults = document.getElementById('expandableSearchResults');
+                    
+                    // Check if click is inside search area (button, input, or results)
+                    const isInsideSearchArea = searchToggleBtn.contains(e.target) || 
+                                            expandableSearchInput.contains(e.target) || 
+                                            expandableSearchResults.contains(e.target);
+                    
+                    // Only close if it's a mouse click, not during recent keyboard activity, and not inside search area
+                    if (e.type === 'click' && !isInsideSearchArea && !recentKeyboardActivity) {
+                        expandableSearchResults.classList.remove('show');
+                        if (searchToggleBtn.classList.contains('expanded')) {
+                            searchToggleBtn.classList.remove('expanded');
+                            expandableSearchInput.value = '';
+                            expandableSearchResults.innerHTML = '';
+                        }
+                    }
+                });
+            }
+            
+            // Toggle search interface
+            function toggleSearch() {
+                const searchToggleBtn = document.getElementById('searchToggleBtn');
+                const searchInput = document.getElementById('expandableSearchInput');
+                const searchResults = document.getElementById('expandableSearchResults');
+                
+                console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'), 'recentKeyboardActivity:', recentKeyboardActivity);
+                
+                // Don't close if there's recent keyboard activity (prevents space key from closing)
+                if (searchToggleBtn.classList.contains('expanded') && !recentKeyboardActivity) {
+                    // Close search
+                    console.log('🔍 TOGGLE SEARCH - CLOSING');
+                    searchToggleBtn.classList.remove('expanded');
+                    searchInput.value = '';
+                    searchResults.classList.remove('show');
+                    searchResults.innerHTML = '';
+                } else if (!searchToggleBtn.classList.contains('expanded')) {
+                    // Open search
+                    console.log('🔍 TOGGLE SEARCH - OPENING');
+                    searchToggleBtn.classList.add('expanded');
+                    setTimeout(() => {
+                        searchInput.focus();
+                    }, 300);
+                } else {
+                    console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
+                }
+            }
+            
+            // Display expandable search results
+            function displayExpandableSearchResults(results) {
+                const searchResults = document.getElementById('expandableSearchResults');
+                
+                if (results.length === 0) {
+                    searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                } else {
+                    searchResults.innerHTML = results.map(item => {
+                        // Calculate path distance for each result
+                        const currentUserId = currentFilterUser || selectedNode;
+                        let pathInfo = '';
+                        
+                        if (currentUserId && currentUserId !== item.id) {
+                            const path = findPathBetweenUsers(currentUserId, item.id);
+                            if (path && path.length > 1) {
+                                const distance = path.length - 1;
+                                pathInfo = ` • ${distance} degree${distance > 1 ? 's' : ''} away`;
+                            } else {
+                                pathInfo = ' • No path found';
+                            }
+                        }
+                        
+                        return `
+                            <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')">
+                                <div class="search-result-name">${item.name}</div>
+                                <div class="search-result-info">${item.taps} taps${pathInfo}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                searchResults.classList.add('show');
+            }
+            
+            // Select node from expandable search
+            function selectNodeByIdExpandable(nodeId) {
+                // NEW BEHAVIOR: Highlight path from current user to searched user
+                highlightPathToUser(nodeId);
+                
+                // Focus on the target user
+                network.selectNodes([nodeId]);
+                network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
+                
+                // Close the expandable search
+                const searchToggleBtn = document.getElementById('searchToggleBtn');
+                const searchInput = document.getElementById('expandableSearchInput');
+                const searchResults = document.getElementById('expandableSearchResults');
+                
+                searchToggleBtn.classList.remove('expanded');
+                searchInput.value = '';
+                searchResults.classList.remove('show');
+                searchResults.innerHTML = '';
+                
+                // Show popup with user data
+                showUserPopup(nodeId);
             }
         
             function displaySearchResults(results) {
@@ -3002,10 +3838,99 @@ Remember: You're helping someone explore and understand their social network dat
                 // Filter the network to show only connections from this user's perspective
                 filterNetworkByUser(nodeId);
                 network.selectNodes([nodeId]);
-                network.focus(nodeId, { scale: 0.4, animation: true }); // Zoomed out view
+                network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
                 selectNode(nodeId);
                 document.getElementById('searchResults').style.display = 'none';
                 document.getElementById('searchInput').value = '';
+                
+                // Show popup with user data
+                showUserPopup(nodeId);
+            }
+            
+            function selectNodeByIdSilent(nodeId) {
+                // Filter the network to show only connections from this user's perspective
+                filterNetworkByUser(nodeId);
+                network.selectNodes([nodeId]);
+                network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
+                selectNode(nodeId);
+                document.getElementById('searchResults').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+                
+                // Don't show popup for silent selection (used for initial load)
+            }
+            
+            function showUserPopup(nodeId) {
+                const node = allNodes[nodeId];
+                if (!node) return;
+                
+                // Create popup content
+                let popupContent = `
+                    <div class="popup-title">${node.label}</div>
+                    <div class="popup-info"><strong>Home Location:</strong> ${node.home_location || 'No location specified'}</div>
+                    <div class="popup-info"><strong>Bio:</strong> ${node.bio || 'No bio provided'}</div>
+                `;
+                
+                // Add LinkedIn if available
+                if (node.linkedin) {
+                    popupContent += `<div class="popup-info"><strong>LinkedIn:</strong> <a href="${node.linkedin}" target="_blank" style="color: #03DAEE;">${node.linkedin}</a></div>`;
+                }
+                
+                // Add activity stats
+                popupContent += `
+                    <div class="popup-info"><strong>Taps:</strong> ${node.taps || 0}</div>
+                    <div class="popup-info"><strong>Connections:</strong> ${node.connections || 0}</div>
+                `;
+                
+                // Create and show popup
+                const popup = document.createElement('div');
+                popup.className = 'custom-popup';
+                popup.innerHTML = popupContent;
+                popup.style.position = 'fixed';
+                
+                // Mobile-friendly positioning: 75% down the screen, left side
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    popup.style.top = '75%';
+                    popup.style.left = '20px';
+                    popup.style.bottom = 'auto';
+                    popup.style.right = 'auto';
+                    popup.style.transform = 'translateY(-50%)';
+                    popup.style.maxWidth = '300px';
+                    popup.style.maxHeight = '70vh';
+                    popup.style.overflowY = 'auto';
+                } else {
+                    // Desktop: keep centered
+                    popup.style.top = '50%';
+                    popup.style.left = '50%';
+                    popup.style.transform = 'translate(-50%, -50%)';
+                }
+                
+                popup.style.zIndex = '10000';
+                
+                // Add close button
+                const closeButton = document.createElement('button');
+                closeButton.innerHTML = '×';
+                closeButton.style.position = 'absolute';
+                closeButton.style.top = '10px';
+                closeButton.style.right = '10px';
+                closeButton.style.background = 'none';
+                closeButton.style.border = 'none';
+                closeButton.style.color = '#ffffff';
+                closeButton.style.fontSize = '20px';
+                closeButton.style.cursor = 'pointer';
+                closeButton.onclick = () => popup.remove();
+                
+                popup.appendChild(closeButton);
+                document.body.appendChild(popup);
+                
+                // Close popup when clicking outside
+                const closePopup = (e) => {
+                    if (!popup.contains(e.target)) {
+                        popup.remove();
+                        document.removeEventListener('click', closePopup);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closePopup), 100);
             }
         
             function selectNode(nodeId) {
@@ -3049,26 +3974,27 @@ Remember: You're helping someone explore and understand their social network dat
                     return;
                 }
                 
-                // Get connections based on current filter
+                // Get only 1st degree connections for the connection details section
                 let connections = [];
-                if (currentDegreeFilter[1] && node.profile_data.degree_1_connections) {
+                if (node.profile_data.degree_1_connections) {
                     connections = connections.concat(node.profile_data.degree_1_connections);
                 }
-                if (currentDegreeFilter[2] && node.profile_data.degree_2_connections) {
-                    connections = connections.concat(node.profile_data.degree_2_connections);
-                }
-                if (currentDegreeFilter[3] && node.profile_data.degree_3_connections) {
-                    connections = connections.concat(node.profile_data.degree_3_connections);
-                }
                 
-                // Create connection objects with tap count for sorting
+                // Create connection objects with tap count between selected user and each connection
                 const connectionObjects = connections.map(connId => {
                     const connNode = allNodes[connId];
                     if (!connNode) return null;
+                    
+                    // Calculate taps between the selected user and this connection
+                    const tapsBetweenUsers = timeSequence.filter(event => 
+                        (event.user1_id === nodeId && event.user2_id === connId) ||
+                        (event.user1_id === connId && event.user2_id === nodeId)
+                    ).length;
+                    
                     return {
                         id: connId,
                         label: connNode.label,
-                        taps: connNode.taps || 0
+                        taps: tapsBetweenUsers
                     };
                 }).filter(conn => conn !== null);
                 
@@ -3083,9 +4009,13 @@ Remember: You're helping someone explore and understand their social network dat
                     </div>
                 `).join('');
                 
-                // Update timeline slider to reflect the current state
-                if (timelineSlider) {
-                    updateTimelineDisplay(timelineSlider.value);
+                // Update timeline to reflect the current state
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                if (leftSlider && rightSlider) {
+                    const leftValue = parseInt(leftSlider.value);
+                    const rightValue = parseInt(rightSlider.value);
+                    updateDualTimelineDisplay(leftValue, rightValue);
                 }
                 
             }
@@ -3166,20 +4096,62 @@ Remember: You're helping someone explore and understand their social network dat
                 const button = document.querySelector('button[onclick="hideConnections()"]');
                 const isCurrentlyHidden = button.textContent.includes('Show');
                 
+                console.log('🔍 Hide Connections clicked - isCurrentlyHidden:', isCurrentlyHidden);
+                
+                // Debug: Check edge state before action
+                const edgesBefore = edges.get();
+                const visibleBefore = edgesBefore.filter(edge => !edge.hidden);
+                const hiddenBefore = edgesBefore.filter(edge => edge.hidden);
+                console.log(`🔍 Before action - Total: ${edgesBefore.length}, Visible: ${visibleBefore.length}, Hidden: ${hiddenBefore.length}`);
+                
                 if (isCurrentlyHidden) {
                     // Show all connections
+                    console.log('🔍 Showing all connections...');
+                    console.log('🔍 About to call edges.update() for each edge...');
+                    
+                    let updateCount = 0;
                     edges.forEach(edge => {
+                        console.log(`🔍 Updating edge ${edge.id}: from=${edge.from}, to=${edge.to}, hidden=false`);
                         edges.update({id: edge.id, hidden: false});
+                        updateCount++;
                     });
+                    
+                    console.log(`🔍 Called edges.update() ${updateCount} times`);
                     button.textContent = 'Hide Connections';
                     button.className = 'control-btn'; // Keep consistent floating control styling
+                    
+                    // Debug: Check edge state after action
+                    setTimeout(() => {
+                        const edgesAfter = edges.get();
+                        const visibleAfter = edgesAfter.filter(edge => !edge.hidden);
+                        const hiddenAfter = edgesAfter.filter(edge => edge.hidden);
+                        console.log(`🔍 After action - Total: ${edgesAfter.length}, Visible: ${visibleAfter.length}, Hidden: ${hiddenAfter.length}`);
+                        console.log('🔍 All connections shown');
+                    }, 50);
                 } else {
                     // Hide all connections
+                    console.log('🔍 Hiding all connections...');
+                    console.log('🔍 About to call edges.update() for each edge...');
+                    
+                    let updateCount = 0;
                     edges.forEach(edge => {
+                        console.log(`🔍 Updating edge ${edge.id}: from=${edge.from}, to=${edge.to}, hidden=true`);
                         edges.update({id: edge.id, hidden: true});
+                        updateCount++;
                     });
+                    
+                    console.log(`🔍 Called edges.update() ${updateCount} times`);
                     button.textContent = 'Show Connections';
                     button.className = 'control-btn'; // Keep consistent floating control styling
+                    
+                    // Debug: Check edge state after action
+                    setTimeout(() => {
+                        const edgesAfter = edges.get();
+                        const visibleAfter = edgesAfter.filter(edge => !edge.hidden);
+                        const hiddenAfter = edgesAfter.filter(edge => edge.hidden);
+                        console.log(`🔍 After action - Total: ${edgesAfter.length}, Visible: ${visibleAfter.length}, Hidden: ${hiddenAfter.length}`);
+                        console.log('🔍 All connections hidden');
+                    }, 50);
                 }
                 
                 // Update the user count display
@@ -3205,11 +4177,15 @@ Remember: You're helping someone explore and understand their social network dat
                     document.getElementById('degreeFilterSection').style.display = 'none';
                     // Hide connection details section in global mode
                     document.getElementById('connectionDetailsSection').style.display = 'none';
+                    // Hide search functionality in global mode
+                    document.querySelector('.search-control-floating').style.display = 'none';
                 } else {
                     globalViewBtn.classList.remove('active');
                     globalViewBtn.textContent = 'See full Arc Network';
                     // Show user-specific elements
                     document.getElementById('profileSection').style.display = 'block';
+                    // Show search functionality in user mode
+                    document.querySelector('.search-control-floating').style.display = 'block';
                     // Show connection details section in user mode
                     document.getElementById('connectionDetailsSection').style.display = 'block';
                     // Show degree filters if a user is selected (either currentFilterUser or selectedNode)
@@ -3243,12 +4219,40 @@ Remember: You're helping someone explore and understand their social network dat
                     }));
                     nodes.update(allNodeData);
                     
-                    // Update all edges to be visible
-                    const allEdgeData = Object.values(allEdges).map(edge => ({
+                    // Update all edges to be visible with initial styling
+                    const allEdgeData = Object.values(allEdges).map(edge => {
+                        const tapCount = edge.tap_count || 1;
+                        
+                        // Apply 5-segment styling based on tap count
+                        let thickness, color;
+                        if (tapCount === 1) {
+                            thickness = 0.5;
+                            color = "#E0E0E0"; // Light grey
+                        } else if (tapCount >= 2 && tapCount <= 3) {
+                            thickness = 1.5;
+                            color = "#D0D0D0"; // Medium-light grey
+                        } else if (tapCount >= 4 && tapCount <= 5) {
+                            thickness = 2.5;
+                            color = "#C0C0C0"; // Medium grey
+                        } else if (tapCount >= 6 && tapCount <= 8) {
+                            thickness = 3.5;
+                            color = "#F0F0F0"; // Light white
+                        } else if (tapCount >= 9) {
+                            thickness = 5.0;
+                            color = "#FFFFFF"; // White
+                        } else {
+                            // Fallback for edge cases
+                            thickness = 0.5;
+                            color = "#E0E0E0";
+                        }
+                        
+                        return {
                         id: edge.id,
                         hidden: false,
-                        color: '#ffffff'
-                    }));
+                            color: color,
+                            width: thickness
+                        };
+                    });
                     edges.update(allEdgeData);
                     
                     // Refresh the network
@@ -3256,8 +4260,12 @@ Remember: You're helping someone explore and understand their social network dat
                     network.stabilize(50);
                     
                     // Ensure timeline works in global mode
-                    if (timelineSlider) {
-                        updateTimelineDisplay(timelineSlider.value);
+                    const leftSlider = document.getElementById('timelineSliderLeft');
+                    const rightSlider = document.getElementById('timelineSliderRight');
+                    if (leftSlider && rightSlider) {
+                        const leftValue = parseInt(leftSlider.value);
+                        const rightValue = parseInt(rightSlider.value);
+                        updateDualTimelineDisplay(leftValue, rightValue);
                     }
                 } else {
                     // Return to user-centric view (restore any existing filters)
@@ -3316,10 +4324,13 @@ Remember: You're helping someone explore and understand their social network dat
                 // Apply initial filter (all degrees) FIRST
                 applyDegreeFilter();
                 
-                // Then set timeline to 100% to show user's connections
-                if (timelineSlider) {
-                    timelineSlider.value = 100;
-                    updateTimelineDisplay(100);
+                // Then set timeline to full range (0% - 100%) to show user's connections
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                if (leftSlider && rightSlider) {
+                    leftSlider.value = 0;
+                    rightSlider.value = 100;
+                    updateDualTimelineDisplay(0, 100);
                 }
                 
             }
@@ -3370,21 +4381,11 @@ Remember: You're helping someone explore and understand their social network dat
                     });
                 });
                 
-                // Batch collect all edge updates
-                const edgeUpdates = [];
-                Object.entries(allEdges).forEach(([edgeId, edge]) => {
-                    const fromIncluded = nodesToShow.has(edge.from);
-                    const toIncluded = nodesToShow.has(edge.to);
-                    edgeUpdates.push({
-                        id: edgeId,
-                        hidden: !(fromIncluded && toIncluded)
-                    });
-                });
-                
-                // Apply all updates in single batch operations
+                // Apply node updates only - let timeline system handle edge visibility
                 nodes.update(nodeUpdates);
                 
-                edges.update(edgeUpdates);
+                // Don't update edges here - let the timeline system handle edge visibility
+                // The timeline system will properly integrate with degree filters
                 
             }
             
@@ -3466,15 +4467,39 @@ Remember: You're helping someone explore and understand their social network dat
             let isUpdating = false;
             
             function initTimelineSlider() {
-                timelineSlider = document.getElementById('timelineSlider');
-                if (!timelineSlider) return;
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                if (!leftSlider || !rightSlider) return;
                 
-                // Set initial state to blank (no connections shown)
-                timelineSlider.value = 0;
-                updateTimelineDisplay(0);
+                // Set initial state to full range (0-100%) - show all connections initially
+                leftSlider.value = 0;
+                rightSlider.value = 100;
+                updateDualTimelineDisplay(0, 100);
+                updateRangeHighlighting(0, 100);
                 
-                // Add event listeners with debouncing
-                timelineSlider.addEventListener('input', function() {
+                // Add debugging for click events
+                leftSlider.addEventListener('mousedown', function(e) {
+                    console.log('🖱️ Left slider mousedown - event target:', e.target.id);
+                });
+                
+                rightSlider.addEventListener('mousedown', function(e) {
+                    console.log('🖱️ Right slider mousedown - event target:', e.target.id);
+                });
+                
+                // Add debugging for input events
+                leftSlider.addEventListener('input', function(e) {
+                    console.log('📊 Left slider input event - value:', e.target.value);
+                });
+                
+                rightSlider.addEventListener('input', function(e) {
+                    console.log('📊 Right slider input event - value:', e.target.value);
+                });
+                
+                // Add event listeners for both sliders
+                [leftSlider, rightSlider].forEach(slider => {
+                    slider.addEventListener('input', function() {
+                        console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                        
                     // Clear any pending update
                     if (updateTimeout) {
                         clearTimeout(updateTimeout);
@@ -3483,97 +4508,525 @@ Remember: You're helping someone explore and understand their social network dat
                     // Debounce the update to reduce choppiness
                     updateTimeout = setTimeout(() => {
                         if (!isUpdating) {
-                            updateTimelineDisplay(this.value);
+                                const leftValue = parseInt(leftSlider.value);
+                                const rightValue = parseInt(rightSlider.value);
+                                
+                                console.log(`🎚️ Slider values: Left=${leftValue}%, Right=${rightValue}%`);
+                                
+                                // Calculate minimum gap based on actual date difference
+                                const minGap = 1; // Minimum 1% gap
+                                const actualDaysDiff = getDateDifferenceInDays(leftValue, rightValue);
+                                
+                                console.log(`📅 Date difference: ${actualDaysDiff} days`);
+                                
+                            // Handle left slider movement
+                            if (this === leftSlider) {
+                                console.log(`🎚️ Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
+                                // Left slider cannot go past right slider minus minimum gap
+                                if (leftValue >= rightValue - minGap) {
+                                    const newValue = Math.max(0, rightValue - minGap);
+                                    leftSlider.value = newValue;
+                                    console.log(`🎚️ Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
+                                }
+                            }
+                            
+                            // Handle right slider movement  
+                            if (this === rightSlider) {
+                                console.log(`🎚️ Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
+                                // Right slider cannot go before left slider plus minimum gap
+                                if (rightValue <= leftValue + minGap) {
+                                    const newValue = Math.min(100, leftValue + minGap);
+                                    rightSlider.value = newValue;
+                                    console.log(`🎚️ Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
+                                }
+                            }
+                                
+                                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                                updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
                         }
                     }, 16); // ~60fps update rate
                 });
                 
-                timelineSlider.addEventListener('mousedown', function() {
+                    slider.addEventListener('mousedown', function() {
                     isSliderDragging = true;
                 });
                 
-                timelineSlider.addEventListener('mouseup', function() {
+                    slider.addEventListener('mouseup', function() {
                     isSliderDragging = false;
                     // Force immediate update when dragging ends
                     if (updateTimeout) {
                         clearTimeout(updateTimeout);
                     }
-                    updateTimelineDisplay(this.value);
+                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                 });
                 
-                timelineSlider.addEventListener('touchstart', function() {
+                    slider.addEventListener('touchstart', function() {
                     isSliderDragging = true;
                 });
                 
-                timelineSlider.addEventListener('touchend', function() {
+                    slider.addEventListener('touchend', function() {
                     isSliderDragging = false;
                     // Force immediate update when touch ends
                     if (updateTimeout) {
                         clearTimeout(updateTimeout);
                     }
-                    updateTimelineDisplay(this.value);
+                        updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                    });
                 });
             }
             
-            // Calculate node properties based on timeline position and degree filters
-            function calculateTimelineNodeProperties(nodeId, eventIndex) {
-                const node = allNodes[nodeId];
-                if (!node) return { size: 10, color: "#87CEEB" }; // Default values
+            // Date conversion functions
+            function getDateFromPercentage(percentage) {
+                if (timeSequence.length === 0) return new Date();
+                const index = Math.floor((percentage / 100) * timeSequence.length);
+                const event = timeSequence[Math.min(index, timeSequence.length - 1)];
+                return new Date(event.time);
+            }
+            
+            function getPercentageFromDate(date) {
+                if (timeSequence.length === 0) return 0;
+                const targetTime = new Date(date).getTime();
+                let closestIndex = 0;
+                let minDiff = Math.abs(new Date(timeSequence[0].time).getTime() - targetTime);
                 
-                // Get current degree filter settings
+                for (let i = 1; i < timeSequence.length; i++) {
+                    const diff = Math.abs(new Date(timeSequence[i].time).getTime() - targetTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIndex = i;
+                    }
+                }
+                
+                return Math.round((closestIndex / timeSequence.length) * 100);
+            }
+            
+            function formatDate(date) {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            }
+            
+            function getDateDifferenceInDays(startPercentage, endPercentage) {
+                if (timeSequence.length === 0) return 0;
+                
+                const startDate = getDateFromPercentage(startPercentage);
+                const endDate = getDateFromPercentage(endPercentage);
+                
+                const timeDiff = endDate.getTime() - startDate.getTime();
+                const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                
+                return daysDiff;
+            }
+            
+            // Update dual timeline display
+            function updateRangeHighlighting(startPercentage, endPercentage) {
+                const container = document.querySelector('.dual-slider-container');
+                if (container) {
+                    const rangeWidth = endPercentage - startPercentage;
+                    container.style.setProperty('--range-left', startPercentage + '%');
+                    container.style.setProperty('--range-width', rangeWidth + '%');
+                    console.log(`🎨 Range highlighting: ${startPercentage}% to ${endPercentage}% (width: ${rangeWidth}%)`);
+                }
+            }
+            
+            function updateDualTimelineDisplay(startPercentage, endPercentage) {
+                if (timeSequence.length === 0) {
+                    console.log('⚠️ Timeline: timeSequence is empty');
+                    return;
+                }
+                
+                // Prevent multiple simultaneous updates
+                if (isUpdating) return;
+                isUpdating = true;
+                
+                console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
+                
+                // Calculate start and end event indices
+                const startIndex = Math.floor((startPercentage / 100) * timeSequence.length);
+                const endIndex = Math.floor((endPercentage / 100) * timeSequence.length);
+                
+                console.log(`📊 Timeline: Event indices ${startIndex} - ${endIndex} (total: ${timeSequence.length})`);
+                
+                // Get date range
+                const startDate = getDateFromPercentage(startPercentage);
+                const endDate = getDateFromPercentage(endPercentage);
+                
+                // Update date displays
+                document.getElementById('startDate').textContent = formatDate(startDate);
+                document.getElementById('endDate').textContent = formatDate(endDate);
+                
+                // Determine if we're in user-centric mode
+                let isUserCentric = false;
+                let selectedUserId = null;
+                
+                if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== null) {
+                    isUserCentric = true;
+                    selectedUserId = currentFilterUser;
+                }
+                
+                // Get degree filter settings
                 const degree1Enabled = document.getElementById('degree1').checked;
                 const degree2Enabled = document.getElementById('degree2').checked;
                 const degree3Enabled = document.getElementById('degree3').checked;
                 
-                // Count taps and connections up to this timeline point, filtered by degree
+                // Filter events within the time range
+                const filteredEvents = timeSequence.slice(startIndex, endIndex + 1);
+                
+                // Update network display based on filtered events
+                updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled, startPercentage, endPercentage);
+                
+                // Update profile stats if a user is selected
+                if (isUserCentric && selectedUserId) {
+                    updateProfileStatsForTimeline(selectedUserId, filteredEvents);
+                }
+                
+                // Update connection count and date range
+                // Count unique users from filtered events in timeline range
+                const uniqueUsers = new Set();
+                filteredEvents.forEach(event => {
+                    if (event.user1_id) uniqueUsers.add(event.user1_id);
+                    if (event.user2_id) uniqueUsers.add(event.user2_id);
+                });
+                const userCount = uniqueUsers.size;
+                const daysDiff = getDateDifferenceInDays(startPercentage, endPercentage);
+                
+                // Format as stacked lines without parentheses
+                let rangeText = `${userCount} users`;
+                if (daysDiff > 0) {
+                    rangeText += `\n${daysDiff} days`;
+                }
+                
+                document.getElementById('connectionCount').textContent = rangeText;
+                
+                // Reset update flag
+                setTimeout(() => {
+                    isUpdating = false;
+                    reapplyHighlighting();
+                }, 50);
+            }
+            
+            // Update network with filtered time range events
+            function updateNetworkWithTimeRange(filteredEvents, isUserCentric, selectedUserId, degree1Enabled, degree2Enabled, degree3Enabled, startPercentage, endPercentage) {
+                console.log(`🔗 Network: Updating with ${filteredEvents.length} filtered events`);
+                
+                if (filteredEvents.length === 0) {
+                    console.log('⚠️ Network: No events in range - hiding all');
+                    // Hide all nodes and edges if no events in range
+                    const allNodeUpdates = Object.keys(allNodes).map(nodeId => ({
+                        id: nodeId,
+                        hidden: true
+                    }));
+                    const allEdgeUpdates = Object.keys(allEdges).map(edgeId => ({
+                        id: edgeId,
+                        hidden: true
+                    }));
+                    nodes.update(allNodeUpdates);
+                    edges.update(allEdgeUpdates);
+                    return;
+                }
+                
+                // Create a set of all nodes involved in the filtered events
+                const nodesInTimeRange = new Set();
+                filteredEvents.forEach(event => {
+                    if (event.user1_id) nodesInTimeRange.add(event.user1_id);
+                    if (event.user2_id) nodesInTimeRange.add(event.user2_id);
+                });
+                
+                if (isUserCentric && selectedUserId) {
+                    // User-centric mode with degree filters
+                    const userNode = allNodes[selectedUserId];
+                    if (!userNode || !userNode.profile_data) {
+                        return;
+                    }
+                    
+                    const profileData = userNode.profile_data;
+                    const degree1Connections = profileData.degree_1_connections || [];
+                    const degree2Connections = profileData.degree_2_connections || [];
+                    const degree3Connections = profileData.degree_3_connections || [];
+                    
+                    // Build set of degree-filtered connections
+                    const degreeFilteredConnections = new Set();
+                    if (degree1Enabled) {
+                        degree1Connections.forEach(conn => degreeFilteredConnections.add(conn));
+                    }
+                    if (degree2Enabled) {
+                        degree2Connections.forEach(conn => degreeFilteredConnections.add(conn));
+                    }
+                    if (degree3Enabled) {
+                        degree3Connections.forEach(conn => degreeFilteredConnections.add(conn));
+                    }
+                    
+                    // Update nodes - show selected user + degree-filtered connections that are in time range
+                    const nodeUpdates = [];
+                    Object.keys(allNodes).forEach(nodeId => {
+                        const shouldShow = nodeId === selectedUserId || 
+                                         (degreeFilteredConnections.has(nodeId) && nodesInTimeRange.has(nodeId));
+                        nodeUpdates.push({
+                            id: nodeId,
+                            hidden: !shouldShow
+                        });
+                    });
+                    nodes.update(nodeUpdates);
+                    
+                    // Update edges - show edges between visible nodes that are in time range
+                    // Note: Edge styling will be handled later in the function, so we just set visibility here
+                    const edgeUpdates = [];
+                    Object.entries(allEdges).forEach(([edgeId, edge]) => {
+                        const fromVisible = !allNodes[edge.from].hidden;
+                        const toVisible = !allNodes[edge.to].hidden;
+                        const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                        
+                        edgeUpdates.push({
+                            id: edgeId,
+                            hidden: !(fromVisible && toVisible && inTimeRange)
+                        });
+                    });
+                    // Don't call edges.update() here - it will be called later with styling
+                    
+                } else {
+                    // Global view mode - show all nodes and edges in time range
+                    const nodeUpdates = [];
+                    Object.keys(allNodes).forEach(nodeId => {
+                        nodeUpdates.push({
+                            id: nodeId,
+                            hidden: !nodesInTimeRange.has(nodeId)
+                        });
+                    });
+                    nodes.update(nodeUpdates);
+                    
+                    // Edge updates will be handled later with styling
+                    // Don't call edges.update() here to avoid duplication
+                }
+                
+                // Update node properties based on filtered events
+                const nodePropsUpdates = [];
+                Object.keys(allNodes).forEach(nodeId => {
+                    if (!allNodes[nodeId].hidden) {
+                        const nodeProps = calculateTimelineNodeProperties(nodeId, filteredEvents);
+                        nodePropsUpdates.push({
+                            id: nodeId,
+                            size: nodeProps.size,
+                            color: nodeProps.color,
+                            title: `${allNodes[nodeId].label} - ${nodeProps.taps} taps, ${nodeProps.connections} connections`
+                        });
+                    }
+                });
+                if (nodePropsUpdates.length > 0) {
+                    nodes.update(nodePropsUpdates);
+                }
+                
+                // Apply edge thickness calculation for timeline < 100%
+                const timelinePercentage = (endPercentage - startPercentage);
+                
+                if (timelinePercentage < 100 && isUserCentric && selectedUserId) {
+                    
+                    // Create edge ID mapping
+                    const edgeMapping = createEdgeIdMapping();
+                    
+                    // Create a set of edges that should be visible based on timeline
+                    const visibleEdgeIds = new Set();
+                    const eventIndex = Math.floor((endPercentage / 100) * timeSequence.length);
+                    for (let i = 0; i < eventIndex; i++) {
+                        const event = timeSequence[i];
+                        // Map time sequence edge to graph edge using user1/user2
+                        const key = `${event.user1_id}-${event.user2_id}`;
+                        const reverseKey = `${event.user2_id}-${event.user1_id}`;
+                        
+                        const graphEdgeId = edgeMapping.get(key) || edgeMapping.get(reverseKey);
+                        if (graphEdgeId !== undefined) {
+                            visibleEdgeIds.add(graphEdgeId);
+                        }
+                    }
+                    
+                    // Get the user's degree-filtered connections
+                    const userNode = allNodes[selectedUserId];
+                    const profileData = userNode.profile_data;
+                    const degree1Connections = profileData.degree_1_connections || [];
+                    const degree2Connections = profileData.degree_2_connections || [];
+                    const degree3Connections = profileData.degree_3_connections || [];
+                    
+                    // Collect degree-filtered connections based on actual user selections
+                    const degreeFilteredConnections = new Set();
+                    degreeFilteredConnections.add(selectedUserId);
+                    
+                    if (degree1Enabled) {
+                        degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree2Enabled) {
+                        degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree3Enabled) {
+                        degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    
+                        // Apply edge thickness calculation
+                        const userCentricTimelineEdgeUpdates = [];
+                    Object.values(allEdges).forEach(edge => {
+                        const isInTimeline = visibleEdgeIds.has(edge.id);
+                        const isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
+                        const shouldShow = isInTimeline && isInDegreeFilter;
+                        
+                        // Calculate total tap count between these users within the timeline range
+                        const user1Id = edge.from;
+                        const user2Id = edge.to;
+                        const timelineTapCount = filteredEvents.filter(tap => 
+                            (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                            (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                        ).length;
+                        
+                        // Apply 5-segment styling based on timeline tap count
+                        let thickness, color;
+                        if (timelineTapCount === 1) {
+                            thickness = 0.5;
+                            color = "#E0E0E0"; // Light grey
+                        } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                            thickness = 1.5;
+                            color = "#D0D0D0"; // Medium-light grey
+                        } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                            thickness = 2.5;
+                            color = "#C0C0C0"; // Medium grey
+                        } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                            thickness = 3.5;
+                            color = "#F0F0F0"; // Light white
+                        } else if (timelineTapCount >= 9) {
+                            thickness = 5.0;
+                            color = "#FFFFFF"; // White
+                        } else {
+                            // Fallback for no taps or edge cases
+                            thickness = 0.5;
+                            color = "#E0E0E0";
+                        }
+                        
+                        userCentricTimelineEdgeUpdates.push({
+                            id: edge.id, 
+                            hidden: !shouldShow,
+                            width: thickness,
+                            color: color
+                        });
+                    });
+                    
+                    // Apply all edge updates in batch
+                    edges.update(userCentricTimelineEdgeUpdates);
+                } else if (timelinePercentage >= 100 && isUserCentric && selectedUserId) {
+                    
+                    // At 100% timeline, show all degree-filtered connections
+                    // Get the user's degree-filtered connections
+                    const userNode = allNodes[selectedUserId];
+                    const profileData = userNode.profile_data;
+                    const degree1Connections = profileData.degree_1_connections || [];
+                    const degree2Connections = profileData.degree_2_connections || [];
+                    const degree3Connections = profileData.degree_3_connections || [];
+                    
+                    // Collect all degree-filtered connections
+                    const degreeFilteredConnections = new Set();
+                    
+                    // At 100% timeline, always use checkbox states
+                    // Always include the selected user themselves
+                    degreeFilteredConnections.add(selectedUserId);
+                    
+                    if (degree1Enabled) {
+                        degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree2Enabled) {
+                        degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                    if (degree3Enabled) {
+                        degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                    }
+                
+                    // Apply degree filtering to all edges (same logic for all timeline positions)
+                    const hundredPercentEdgeUpdates = [];
+                    Object.values(allEdges).forEach(edge => {
+                        let isInDegreeFilter = false;
+                        
+                        // Simple node-based degree filtering: show edges between visible nodes
+                        isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
+                        
+                        // Calculate total tap count between these users within the full timeline range
+                        const user1Id = edge.from;
+                        const user2Id = edge.to;
+                        const timelineTapCount = filteredEvents.filter(tap => 
+                            (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                            (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                        ).length;
+                        
+                        // Apply 5-segment styling based on timeline tap count (same as < 100% logic)
+                        let thickness, color;
+                        if (timelineTapCount === 1) {
+                            thickness = 0.5;
+                            color = "#E0E0E0"; // Light grey
+                        } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                            thickness = 1.5;
+                            color = "#D0D0D0"; // Medium-light grey
+                        } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                            thickness = 2.5;
+                            color = "#C0C0C0"; // Medium grey
+                        } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                            thickness = 3.5;
+                            color = "#F0F0F0"; // Light white
+                        } else if (timelineTapCount >= 9) {
+                            thickness = 5.0;
+                            color = "#FFFFFF"; // White
+                        } else {
+                            // Fallback for no taps or edge cases
+                            thickness = 0.5;
+                            color = "#E0E0E0";
+                        }
+                        
+                        hundredPercentEdgeUpdates.push({
+                            id: edge.id, 
+                            hidden: !isInDegreeFilter,
+                            width: thickness,
+                            color: color
+                        });
+                    });
+                    edges.update(hundredPercentEdgeUpdates);
+                    
+                    // Show nodes that are part of the degree-filtered connections AND have visible edges
+                    let visibleNodeCount = 0;
+                    const nodesWithVisibleEdges = new Set();
+                    
+                    // First, collect all nodes that have visible edges
+                    edges.get().forEach(edge => {
+                        if (!edge.hidden) {
+                            nodesWithVisibleEdges.add(edge.from);
+                            nodesWithVisibleEdges.add(edge.to);
+                        }
+                    });
+                    
+                    const hundredPercentNodeUpdates = [];
+                    nodes.forEach(node => {
+                        const shouldShow = node.id === selectedUserId || (degreeFilteredConnections.has(node.id) && nodesWithVisibleEdges.has(node.id));
+                        hundredPercentNodeUpdates.push({
+                            id: node.id, 
+                            hidden: !shouldShow
+                        });
+                        if (shouldShow) visibleNodeCount++;
+                    });
+                    nodes.update(hundredPercentNodeUpdates);
+                }
+            }
+            
+            // Calculate node properties based on filtered events
+            function calculateTimelineNodeProperties(nodeId, filteredEvents) {
+                const node = allNodes[nodeId];
+                if (!node) return { size: 10, color: "#87CEEB" }; // Default values
+                
+                // Count events involving this node in the filtered time range
                 let timelineTaps = 0;
                 let timelineConnections = new Set();
                 
-                // Count events involving this node up to the current timeline point
-                for (let i = 0; i < eventIndex; i++) {
-                    const event = timeSequence[i];
+                // Count events involving this node in the filtered events
+                filteredEvents.forEach(event => {
                     if (event.user1_id === nodeId || event.user2_id === nodeId) {
-                        // Check if this event should be included based on degree filters
-                        let shouldIncludeEvent = false;
-                        
-                        // If we're in user-centric mode, check degree relationships
-                        if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== null) {
-                            const selectedUserId = currentFilterUser;
-                            const userNode = allNodes[selectedUserId];
-                            const profileData = userNode.profile_data;
-                            const degree1Connections = profileData.degree_1_connections || [];
-                            const degree2Connections = profileData.degree_2_connections || [];
-                            const degree3Connections = profileData.degree_3_connections || [];
-                            
-                            // Check if this event involves connections that match the selected degree filters
-                            if (event.user1_id === selectedUserId || event.user2_id === selectedUserId) {
-                                // Direct connection to selected user
-                                if (degree1Enabled) {
-                                    shouldIncludeEvent = true;
-                                }
-                            } else if (degree1Connections.includes(event.user1_id) && degree1Connections.includes(event.user2_id)) {
-                                // Connection between 1st degree connections
-                                if (degree2Enabled) {
-                                    shouldIncludeEvent = true;
-                                }
-                            } else if (degree2Connections.includes(event.user1_id) && degree2Connections.includes(event.user2_id)) {
-                                // Connection between 2nd degree connections
-                                if (degree3Enabled) {
-                                    shouldIncludeEvent = true;
-                                }
-                            }
-                        } else {
-                            // Global mode - include all events
-                            shouldIncludeEvent = true;
-                        }
-                        
-                        if (shouldIncludeEvent) {
-                            timelineTaps++;
-                            timelineConnections.add(event.user1_id);
-                            timelineConnections.add(event.user2_id);
-                        }
+                        // Include ALL events involving this node (no degree filtering for styling)
+                        timelineTaps++;
+                        timelineConnections.add(event.user1_id);
+                        timelineConnections.add(event.user2_id);
                     }
-                }
+                });
                 
                 // Remove the node itself from connections count
                 timelineConnections.delete(nodeId);
@@ -3626,6 +5079,30 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update the profile stats display
                 document.getElementById('profileTaps').textContent = timelineProps.taps;
                 document.getElementById('profileConnections').textContent = timelineProps.connections;
+            }
+            
+            // Update profile stats for dual timeline system
+            function updateProfileStatsForTimeline(userId, filteredEvents) {
+                // Calculate stats based on filtered events within the timeline range
+                let timelineTaps = 0;
+                let timelineConnections = new Set();
+                
+                // Count taps and connections from filtered events
+                filteredEvents.forEach(event => {
+                    if (event.user1_id === userId || event.user2_id === userId) {
+                        timelineTaps++;
+                        timelineConnections.add(event.user1_id);
+                        timelineConnections.add(event.user2_id);
+                    }
+                });
+                
+                // Remove the user themselves from connections count
+                timelineConnections.delete(userId);
+                const connectionCount = timelineConnections.size;
+                
+                // Update the profile stats display
+                document.getElementById('profileTaps').textContent = timelineTaps;
+                document.getElementById('profileConnections').textContent = connectionCount;
             }
             
             function updateTimelineDisplay(percentage) {
@@ -3711,7 +5188,10 @@ Remember: You're helping someone explore and understand their social network dat
                 }
                 
                 // Apply timeline filtering (or show all connections at 100%)
-                if (percentage < 100) {
+                const timelinePercentage = (endPercentage - startPercentage) * 100;
+                console.log(`🔍 DEBUG: Timeline percentage check - startPercentage: ${startPercentage}, endPercentage: ${endPercentage}, calculated timelinePercentage: ${timelinePercentage}, isUserCentric: ${isUserCentric}, selectedUserId: ${selectedUserId}`);
+                if (timelinePercentage < 100) {
+                    console.log(`🔍 DEBUG: Taking percentage < 100 path`);
                     // Create edge ID mapping
                     const edgeMapping = createEdgeIdMapping();
                     
@@ -3737,6 +5217,7 @@ Remember: You're helping someone explore and understand their social network dat
                         // 1. Not in the timeline visible set AND
                         // 2. Not part of the user's degree-filtered connections
                         if (isUserCentric && selectedUserId) {
+                            console.log(`🔍 DEBUG: Entering nested user-centric mode for edge processing...`);
                             // Get the user's degree-filtered connections
                             const userNode = allNodes[selectedUserId];
                             const profileData = userNode.profile_data;
@@ -3755,14 +5236,14 @@ Remember: You're helping someone explore and understand their social network dat
                             degreeFilteredConnections.add(selectedUserId);
                             
                             // Add connections based on what degrees are actually enabled
-                            if (degree1Enabled) {
-                                degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                            }
-                            if (degree2Enabled) {
-                                degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                            }
-                            if (degree3Enabled) {
-                                degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                if (degree1Enabled) {
+                                    degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                                if (degree2Enabled) {
+                                    degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
+                                }
+                                if (degree3Enabled) {
+                                    degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
                             }
                         
                         
@@ -3803,6 +5284,7 @@ Remember: You're helping someone explore and understand their social network dat
                         let intersectionCount = 0;
                         
                         // Batch collect all edge updates for user-centric mode
+                        console.log(`🔍 DEBUG: About to start edge thickness calculation...`);
                         const userCentricTimelineEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
                             const isInTimeline = visibleEdgeIds.has(edge.id);
@@ -3810,23 +5292,8 @@ Remember: You're helping someone explore and understand their social network dat
                             // Check if edge matches degree filter criteria
                             let isInDegreeFilter = false;
                             
-                            // Use degree filtering logic for all timeline positions
-                            if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
-                                    // 1st degree only: only edges connected to Luke
-                                    isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                     (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                            } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
-                                // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
-                                const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                        (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                                const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
-                                isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
-                            } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
-                                // All degrees: all edges between degree-filtered users
-                                isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
-                            }
+                            // Simple node-based degree filtering: show edges between visible nodes
+                            isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
                             
                             if (isInTimeline) timelineEdgeCount++;
                             if (isInDegreeFilter) degreeFilterEdgeCount++;
@@ -3834,13 +5301,77 @@ Remember: You're helping someone explore and understand their social network dat
                             
                             // Collect edge update for batch processing
                             const shouldShow = isInTimeline && isInDegreeFilter;
+                            
+                            // Calculate total tap count between these users within the timeline range
+                            const user1Id = edge.from;
+                            const user2Id = edge.to;
+                            const timelineTapCount = filteredEvents.filter(tap => 
+                                (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                                (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                            ).length;
+                            
+                            // Apply 5-segment styling based on timeline tap count
+                            let thickness, color;
+                            if (timelineTapCount === 1) {
+                                thickness = 0.5;
+                                color = "#E0E0E0"; // Light grey
+                            } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                                thickness = 1.5;
+                                color = "#D0D0D0"; // Medium-light grey
+                            } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                                thickness = 2.5;
+                                color = "#C0C0C0"; // Medium grey
+                            } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                                thickness = 3.5;
+                                color = "#F0F0F0"; // Light white
+                            } else if (timelineTapCount >= 9) {
+                                thickness = 5.0;
+                                color = "#FFFFFF"; // White
+                            } else {
+                                // Fallback for no taps or edge cases
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            }
+                            
                             userCentricTimelineEdgeUpdates.push({
                                 id: edge.id, 
-                                hidden: !shouldShow
+                                hidden: !shouldShow,
+                                width: thickness,
+                                color: color
                             });
                             
                             if (!shouldShow) hiddenCount++;
                         });
+                        
+                        // Combine visibility and styling updates
+                        const combinedEdgeUpdates = [];
+                        Object.entries(allEdges).forEach(([edgeId, edge]) => {
+                            const fromVisible = !allNodes[edge.from].hidden;
+                            const toVisible = !allNodes[edge.to].hidden;
+                            const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                            const shouldShow = fromVisible && toVisible && inTimeRange;
+                            
+                            // Find the styling update for this edge
+                            const stylingUpdate = userCentricTimelineEdgeUpdates.find(update => update.id === edgeId);
+                            
+                            // Debug: Log styling update
+                            if (stylingUpdate) {
+                                console.log(`🔍 Edge ${edgeId}: Found styling update - width: ${stylingUpdate.width}, color: ${stylingUpdate.color}`);
+                            } else {
+                                console.log(`🔍 Edge ${edgeId}: No styling update found`);
+                            }
+                            
+                            combinedEdgeUpdates.push({
+                                id: edgeId,
+                                hidden: !shouldShow,
+                                width: stylingUpdate ? stylingUpdate.width : 0.5,
+                                color: stylingUpdate ? stylingUpdate.color : "#E0E0E0"
+                            });
+                        });
+                        
+                        // Debug: Log userCentricTimelineEdgeUpdates
+                        console.log(`🔍 userCentricTimelineEdgeUpdates length: ${userCentricTimelineEdgeUpdates.length}`);
+                        console.log(`🔍 Sample userCentricTimelineEdgeUpdates:`, userCentricTimelineEdgeUpdates.slice(0, 3));
                         
                         // Apply all edge updates in batch
                         edges.update(userCentricTimelineEdgeUpdates);
@@ -3872,14 +5403,41 @@ Remember: You're helping someone explore and understand their social network dat
 
                         
                     } else {
-                        // Global mode - hide edges not in timeline (batch update)
+                        // Global mode - combine visibility and styling updates
                         let hiddenCount = 0;
                         const globalModeEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
                             const shouldHide = !visibleEdgeIds.has(edge.id);
+                            const inTimeRange = nodesInTimeRange.has(edge.from) && nodesInTimeRange.has(edge.to);
+                            
+                            // Calculate styling based on timeline tap count
+                            const timelineTapCount = edge.tap_count || 1;
+                            let thickness, color;
+                            if (timelineTapCount === 1) {
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                                thickness = 1.5;
+                                color = "#D0D0D0";
+                            } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                                thickness = 2.5;
+                                color = "#C0C0C0";
+                            } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                                thickness = 3.5;
+                                color = "#F0F0F0";
+                            } else if (timelineTapCount >= 9) {
+                                thickness = 5.0;
+                                color = "#FFFFFF";
+                            } else {
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            }
+                            
                             globalModeEdgeUpdates.push({
                                 id: edge.id, 
-                                hidden: shouldHide
+                                hidden: shouldHide,
+                                width: thickness,
+                                color: color
                             });
                             if (shouldHide) hiddenCount++;
                         });
@@ -3935,7 +5493,8 @@ Remember: You're helping someone explore and understand their social network dat
                     // Apply all node updates in batch
                     nodes.update(finalNodeUpdates);
                 } else {
-                                            // At 100% timeline, show all degree-filtered connections
+                    console.log(`🔍 DEBUG: Taking percentage >= 100 path (else block)`);
+                    // At 100% timeline, show all degree-filtered connections
                         if (isUserCentric && selectedUserId) {
                             // Get the user's degree-filtered connections
                             const userNode = allNodes[selectedUserId];
@@ -3970,22 +5529,8 @@ Remember: You're helping someone explore and understand their social network dat
                         Object.values(allEdges).forEach(edge => {
                             let isInDegreeFilter = false;
                             
-                            if (degree1Enabled && !degree2Enabled && !degree3Enabled) {
-                                // 1st degree only: only edges connected to Luke
-                                isInDegreeFilter = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                 (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                            } else if (degree1Enabled && degree2Enabled && !degree3Enabled) {
-                                // 1st + 2nd degree: edges connected to Luke + edges between 1st degree connections
-                                const isConnectedToLuke = (edge.from === selectedUserId && degree1Connections.includes(edge.to)) ||
-                                                        (edge.to === selectedUserId && degree1Connections.includes(edge.from));
-                                const isBetweenFirstDegree = degree1Connections.includes(edge.from) && degree1Connections.includes(edge.to);
-                                isInDegreeFilter = isConnectedToLuke || isBetweenFirstDegree;
-                            } else if (degree1Enabled && degree2Enabled && degree3Enabled) {
-                                // All degrees: all edges between degree-filtered users
-                                isInDegreeFilter = (degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.from === selectedUserId && degreeFilteredConnections.has(edge.to)) ||
-                                                 (edge.to === selectedUserId && degreeFilteredConnections.has(edge.from));
-                            }
+                            // Simple node-based degree filtering: show edges between visible nodes
+                            isInDegreeFilter = degreeFilteredConnections.has(edge.from) && degreeFilteredConnections.has(edge.to);
                             
                             hundredPercentEdgeUpdates.push({
                                 id: edge.id, 
@@ -4035,10 +5580,46 @@ Remember: You're helping someone explore and understand their social network dat
                     } else {
                         // Global mode at 100% timeline - show all nodes and edges with full timeline properties
                         
-                        // Show all edges (batch update)
+                        // Show all edges with timeline-based styling (batch update)
                         const globalModeEdgeUpdates = [];
                         Object.values(allEdges).forEach(edge => {
-                            globalModeEdgeUpdates.push({id: edge.id, hidden: false});
+                            // Calculate total tap count between these users within the timeline range
+                            const user1Id = edge.from;
+                            const user2Id = edge.to;
+                            const timelineTapCount = filteredEvents.filter(tap => 
+                                (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                                (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                            ).length;
+                            
+                            // Apply 5-segment styling based on timeline tap count
+                            let thickness, color;
+                            if (timelineTapCount === 1) {
+                                thickness = 0.5;
+                                color = "#E0E0E0"; // Light grey
+                            } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                                thickness = 1.5;
+                                color = "#D0D0D0"; // Medium-light grey
+                            } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                                thickness = 2.5;
+                                color = "#C0C0C0"; // Medium grey
+                            } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                                thickness = 3.5;
+                                color = "#F0F0F0"; // Light white
+                            } else if (timelineTapCount >= 9) {
+                                thickness = 5.0;
+                                color = "#FFFFFF"; // White
+                            } else {
+                                // Fallback for no taps or edge cases
+                                thickness = 0.5;
+                                color = "#E0E0E0";
+                            }
+                            
+                            globalModeEdgeUpdates.push({
+                                id: edge.id, 
+                                hidden: false,
+                                width: thickness,
+                                color: color
+                            });
                         });
                         edges.update(globalModeEdgeUpdates);
                         
@@ -4057,6 +5638,54 @@ Remember: You're helping someone explore and understand their social network dat
                         });
                         nodes.update(globalModeNodeUpdates);
                     }
+                }
+                
+                // Apply edge thickness calculation regardless of timeline percentage
+                console.log(`🔍 DEBUG: About to start edge thickness calculation...`);
+                const edgeThicknessUpdates = [];
+                Object.values(allEdges).forEach(edge => {
+                    // Calculate total tap count between these users within the timeline range
+                    const user1Id = edge.from;
+                    const user2Id = edge.to;
+                    const timelineTapCount = filteredEvents.filter(tap => 
+                        (tap.user1_id === user1Id && tap.user2_id === user2Id) ||
+                        (tap.user1_id === user2Id && tap.user2_id === user1Id)
+                    ).length;
+                    
+                    // Apply 5-segment styling based on timeline tap count
+                    let thickness, color;
+                    if (timelineTapCount === 1) {
+                        thickness = 0.5;
+                        color = "#E0E0E0"; // Light grey
+                    } else if (timelineTapCount >= 2 && timelineTapCount <= 3) {
+                        thickness = 1.5;
+                        color = "#D0D0D0"; // Medium-light grey
+                    } else if (timelineTapCount >= 4 && timelineTapCount <= 5) {
+                        thickness = 2.5;
+                        color = "#C0C0C0"; // Medium grey
+                    } else if (timelineTapCount >= 6 && timelineTapCount <= 8) {
+                        thickness = 3.5;
+                        color = "#F0F0F0"; // Light white
+                    } else if (timelineTapCount >= 9) {
+                        thickness = 5.0;
+                        color = "#FFFFFF"; // White
+                    } else {
+                        // Fallback for no taps or edge cases
+                        thickness = 0.5;
+                        color = "#E0E0E0";
+                    }
+                    
+                    edgeThicknessUpdates.push({
+                        id: edge.id,
+                        width: thickness,
+                        color: color
+                    });
+                });
+                
+                // Apply edge thickness updates
+                if (edgeThicknessUpdates.length > 0) {
+                    edges.update(edgeThicknessUpdates);
+                    console.log(`🔍 DEBUG: Applied edge thickness updates to ${edgeThicknessUpdates.length} edges`);
                 }
                 
                 // Update display information
@@ -4089,6 +5718,8 @@ Remember: You're helping someone explore and understand their social network dat
                 // Reset update flag and allow smooth transitions
                 setTimeout(() => {
                     isUpdating = false;
+                    // Re-apply edge highlighting after timeline updates
+                    reapplyHighlighting();
                 }, 50); // Small delay to ensure smooth transitions
             }
             
@@ -4147,7 +5778,7 @@ Remember: You're helping someone explore and understand their social network dat
                     console.log('🔗 Iframe context detected - applying mobile control adjustments');
                 }
             }
-
+            
             // Initialize everything when the page loads
             document.addEventListener('DOMContentLoaded', async function() {
                 detectIframeContext();
@@ -4155,6 +5786,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Initialize network (which will load data)
                 await initNetwork();
                 initSearch();
+                initExpandableSearch();
                 initTimelineSlider();
                 
                 // Check for userName parameter and auto-select user
@@ -4162,21 +5794,59 @@ Remember: You're helping someone explore and understand their social network dat
                 const userName = urlParams.get('userName');
                 if (userName) {
                     console.log('🎯 Auto-selecting user from URL:', userName);
-                    // Simulate typing in search and selecting the user
+                    // Find exact match in search index instead of using fuzzy search
                     setTimeout(() => {
-                        const searchInput = document.getElementById('searchInput');
-                        if (searchInput) {
-                            searchInput.value = userName;
-                            // Trigger search
-                            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            // After a brief delay, select the first result (should be the user)
-                            setTimeout(() => {
-                                const searchResults = document.getElementById('searchResults');
-                                const firstResult = searchResults.querySelector('.search-result-item');
-                                if (firstResult) {
-                                    firstResult.click();
-                                }
-                            }, 500);
+                        // Debug: Log searchIndex contents
+                        console.log('🔍 DEBUG: searchIndex length:', searchIndex.length);
+                        console.log('🔍 DEBUG: First 5 users in searchIndex:', searchIndex.slice(0, 5).map(u => ({ name: u.name, id: u.id })));
+                        
+                        // Look for exact match in searchIndex (trim both sides for safety)
+                        // If multiple matches, prioritize the one with more taps
+                        const exactMatches = searchIndex.filter(user => 
+                            user.name.toLowerCase().trim() === userName.toLowerCase().trim()
+                        );
+                        
+                        // Sort by tap count (descending) to get the most active user first
+                        exactMatches.sort((a, b) => b.taps - a.taps);
+                        const exactMatch = exactMatches[0];
+                        
+                        if (exactMatch) {
+                            console.log('✅ Found exact match for user:', exactMatch.name, 'ID:', exactMatch.id, 'Taps:', exactMatch.taps);
+                            if (exactMatches.length > 1) {
+                                console.log('🔍 Multiple users found, selected the one with most taps:', exactMatches.map(u => ({ name: u.name, taps: u.taps, id: u.id })));
+                            }
+                            // Directly select the user without going through search (silent - no popup)
+                            selectNodeByIdSilent(exactMatch.id);
+                        } else {
+                            console.log('❌ No exact match found for:', userName);
+                            console.log('🔍 DEBUG: Available user names:', searchIndex.map(u => u.name));
+                            
+                            // Try to find partial matches for debugging
+                            const partialMatches = searchIndex.filter(user => 
+                                user.name.toLowerCase().includes(userName.toLowerCase())
+                            );
+                            console.log('🔍 DEBUG: Partial matches found:', partialMatches.map(u => ({ name: u.name, id: u.id })));
+                            
+                            // Fallback to original search method if no exact match
+                            const searchInput = document.getElementById('searchInput');
+                            if (searchInput) {
+                                searchInput.value = userName;
+                                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                setTimeout(() => {
+                                    const searchResults = document.getElementById('searchResults');
+                                    const firstResult = searchResults.querySelector('.search-result-item');
+                                    if (firstResult) {
+                                        // Extract nodeId from onclick attribute and use silent selection
+                                        const onclickAttr = firstResult.getAttribute('onclick');
+                                        const nodeIdMatch = onclickAttr.match(/selectNodeById\('([^']+)'\)/);
+                                        if (nodeIdMatch) {
+                                            selectNodeByIdSilent(nodeIdMatch[1]);
+                                        } else {
+                                            firstResult.click(); // Fallback to original behavior
+                                        }
+                                    }
+                                }, 500);
+                            }
                         }
                     }, 2000); // Wait longer for network to stabilize
                 }
@@ -4185,9 +5855,14 @@ Remember: You're helping someone explore and understand their social network dat
                 document.getElementById('degree1').addEventListener('change', function() {
                     currentDegreeFilter[1] = this.checked;
                     if (currentFilterUser) {
-                        // Use current timeline position instead of showing all connections
-                        const currentTimelinePosition = timelineSlider.value;
-                        updateTimelineDisplay(currentTimelinePosition);
+                        // Use current timeline range instead of single position
+                        const leftSlider = document.getElementById('timelineSliderLeft');
+                        const rightSlider = document.getElementById('timelineSliderRight');
+                        if (leftSlider && rightSlider) {
+                            const leftValue = parseInt(leftSlider.value);
+                            const rightValue = parseInt(rightSlider.value);
+                            updateDualTimelineDisplay(leftValue, rightValue);
+                        }
                     } else if (selectedNode) {
                         displayConnections(selectedNode);
                     }
@@ -4201,9 +5876,14 @@ Remember: You're helping someone explore and understand their social network dat
                         document.getElementById('degree1').checked = true;
                     }
                     if (currentFilterUser) {
-                        // Use current timeline position instead of showing all connections
-                        const currentTimelinePosition = timelineSlider.value;
-                        updateTimelineDisplay(currentTimelinePosition);
+                        // Use current timeline range instead of single position
+                        const leftSlider = document.getElementById('timelineSliderLeft');
+                        const rightSlider = document.getElementById('timelineSliderRight');
+                        if (leftSlider && rightSlider) {
+                            const leftValue = parseInt(leftSlider.value);
+                            const rightValue = parseInt(rightSlider.value);
+                            updateDualTimelineDisplay(leftValue, rightValue);
+                        }
                     } else if (selectedNode) {
                         displayConnections(selectedNode);
                     }
@@ -4219,9 +5899,14 @@ Remember: You're helping someone explore and understand their social network dat
                         document.getElementById('degree2').checked = true;
                     }
                     if (currentFilterUser) {
-                        // Use current timeline position instead of showing all connections
-                        const currentTimelinePosition = timelineSlider.value;
-                        updateTimelineDisplay(currentTimelinePosition);
+                        // Use current timeline range instead of single position
+                        const leftSlider = document.getElementById('timelineSliderLeft');
+                        const rightSlider = document.getElementById('timelineSliderRight');
+                        if (leftSlider && rightSlider) {
+                            const leftValue = parseInt(leftSlider.value);
+                            const rightValue = parseInt(rightSlider.value);
+                            updateDualTimelineDisplay(leftValue, rightValue);
+                        }
                     } else if (selectedNode) {
                         displayConnections(selectedNode);
                     }
