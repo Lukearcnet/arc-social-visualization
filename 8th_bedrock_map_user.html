@@ -1728,6 +1728,14 @@
             
             document.getElementById('connectionCount').textContent = `${userCount} users • ${daysDiff} days`;
             
+            // Update profile stats if a user is selected
+            if (currentMode === 'user' && selectedUserId) {
+                updateProfileStatsForTimeline(selectedUserId, startTime, endTime);
+            }
+            
+            // Update view options numbers
+            updateViewOptionsNumbers(filteredEvents, startTime, endTime);
+            
             isUpdating = false;
         }
         
@@ -2466,6 +2474,64 @@
             // Update the profile stats display
             document.getElementById('profileTaps').textContent = timelineTaps;
             document.getElementById('profileConnections').textContent = connectionCount;
+        }
+        
+        // Update profile stats for dual timeline system
+        function updateProfileStatsForTimeline(userId, startTime, endTime) {
+            let timelineTaps = 0;
+            let timelineConnections = new Set();
+            
+            // Filter events within the timeline range
+            const filteredEvents = completeLocationData.filter(tap => {
+                const tapTime = new Date(tap.time).getTime();
+                return tapTime >= startTime && tapTime <= endTime && (tap.user1_id === userId || tap.user2_id === userId);
+            });
+            
+            // Count taps and connections
+            filteredEvents.forEach(tap => {
+                timelineTaps++;
+                timelineConnections.add(tap.user1_id);
+                timelineConnections.add(tap.user2_id);
+            });
+            
+            // Remove the user themselves from connections count
+            timelineConnections.delete(userId);
+            const connectionCount = timelineConnections.size;
+            
+            // Update the profile stats display
+            document.getElementById('profileTaps').textContent = timelineTaps;
+            document.getElementById('profileConnections').textContent = connectionCount;
+        }
+        
+        // Update view options numbers based on timeline
+        function updateViewOptionsNumbers(filteredEvents, startTime, endTime) {
+            // Count visible taps (events within timeline range)
+            const visibleTaps = filteredEvents.length;
+            
+            // Count total taps (all events in complete data)
+            let totalTaps;
+            if (globalViewEnabled) {
+                totalTaps = allLocationData.length;
+            } else if (currentMode === 'user' && selectedUserId) {
+                // Count only taps involving the selected user
+                totalTaps = completeLocationData.filter(tap => 
+                    tap.user1_id === selectedUserId || tap.user2_id === selectedUserId
+                ).length;
+            } else {
+                totalTaps = completeLocationData.length;
+            }
+            
+            // Count active users (unique users in filtered events)
+            const activeUsers = new Set();
+            filteredEvents.forEach(event => {
+                if (event.user1_id) activeUsers.add(event.user1_id);
+                if (event.user2_id) activeUsers.add(event.user2_id);
+            });
+            
+            // Update the display
+            document.getElementById('visibleTaps').textContent = visibleTaps;
+            document.getElementById('totalTaps').textContent = totalTaps;
+            document.getElementById('activeUsers').textContent = activeUsers.size;
         }
         
         // Initialize degree filters
