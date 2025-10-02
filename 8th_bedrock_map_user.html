@@ -1761,8 +1761,15 @@
                 }));
             } else if (currentMode === 'user' && selectedUserId) {
                 // Calculate timeline percentage for degree integration
-                const totalTimeRange = new Date(completeLocationData[completeLocationData.length - 1].time).getTime() - new Date(completeLocationData[0].time).getTime();
-                const timelinePercentage = ((endTime - startTime) / totalTimeRange) * 100;
+                // Use the slider values directly to determine if timeline is restricted
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                const leftValue = parseInt(leftSlider.value);
+                const rightValue = parseInt(rightSlider.value);
+                const timelinePercentage = rightValue - leftValue; // This represents how much of the timeline is visible
+                
+                // Debug: Log the actual values
+                console.log(`🔍 Debug: leftValue=${leftValue}, rightValue=${rightValue}, timelinePercentage=${timelinePercentage}%`);
                 
                 console.log(`🎯 Timeline percentage: ${timelinePercentage.toFixed(1)}%`);
                 
@@ -1778,15 +1785,30 @@
                     
                     let shouldShow = false;
                     
-                    // TIMELINE-DEGREE INTEGRATION: When timeline < 100%, automatically include ALL degrees
+                    // TIMELINE-DEGREE INTEGRATION: When timeline < 100%, show all degrees but still respect degree boundaries
                     if (timelinePercentage < 100) {
-                        console.log('🎯 Timeline < 100%: Showing ALL degrees automatically');
-                        // Timeline < 100%: Show all degrees automatically
+                        console.log('🎯 Timeline < 100%: Showing all enabled degrees automatically');
+                        // Timeline < 100%: Show all enabled degrees automatically, but still respect degree boundaries
                         if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
                             shouldShow = true; // Direct connections to selected user
                         } else {
-                            // Include all other connections when timeline is restricted
-                            shouldShow = true;
+                            // For other connections, check if they're within the enabled degree boundaries
+                            const degreeConnections = calculateDegreeConnections(selectedUserId);
+                            
+                            // Check if this connection involves users within the enabled degree boundaries
+                            let isWithinDegreeBoundaries = false;
+                            
+                            if (degreeFilters.degree1 && (degreeConnections.degree1.has(sourceUserId) || degreeConnections.degree1.has(targetUserId))) {
+                                isWithinDegreeBoundaries = true;
+                            }
+                            if (degreeFilters.degree2 && (degreeConnections.degree2.has(sourceUserId) || degreeConnections.degree2.has(targetUserId))) {
+                                isWithinDegreeBoundaries = true;
+                            }
+                            if (degreeFilters.degree3 && (degreeConnections.degree3.has(sourceUserId) || degreeConnections.degree3.has(targetUserId))) {
+                                isWithinDegreeBoundaries = true;
+                            }
+                            
+                            shouldShow = isWithinDegreeBoundaries;
                         }
                     } else {
                         console.log('🎯 Timeline = 100%: Using normal degree filtering');
