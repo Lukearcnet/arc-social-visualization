@@ -5743,12 +5743,20 @@ Remember: You're helping someone explore and understand their social network dat
                         console.log('🔍 DEBUG: First 5 users in searchIndex:', searchIndex.slice(0, 5).map(u => ({ name: u.name, id: u.id })));
                         
                         // Look for exact match in searchIndex (trim both sides for safety)
-                        const exactMatch = searchIndex.find(user => 
+                        // If multiple matches, prioritize the one with more taps
+                        const exactMatches = searchIndex.filter(user => 
                             user.name.toLowerCase().trim() === userName.toLowerCase().trim()
                         );
                         
+                        // Sort by tap count (descending) to get the most active user first
+                        exactMatches.sort((a, b) => b.taps - a.taps);
+                        const exactMatch = exactMatches[0];
+                        
                         if (exactMatch) {
-                            console.log('✅ Found exact match for user:', exactMatch.name, 'ID:', exactMatch.id);
+                            console.log('✅ Found exact match for user:', exactMatch.name, 'ID:', exactMatch.id, 'Taps:', exactMatch.taps);
+                            if (exactMatches.length > 1) {
+                                console.log('🔍 Multiple users found, selected the one with most taps:', exactMatches.map(u => ({ name: u.name, taps: u.taps, id: u.id })));
+                            }
                             // Directly select the user without going through search
                             selectNodeById(exactMatch.id);
                         } else {
