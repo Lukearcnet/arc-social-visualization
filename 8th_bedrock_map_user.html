@@ -2503,35 +2503,117 @@
             document.getElementById('profileConnections').textContent = connectionCount;
         }
         
-        // Update view options numbers based on timeline
+        // Update view options numbers based on timeline and degree filtering
         function updateViewOptionsNumbers(filteredEvents, startTime, endTime) {
-            // Count visible taps (events within timeline range)
-            const visibleTaps = filteredEvents.length;
-            
-            // Count total taps (all events in complete data)
-            let totalTaps;
-            if (globalViewEnabled) {
-                totalTaps = allLocationData.length;
-            } else if (currentMode === 'user' && selectedUserId) {
-                // Count only taps involving the selected user
-                totalTaps = completeLocationData.filter(tap => 
-                    tap.user1_id === selectedUserId || tap.user2_id === selectedUserId
-                ).length;
+            // For user mode with degree filtering, count only degree-filtered connections
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
+                // Get degree connections for the selected user
+                if (!window.cachedDegreeConnections || window.cachedDegreeConnections.userId !== selectedUserId) {
+                    window.cachedDegreeConnections = {
+                        userId: selectedUserId,
+                        connections: calculateDegreeConnections(selectedUserId)
+                    };
+                }
+                const degreeConnections = window.cachedDegreeConnections.connections;
+                
+                // Filter events by degree connections that are actually visible
+                const degreeFilteredEvents = filteredEvents.filter(event => {
+                    const sourceUserId = event.source_id;
+                    const targetUserId = event.target_id;
+                    
+                    // Quick check: if either user is the selected user, it's always 1st degree
+                    if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                        return degreeFilters.degree1;
+                    }
+                    
+                    // For other connections, check degree levels efficiently
+                    const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                    const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                    const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                    const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                    
+                    // 2nd degree: at least one user is 1st degree connection
+                    if (degreeFilters.degree2 && (sourceInDegree1 || targetInDegree1)) {
+                        return true;
+                    }
+                    
+                    // 3rd degree: at least one user is 2nd degree connection
+                    if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                        return true;
+                    }
+                    
+                    return false;
+                });
+                
+                // Count visible taps (degree-filtered events within timeline range)
+                const visibleTaps = degreeFilteredEvents.length;
+                
+                // Count total taps (all degree-filtered events for this user)
+                const allDegreeFilteredEvents = completeLocationData.filter(event => {
+                    const sourceUserId = event.user1_id;
+                    const targetUserId = event.user2_id;
+                    
+                    // Quick check: if either user is the selected user, it's always 1st degree
+                    if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                        return degreeFilters.degree1;
+                    }
+                    
+                    // For other connections, check degree levels efficiently
+                    const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                    const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                    const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                    const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                    
+                    // 2nd degree: at least one user is 1st degree connection
+                    if (degreeFilters.degree2 && (sourceInDegree1 || targetInDegree1)) {
+                        return true;
+                    }
+                    
+                    // 3rd degree: at least one user is 2nd degree connection
+                    if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                        return true;
+                    }
+                    
+                    return false;
+                });
+                
+                const totalTaps = allDegreeFilteredEvents.length;
+                
+                // Count active users (unique users in degree-filtered events)
+                const activeUsers = new Set();
+                degreeFilteredEvents.forEach(event => {
+                    if (event.user1_id) activeUsers.add(event.user1_id);
+                    if (event.user2_id) activeUsers.add(event.user2_id);
+                });
+                
+                // Update the display
+                document.getElementById('visibleTaps').textContent = visibleTaps;
+                document.getElementById('totalTaps').textContent = totalTaps;
+                document.getElementById('activeUsers').textContent = activeUsers.size;
+                
             } else {
-                totalTaps = completeLocationData.length;
+                // For global mode or non-user mode, use original logic
+                const visibleTaps = filteredEvents.length;
+                
+                let totalTaps;
+                if (globalViewEnabled) {
+                    totalTaps = allLocationData.length;
+                } else {
+                    totalTaps = completeLocationData.length;
+                }
+                
+                // Count active users (unique users in filtered events)
+                const activeUsers = new Set();
+                filteredEvents.forEach(event => {
+                    if (event.user1_id) activeUsers.add(event.user1_id);
+                    if (event.user2_id) activeUsers.add(event.user2_id);
+                });
+                
+                // Update the display
+                document.getElementById('visibleTaps').textContent = visibleTaps;
+                document.getElementById('totalTaps').textContent = totalTaps;
+                document.getElementById('activeUsers').textContent = activeUsers.size;
             }
-            
-            // Count active users (unique users in filtered events)
-            const activeUsers = new Set();
-            filteredEvents.forEach(event => {
-                if (event.user1_id) activeUsers.add(event.user1_id);
-                if (event.user2_id) activeUsers.add(event.user2_id);
-            });
-            
-            // Update the display
-            document.getElementById('visibleTaps').textContent = visibleTaps;
-            document.getElementById('totalTaps').textContent = totalTaps;
-            document.getElementById('activeUsers').textContent = activeUsers.size;
         }
         
         // Initialize degree filters
