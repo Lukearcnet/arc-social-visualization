@@ -2510,11 +2510,22 @@
             
             console.log('Degree filters updated:', degreeFilters);
             
-            // Update display using dual timeline
+            // Clear degree connection cache since filtering logic changed
+            if (window.cachedDegreeConnections) {
+                window.cachedDegreeConnections = null;
+            }
+            
+            // Immediate update for degree filters (no debouncing)
             const leftSlider = document.getElementById('timelineSliderLeft');
             const rightSlider = document.getElementById('timelineSliderRight');
             if (leftSlider && rightSlider) {
-                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                // Clear any pending timeline updates to prevent conflicts
+                if (window.timelineUpdateTimeout) {
+                    clearTimeout(window.timelineUpdateTimeout);
+                }
+                
+                // Immediate update for responsive degree filtering
+                performTimelineUpdate(parseInt(leftSlider.value), parseInt(rightSlider.value));
             }
         }
         
