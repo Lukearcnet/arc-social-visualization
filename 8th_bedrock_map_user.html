@@ -1517,10 +1517,14 @@
                     return dl <= dr ? 'left' : 'right';
                 }
 
-                // Before the user presses, make the nearer handle the top one
+                // Before the user presses, make the nearer handle the top one (throttled for performance)
+                let proximityTimeout;
                 container.addEventListener('pointermove', (e) => {
                     if (container.dataset.lock) return; // don't swap while dragging
-                    setTop(closestHandle(e.clientX));
+                    clearTimeout(proximityTimeout);
+                    proximityTimeout = setTimeout(() => {
+                        setTop(closestHandle(e.clientX));
+                    }, 16); // ~60fps throttling
                 });
 
                 // Lock z-index to the active handle during drag
@@ -1541,15 +1545,8 @@
                     if (rv < lv + minGap) right.value = lv + minGap;
                 }
 
-                left.addEventListener('input', () => {
-                    clampValues();
-                    // update your highlight UI here
-                });
-
-                right.addEventListener('input', () => {
-                    clampValues();
-                    // update your highlight UI here
-                });
+                // Note: Input handling is done by the forEach loop below
+                // This proximity solution only handles z-index management
 
                 // Optional: track click to jump the nearer handle to the clicked spot
                 container.addEventListener('pointerdown', (e) => {
@@ -1763,11 +1760,44 @@
                     timestamp: new Date(tap.time).getTime()
                 }));
             } else if (currentMode === 'user' && selectedUserId) {
-                // User-centric mode: filter by time range only
-                // Degree filtering will be handled by the existing degree filter system
+                // Calculate timeline percentage for degree integration
+                const totalTimeRange = new Date(completeLocationData[completeLocationData.length - 1].time).getTime() - new Date(completeLocationData[0].time).getTime();
+                const timelinePercentage = ((endTime - startTime) / totalTimeRange) * 100;
+                
+                console.log(`🎯 Timeline percentage: ${timelinePercentage.toFixed(1)}%`);
+                
+                // User-centric mode with timeline-degree integration
                 filteredEvents = completeLocationData.filter(event => {
                     const eventTime = new Date(event.time).getTime();
-                    return eventTime >= startTime && eventTime <= endTime;
+                    const isInTimeRange = eventTime >= startTime && eventTime <= endTime;
+                    
+                    if (!isInTimeRange) return false;
+                    
+                    const sourceUserId = event.user1_id;
+                    const targetUserId = event.user2_id;
+                    
+                    let shouldShow = false;
+                    
+                    // TIMELINE-DEGREE INTEGRATION: When timeline < 100%, automatically include ALL degrees
+                    if (timelinePercentage < 100) {
+                        console.log('🎯 Timeline < 100%: Showing ALL degrees automatically');
+                        // Timeline < 100%: Show all degrees automatically
+                        if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                            shouldShow = true; // Direct connections to selected user
+                        } else {
+                            // Include all other connections when timeline is restricted
+                            shouldShow = true;
+                        }
+                    } else {
+                        console.log('🎯 Timeline = 100%: Using normal degree filtering');
+                        // Timeline = 100%: Use normal degree filtering
+                        if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                            shouldShow = true; // Always show direct connections
+                        }
+                        // Note: Degree filtering will be applied later in the pipeline
+                    }
+                    
+                    return shouldShow;
                 }).map(tap => ({
                     source_id: tap.user1_id,
                     source_name: tap.user1_name,
