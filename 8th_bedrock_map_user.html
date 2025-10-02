@@ -1455,10 +1455,29 @@
             updateDualTimelineDisplay(0, 100);
             updateRangeHighlighting(0, 100);
             
+            // Add debugging for click events
+            leftSlider.addEventListener('mousedown', function(e) {
+                console.log('🖱️ Left slider mousedown - event target:', e.target.id);
+            });
+            
+            rightSlider.addEventListener('mousedown', function(e) {
+                console.log('🖱️ Right slider mousedown - event target:', e.target.id);
+            });
+            
+            // Add debugging for input events
+            leftSlider.addEventListener('input', function(e) {
+                console.log('📊 Left slider input event - value:', e.target.value);
+            });
+            
+            rightSlider.addEventListener('input', function(e) {
+                console.log('📊 Right slider input event - value:', e.target.value);
+            });
             
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
                 slider.addEventListener('input', function() {
+                    console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                    
                     // Clear any pending update
                     if (updateTimeout) {
                         clearTimeout(updateTimeout);
@@ -1470,24 +1489,30 @@
                             const leftValue = parseInt(leftSlider.value);
                             const rightValue = parseInt(rightSlider.value);
                             
+                            console.log(`🎚️ Slider values: Left=${leftValue}%, Right=${rightValue}%`);
+                            
                             // Calculate minimum gap
                             const minGap = 1; // Minimum 1% gap
                             
                             // Handle left slider movement
                             if (this === leftSlider) {
+                                console.log(`🎚️ Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Left slider cannot go past right slider minus minimum gap
                                 if (leftValue >= rightValue - minGap) {
                                     const newValue = Math.max(0, rightValue - minGap);
                                     leftSlider.value = newValue;
+                                    console.log(`🎚️ Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                             
                             // Handle right slider movement  
                             if (this === rightSlider) {
+                                console.log(`🎚️ Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Right slider cannot go before left slider plus minimum gap
                                 if (rightValue <= leftValue + minGap) {
                                     const newValue = Math.min(100, leftValue + minGap);
                                     rightSlider.value = newValue;
+                                    console.log(`🎚️ Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                             
