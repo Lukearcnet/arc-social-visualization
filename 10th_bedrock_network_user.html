@@ -1666,7 +1666,7 @@ DO NOT use file:// URLs with this version
                     <!-- Search Section (hidden in user-centric view) -->
                     <div class="search-section" style="display: none;">
                         <label for="searchInput">Search Users</label>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username...">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
                         <div id="searchResults" class="search-results" style="display: none;"></div>
                     </div>
                     
@@ -1775,7 +1775,7 @@ DO NOT use file:// URLs with this version
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
-                        <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
+                        <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
                         <div id="expandableSearchResults" class="search-results"></div>
                     </button>
                 </div>
@@ -3587,6 +3587,16 @@ Remember: You're helping someone explore and understand their social network dat
                     if (this.value.length >= 2) {
                         searchResults.style.display = 'block';
                     }
+                    
+                    // Ensure keyboard appears on mobile
+                    if (this.setSelectionRange) {
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+                
+                // Mobile-specific touch handler to ensure keyboard appears
+                searchInput.addEventListener('touchstart', function() {
+                    this.focus();
                 });
                 
                 // Hide results when clicking outside
@@ -3679,6 +3689,16 @@ Remember: You're helping someone explore and understand their social network dat
                     if (this.value.length >= 2) {
                         expandableSearchResults.classList.add('show');
                     }
+                    
+                    // Ensure keyboard appears on mobile
+                    if (this.setSelectionRange) {
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+                
+                // Mobile-specific touch handler to ensure keyboard appears
+                expandableSearchInput.addEventListener('touchstart', function() {
+                    this.focus();
                 });
                 
                 // Hide results when clicking outside (but not during keyboard activity)
