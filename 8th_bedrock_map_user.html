@@ -328,12 +328,6 @@
             color: var(--fg-muted);
         }
         
-        /* Timeline Slider Container - Matching 10th bedrock */
-        .timeline-slider-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
         
         /* Dual Slider Container - Adapted from 10th bedrock */
         .dual-slider-container {
@@ -951,11 +945,9 @@
                 <div class="timeline-control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
-                        <div class="timeline-slider-container">
-                            <div class="dual-slider-container">
-                                <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
-                                <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
-                            </div>
+                        <div class="dual-slider-container">
+                            <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
+                            <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
                         </div>
                         <div class="timeline-info">
                             <div class="timeline-date-left">
