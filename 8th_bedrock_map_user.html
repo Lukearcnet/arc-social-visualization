@@ -891,6 +891,11 @@
                 z-index: 10000 !important;
             }
             
+            body.iframe-context .search-control-floating {
+                top: 98px !important; /* Move up 10px to follow control buttons (108px - 10px) */
+                z-index: 10000 !important;
+            }
+            
         }
 
         /* ========================================
@@ -1060,7 +1065,7 @@
             
             /* Search control positioning on mobile - follow control buttons */
             .search-control-floating {
-                top: 115px; /* Move down 7px to follow control buttons (108px + 7px) */
+                top: 98px; /* Move up 10px to follow control buttons (108px - 10px) */
             }
         }
 
