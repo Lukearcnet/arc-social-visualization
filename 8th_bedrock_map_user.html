@@ -2537,9 +2537,7 @@
             } else if (!searchToggleBtn.classList.contains('expanded')) {
                 // Open search
                 searchToggleBtn.classList.add('expanded');
-                setTimeout(() => {
-                    searchInput.focus();
-                }, 100);
+                // Let mobile browser handle focus naturally - no forced focus
             }
         }
         
@@ -2717,10 +2715,10 @@
                 }
             });
             
-            // Mobile-specific touch handler to ensure keyboard appears
-            searchInput.addEventListener('touchstart', function() {
-                this.focus();
-            });
+            // Let mobile browser handle focus naturally - no forced focus
+            // searchInput.addEventListener('touchstart', function() {
+            //     this.focus();
+            // });
             
             // Prevent clicks inside search input from bubbling up
             searchInput.addEventListener('click', function(e) {

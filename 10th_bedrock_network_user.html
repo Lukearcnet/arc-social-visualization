@@ -3603,10 +3603,10 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 });
                 
-                // Mobile-specific touch handler to ensure keyboard appears
-                searchInput.addEventListener('touchstart', function() {
-                    this.focus();
-                });
+                // Let mobile browser handle focus naturally - no forced focus
+                // searchInput.addEventListener('touchstart', function() {
+                //     this.focus();
+                // });
                 
                 // Hide results when clicking outside
                 document.addEventListener('click', function(e) {
@@ -3693,10 +3693,10 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 });
                 
-                // Mobile-specific touch handler to ensure keyboard appears
-                expandableSearchInput.addEventListener('touchstart', function() {
-                    this.focus();
-                });
+                // Let mobile browser handle focus naturally - no forced focus
+                // expandableSearchInput.addEventListener('touchstart', function() {
+                //     this.focus();
+                // });
                 
                 // Prevent clicks inside search input from bubbling up
                 expandableSearchInput.addEventListener('click', function(e) {
@@ -3751,9 +3751,7 @@ Remember: You're helping someone explore and understand their social network dat
                     // Open search
                     console.log('🔍 TOGGLE SEARCH - OPENING');
                     searchToggleBtn.classList.add('expanded');
-                    setTimeout(() => {
-                        searchInput.focus();
-                    }, 300);
+                    // Let mobile browser handle focus naturally - no forced focus
                 } else {
                     console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
                 }
