@@ -158,13 +158,22 @@
             transition: opacity 0.2s ease;
         }
         
-        /* Search button expanded state */
+        /* Search button expanded state - use width/opacity instead of transform */
         .search-toggle-btn.expanded {
             width: 300px;
             min-width: 300px !important;
+            max-width: 300px !important;
             padding: 8px 12px !important;
             justify-content: flex-start;
             z-index: 1001;
+            /* Ensure no transforms on expanded state */
+            transform: none !important;
+        }
+        
+        /* While the input is visible/focused, guarantee no transforms up the chain */
+        .search-toggle-btn.expanded,
+        .search-toggle-btn.expanded * {
+            transform: none !important;
         }
         
         .search-toggle-btn.expanded svg {
@@ -890,9 +899,26 @@
         
         /* Prevent iOS Safari focus zoom by ensuring all form controls are ≥16px */
         input, textarea, select, button {
-            font-size: 16px;             /* prevent iOS focus zoom */
-            line-height: 1.2;            /* avoid vertical clipping when bumped to 16px */
+            font-size: 16px !important;  /* Win every cascade - prevent iOS focus zoom */
+            line-height: 1.25;           /* avoid vertical clipping when bumped to 16px */
             -webkit-text-size-adjust: 100%;
+        }
+        
+        /* Specifically target search inputs with maximum specificity */
+        .search-input { 
+            font-size: 16px !important; 
+            line-height: 1.25; 
+        }
+        
+        /* iOS can consider placeholder styling - ensure it's also 16px */
+        .search-input::placeholder { 
+            font-size: 16px !important; 
+            opacity: 0.6; 
+        }
+        
+        /* Ensure root won't shrink below 16px effective size on mobile */
+        html { 
+            -webkit-text-size-adjust: 100%; 
         }
         
         /* ========================================
@@ -3717,6 +3743,19 @@
                 console.log('🔗 Iframe context detected - applying mobile control adjustments');
             }
         }
+
+        // iOS viewport locking to prevent zoom
+        (function () {
+            const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (!isiOS) return;
+            let m = document.querySelector('meta[name="viewport"]');
+            if (!m) {
+                m = document.createElement('meta');
+                m.name = 'viewport';
+                document.head.appendChild(m);
+            }
+            m.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover');
+        })();
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
