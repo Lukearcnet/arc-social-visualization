@@ -5738,6 +5738,10 @@ Remember: You're helping someone explore and understand their social network dat
                     console.log('🎯 Auto-selecting user from URL:', userName);
                     // Find exact match in search index instead of using fuzzy search
                     setTimeout(() => {
+                        // Debug: Log searchIndex contents
+                        console.log('🔍 DEBUG: searchIndex length:', searchIndex.length);
+                        console.log('🔍 DEBUG: First 5 users in searchIndex:', searchIndex.slice(0, 5).map(u => ({ name: u.name, id: u.id })));
+                        
                         // Look for exact match in searchIndex
                         const exactMatch = searchIndex.find(user => 
                             user.name.toLowerCase() === userName.toLowerCase()
@@ -5749,6 +5753,14 @@ Remember: You're helping someone explore and understand their social network dat
                             selectNodeById(exactMatch.id);
                         } else {
                             console.log('❌ No exact match found for:', userName);
+                            console.log('🔍 DEBUG: Available user names:', searchIndex.map(u => u.name));
+                            
+                            // Try to find partial matches for debugging
+                            const partialMatches = searchIndex.filter(user => 
+                                user.name.toLowerCase().includes(userName.toLowerCase())
+                            );
+                            console.log('🔍 DEBUG: Partial matches found:', partialMatches.map(u => ({ name: u.name, id: u.id })));
+                            
                             // Fallback to original search method if no exact match
                             const searchInput = document.getElementById('searchInput');
                             if (searchInput) {
