@@ -1712,7 +1712,7 @@
             // Create markers for filtered events
             console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
-                createMarker(event);
+                addTapMarker(event.location, event);
             });
         }
         
