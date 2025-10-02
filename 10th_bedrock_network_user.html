@@ -3757,7 +3757,7 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Focus on the target user
                 network.selectNodes([nodeId]);
-                network.focus(nodeId, { scale: 0.3, animation: true }); // Zoomed out view
+                network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
                 
                 // Close the expandable search
                 const searchToggleBtn = document.getElementById('searchToggleBtn');
@@ -3795,7 +3795,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Filter the network to show only connections from this user's perspective
                 filterNetworkByUser(nodeId);
                 network.selectNodes([nodeId]);
-                network.focus(nodeId, { scale: 0.3, animation: true }); // Zoomed out view
+                network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
                 selectNode(nodeId);
                 document.getElementById('searchResults').style.display = 'none';
                 document.getElementById('searchInput').value = '';
