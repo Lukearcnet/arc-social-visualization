@@ -1813,8 +1813,8 @@
                     
                     // Optimized degree filtering for better performance
                     filteredEvents = filteredEvents.filter(event => {
-                        const sourceUserId = event.source_id;
-                        const targetUserId = event.target_id;
+                        const sourceUserId = event.user1_id;
+                        const targetUserId = event.user2_id;
                         
                         // Quick check: if either user is the selected user, it's always 1st degree
                         if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
@@ -1989,8 +1989,8 @@
                 
                 // Filter events based on selected degree filters
                 filteredEvents = filteredEvents.filter(event => {
-                    const sourceUserId = event.source_id;
-                    const targetUserId = event.target_id;
+                    const sourceUserId = event.user1_id;
+                    const targetUserId = event.user2_id;
                     
                     let shouldShow = false;
                     
@@ -2088,8 +2088,8 @@
             let fillColor = '#ffffff';
             
             if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
-                const sourceUserId = event.source_id;
-                const targetUserId = event.target_id;
+                const sourceUserId = event.user1_id;
+                const targetUserId = event.user2_id;
                 
                 // Determine the degree based on the actual filtering logic
                 if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
@@ -2153,8 +2153,8 @@
         function updateStats(events) {
             const uniqueUsers = new Set();
             events.forEach(event => {
-                uniqueUsers.add(event.source_id);
-                uniqueUsers.add(event.target_id);
+                uniqueUsers.add(event.user1_id);
+                uniqueUsers.add(event.user2_id);
             });
             
             // Get the appropriate total tap count based on current mode
@@ -2536,8 +2536,8 @@
                 
                 // Filter events by degree connections that are actually visible
                 const degreeFilteredEvents = filteredEvents.filter(event => {
-                    const sourceUserId = event.source_id;
-                    const targetUserId = event.target_id;
+                    const sourceUserId = event.user1_id;
+                    const targetUserId = event.user2_id;
                     
                     // Quick check: if either user is the selected user, it's always 1st degree
                     if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
