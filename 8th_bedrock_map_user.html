@@ -3769,6 +3769,12 @@
             } else {
                 sidebar.classList.add('show');
                 hamburger.classList.add('active');
+                
+                // Reset search to original user when opening control panel (mobile equivalent of desktop behavior)
+                if (isViewingSearchedUser) {
+                    revertToOriginalUser();
+                }
+                
                 // Notify parent that control panel is open
                 if (window.parent) {
                     window.parent.postMessage({
