@@ -121,6 +121,131 @@
             border-color: rgba(255, 255, 255, 0.4);
         }
         
+        /* Search Control - Separate Container */
+        .search-control-floating {
+            position: absolute;
+            top: 114px; /* Move down further to create proper visual spacing */
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-control-floating .search-toggle-btn {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--fg);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .search-control-floating .search-toggle-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .search-toggle-btn svg {
+            width: 16px;
+            height: 16px;
+            transition: opacity 0.2s ease;
+        }
+        
+        /* Search button expanded state */
+        .search-toggle-btn.expanded {
+            width: 300px;
+            min-width: 300px !important;
+            padding: 8px 12px !important;
+            justify-content: flex-start;
+            z-index: 1001;
+        }
+        
+        .search-toggle-btn.expanded svg {
+            opacity: 0;
+        }
+        
+        /* Hidden input field that appears when expanded */
+        .search-toggle-btn .search-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--fg);
+            font-size: var(--text-md);
+            outline: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        
+        .search-toggle-btn.expanded .search-input {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .search-toggle-btn .search-input::placeholder {
+            color: var(--fg-muted);
+        }
+        
+        /* Search results dropdown */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: none;
+            border-radius: 0 0 var(--radius-1) var(--radius-1);
+            backdrop-filter: blur(10px);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1003;
+            display: none;
+        }
+        
+        .search-results.show {
+            display: block;
+        }
+        
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.2s ease;
+        }
+        
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-item .user-name {
+            font-weight: 500;
+            color: var(--fg);
+            font-size: var(--text-sm);
+        }
+        
+        .search-result-item .user-location {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+            margin-top: 2px;
+        }
+        
         /* Header Styling - Normalized from bedrock 5 */
         .header {
             background: #000000; /* Pure black instead of var(--bg-1) */
@@ -750,6 +875,11 @@
                 top: 10px !important;
                 z-index: 10000 !important;
             }
+            
+            body.iframe-context .search-control-floating {
+                top: 10px !important;
+                z-index: 10000 !important;
+            }
         }
 
         /* ========================================
@@ -880,6 +1010,11 @@
             
             /* Align map controls with hamburger button */
             .map-controls-floating {
+                top: 27px;
+            }
+            
+            /* Adjust search control positioning on mobile */
+            .search-control-floating {
                 top: 27px;
             }
         }
@@ -1060,6 +1195,18 @@
             <div class="map-controls-floating">
                 <button class="control-btn" onclick="fitMapToBounds()">Fit to Data</button>
                 <button class="control-btn" onclick="resetMapView()">Reset View</button>
+            </div>
+            
+            <!-- Search Button - Separate Container -->
+            <div class="search-control-floating">
+                <button class="control-btn search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()" title="Search Users">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
+                    <div id="expandableSearchResults" class="search-results"></div>
+                </button>
             </div>
         </div>
     </div>
@@ -2318,6 +2465,122 @@
             updateDisplay();
         }
         
+        // Toggle search functionality for floating search bar
+        function toggleSearch() {
+            const searchToggleBtn = document.getElementById('searchToggleBtn');
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            
+            console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'));
+            
+            if (searchToggleBtn.classList.contains('expanded')) {
+                // Close search
+                console.log('🔍 TOGGLE SEARCH - CLOSING');
+                searchToggleBtn.classList.remove('expanded');
+                searchInput.value = '';
+                searchResults.classList.remove('show');
+                searchResults.innerHTML = '';
+            } else {
+                // Open search
+                console.log('🔍 TOGGLE SEARCH - OPENING');
+                searchToggleBtn.classList.add('expanded');
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 100);
+            }
+        }
+        
+        // Initialize floating search functionality
+        function initFloatingSearch() {
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                
+                if (query.length < 2) {
+                    searchResults.classList.remove('show');
+                    searchResults.innerHTML = '';
+                    return;
+                }
+                
+                // Search through all users in edges data
+                const matches = [];
+                const seenUsers = new Set();
+                
+                // Safety guard for undefined values
+                const lower = v => (v ?? '').toString().toLowerCase();
+                
+                // Search through all users in tap data (which has home locations)
+                completeLocationData.forEach(tap => {
+                    // Check user1
+                    if (lower(tap.user1_name).includes(query) && !seenUsers.has(tap.user1_id)) {
+                        matches.push({
+                            id: tap.user1_id,
+                            name: tap.user1_name,
+                            location: tap.user1_home || 'Unknown location'
+                        });
+                        seenUsers.add(tap.user1_id);
+                    }
+                    
+                    // Check user2
+                    if (lower(tap.user2_name).includes(query) && !seenUsers.has(tap.user2_id)) {
+                        matches.push({
+                            id: tap.user2_id,
+                            name: tap.user2_name,
+                            location: tap.user2_home || 'Unknown location'
+                        });
+                        seenUsers.add(tap.user2_id);
+                    }
+                });
+                
+                // Display results
+                if (matches.length > 0) {
+                    searchResults.innerHTML = matches.slice(0, 10).map(user => `
+                        <div class="search-result-item" onclick="selectUser('${user.id}', '${user.name}')">
+                            <div class="user-name">${user.name}</div>
+                            <div class="user-location">${user.location}</div>
+                        </div>
+                    `).join('');
+                    searchResults.classList.add('show');
+                } else {
+                    searchResults.innerHTML = '<div class="search-result-item" style="color: var(--fg-muted); cursor: default;">No users found</div>';
+                    searchResults.classList.add('show');
+                }
+            });
+            
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.remove('show');
+                }
+            });
+            
+            // Keyboard handling
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    // Close search on escape
+                    const searchToggleBtn = document.getElementById('searchToggleBtn');
+                    searchToggleBtn.classList.remove('expanded');
+                    this.value = '';
+                    searchResults.classList.remove('show');
+                    searchResults.innerHTML = '';
+                }
+            });
+            
+            // Focus handling
+            searchInput.addEventListener('focus', function() {
+                if (this.value.length >= 2) {
+                    searchResults.classList.add('show');
+                }
+            });
+            
+            // Mobile-specific touch handler to ensure keyboard appears
+            searchInput.addEventListener('touchstart', function() {
+                this.focus();
+            });
+        }
+        
         // Initialize user search functionality
         function initUserSearch() {
             const searchInput = document.getElementById('userSearchInput');
@@ -3174,6 +3437,9 @@
             
             // Initialize user search immediately (user-centric mode)
             initUserSearch();
+            
+            // Initialize floating search
+            initFloatingSearch();
             
             // Check for userName parameter and auto-select user
             const urlParams = new URLSearchParams(window.location.search);
