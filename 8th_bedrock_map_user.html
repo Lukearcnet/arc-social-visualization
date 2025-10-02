@@ -271,6 +271,7 @@
             cursor: pointer;
             margin: 0;
             pointer-events: none;
+            padding: 12px 0; /* Extra vertical hit area */
         }
         
         /* Left slider positioning - on top of right slider */
@@ -336,7 +337,12 @@
             height: 6px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
+            touch-action: none;
         }
+        
+        /* Proximity-based z-index classes */
+        .timeline-slider.on-top { z-index: 3; }
+        .timeline-slider.below  { z-index: 2; }
         
         /* Range highlighting between handles */
         .dual-slider-container::before {
@@ -1468,40 +1474,86 @@
             updateDualTimelineDisplay(0, 100);
             updateRangeHighlighting(0, 100);
             
-            // Add debugging for input events (matching 10th version)
-            leftSlider.addEventListener('input', function(e) {
-                console.log('📊 Left slider input event - value:', e.target.value);
-            });
-            
-            rightSlider.addEventListener('input', function(e) {
-                console.log('📊 Right slider input event - value:', e.target.value);
-            });
-            
-            // Dynamic z-index switching to fix event targeting
-            leftSlider.addEventListener('mousedown', function() {
-                console.log('🖱️ Left slider mousedown - bringing to front');
-                leftSlider.style.zIndex = '4';
-                rightSlider.style.zIndex = '2';
-            });
-            
-            rightSlider.addEventListener('mousedown', function() {
-                console.log('🖱️ Right slider mousedown - bringing to front');
-                rightSlider.style.zIndex = '4';
-                leftSlider.style.zIndex = '2';
-            });
-            
-            // Reset z-index after interaction
-            leftSlider.addEventListener('mouseup', function() {
-                console.log('🖱️ Left slider mouseup - resetting z-index');
-                leftSlider.style.zIndex = '3';
-                rightSlider.style.zIndex = '2';
-            });
-            
-            rightSlider.addEventListener('mouseup', function() {
-                console.log('🖱️ Right slider mouseup - resetting z-index');
-                rightSlider.style.zIndex = '2';
-                leftSlider.style.zIndex = '3';
-            });
+            // Proximity-based z-index solution for dual sliders
+            (function () {
+                const container = document.querySelector('.dual-slider-container');
+                const left = leftSlider;
+                const right = rightSlider;
+                const minGap = 1; // in slider units (0–100 here)
+
+                // Initialize z-order
+                function setTop(which) {
+                    const top = which === 'left' ? left : right;
+                    const other = which === 'left' ? right : left;
+                    top.classList.add('on-top');  top.classList.remove('below');
+                    other.classList.add('below'); other.classList.remove('on-top');
+                }
+                setTop('right'); // start with right on top; will swap based on pointer
+
+                // Map value to pixel X inside container
+                function valueToPx(input) {
+                    const rect = container.getBoundingClientRect();
+                    const min = Number(input.min), max = Number(input.max), val = Number(input.value);
+                    const t = (val - min) / (max - min);
+                    return rect.left + t * rect.width;
+                }
+
+                function closestHandle(clientX) {
+                    const dl = Math.abs(clientX - valueToPx(left));
+                    const dr = Math.abs(clientX - valueToPx(right));
+                    return dl <= dr ? 'left' : 'right';
+                }
+
+                // Before the user presses, make the nearer handle the top one
+                container.addEventListener('pointermove', (e) => {
+                    if (container.dataset.lock) return; // don't swap while dragging
+                    setTop(closestHandle(e.clientX));
+                });
+
+                // Lock z-index to the active handle during drag
+                [left, right].forEach((el) => {
+                    el.addEventListener('pointerdown', () => {
+                        setTop(el === left ? 'left' : 'right');
+                        container.dataset.lock = '1';
+                    }, { passive: true });
+                });
+
+                // Unlock on release (use capture on window to catch releases outside)
+                window.addEventListener('pointerup', () => { container.dataset.lock = ''; }, true);
+
+                // Enforce a minimum gap and keep values sane
+                function clampValues() {
+                    const lv = Number(left.value), rv = Number(right.value);
+                    if (lv > rv - minGap) left.value = rv - minGap;
+                    if (rv < lv + minGap) right.value = lv + minGap;
+                }
+
+                left.addEventListener('input', () => {
+                    clampValues();
+                    // update your highlight UI here
+                });
+
+                right.addEventListener('input', () => {
+                    clampValues();
+                    // update your highlight UI here
+                });
+
+                // Optional: track click to jump the nearer handle to the clicked spot
+                container.addEventListener('pointerdown', (e) => {
+                    const which = closestHandle(e.clientX);
+                    const target = which === 'left' ? left : right;
+                    setTop(which);
+
+                    const rect = container.getBoundingClientRect();
+                    const min = Number(target.min), max = Number(target.max);
+                    const t = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                    const next = Math.round(min + t * (max - min));
+
+                    target.value = next;
+                    clampValues();
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            })();
             
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
