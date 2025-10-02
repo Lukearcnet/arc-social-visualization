@@ -3894,9 +3894,24 @@ Remember: You're helping someone explore and understand their social network dat
                 popup.className = 'custom-popup';
                 popup.innerHTML = popupContent;
                 popup.style.position = 'fixed';
-                popup.style.top = '50%';
-                popup.style.left = '50%';
-                popup.style.transform = 'translate(-50%, -50%)';
+                
+                // Mobile-friendly positioning: top-right corner with some margin
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    popup.style.top = '20px';
+                    popup.style.right = '20px';
+                    popup.style.left = 'auto';
+                    popup.style.transform = 'none';
+                    popup.style.maxWidth = '300px';
+                    popup.style.maxHeight = '70vh';
+                    popup.style.overflowY = 'auto';
+                } else {
+                    // Desktop: keep centered
+                    popup.style.top = '50%';
+                    popup.style.left = '50%';
+                    popup.style.transform = 'translate(-50%, -50%)';
+                }
+                
                 popup.style.zIndex = '10000';
                 
                 // Add close button
