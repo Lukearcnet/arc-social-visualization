@@ -1565,56 +1565,55 @@
                 });
             })();
             
-            // Add event listeners for both sliders
+            // Add event listeners for both sliders with throttling
             [leftSlider, rightSlider].forEach(slider => {
+                // Throttle slider updates to max 10fps (100ms) for better performance
+                let sliderThrottle = null;
+                
                 slider.addEventListener('input', function() {
-                    // Reduced logging for performance
-                    // console.log(`🎚️ FOREACH INPUT - Slider moved: ${this.id} = ${this.value}%`);
-                    // console.log(`🎚️ FOREACH INPUT - this === leftSlider: ${this === leftSlider}, this === rightSlider: ${this === rightSlider}`);
-                    // console.log(`🎚️ FOREACH INPUT - event target: ${event.target.id}, event type: ${event.type}`);
+                    // Store current slider values immediately for responsive UI
+                    const currentLeftValue = parseInt(leftSlider.value);
+                    const currentRightValue = parseInt(rightSlider.value);
                     
-                    // Clear any pending update
-                    if (updateTimeout) {
-                        clearTimeout(updateTimeout);
+                    // Clear any pending throttled update
+                    if (sliderThrottle) {
+                        clearTimeout(sliderThrottle);
                     }
                     
-                    // Debounce the update to reduce choppiness
-                    updateTimeout = setTimeout(() => {
+                    // Throttle the actual processing to reduce lag
+                    sliderThrottle = setTimeout(() => {
                         if (!isUpdating) {
                             const leftValue = parseInt(leftSlider.value);
                             const rightValue = parseInt(rightSlider.value);
-                            
-                            // console.log(`🎚️ FOREACH TIMEOUT - Slider values: Left=${leftValue}%, Right=${rightValue}%`);
                             
                             // Calculate minimum gap
                             const minGap = 1; // Minimum 1% gap
                             
                             // Handle left slider movement
                             if (this === leftSlider) {
-                                console.log(`🎚️ FOREACH - Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Left slider cannot go past right slider minus minimum gap
                                 if (leftValue >= rightValue - minGap) {
                                     const newValue = Math.max(0, rightValue - minGap);
                                     leftSlider.value = newValue;
-                                    console.log(`🎚️ FOREACH - Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                             
                             // Handle right slider movement  
                             if (this === rightSlider) {
-                                console.log(`🎚️ FOREACH - Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Right slider cannot go before left slider plus minimum gap
                                 if (rightValue <= leftValue + minGap) {
                                     const newValue = Math.min(100, leftValue + minGap);
                                     rightSlider.value = newValue;
-                                    console.log(`🎚️ FOREACH - Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                             
+                            // Update timeline and range highlighting
                             updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                             updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
                         }
-                    }, 16); // ~60fps update rate
+                        
+                        sliderThrottle = null;
+                    }, 100); // 100ms = 10fps max update rate
                 });
                 
                 slider.addEventListener('mousedown', function() {
