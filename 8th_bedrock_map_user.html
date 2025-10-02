@@ -882,12 +882,6 @@
                 z-index: 10000 !important;
             }
             
-            /* Add iframe context adjustments for search control */
-            body.iframe-context .search-control-floating {
-                top: 10px !important;
-                z-index: 10000 !important;
-            }
-            
         }
 
         /* ========================================
@@ -2543,31 +2537,9 @@
             } else if (!searchToggleBtn.classList.contains('expanded')) {
                 // Open search
                 searchToggleBtn.classList.add('expanded');
-                
-                // Mobile-specific focus handling to prevent viewport issues
-                if (window.innerWidth <= 900) {
-                    // On mobile, delay focus and prevent viewport changes
-                    setTimeout(() => {
-                        // Prevent mobile browser zoom
-                        document.body.style.zoom = '1';
-                        document.documentElement.style.zoom = '1';
-                        
-                        searchInput.focus();
-                        
-                        // Force viewport to stay consistent after focus
-                        setTimeout(() => {
-                            const viewport = document.querySelector('meta[name="viewport"]');
-                            if (viewport) {
-                                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-                            }
-                        }, 100);
-                    }, 150);
-                } else {
-                    // Desktop behavior
-                    setTimeout(() => {
-                        searchInput.focus();
-                    }, 100);
-                }
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 100);
             }
         }
         
@@ -2738,41 +2710,17 @@
                 }
             });
             
-            // Focus handling with mobile viewport protection
+            // Focus handling
             searchInput.addEventListener('focus', function() {
                 if (this.value.length >= 2) {
                     searchResults.classList.add('show');
                 }
-                
-                // Mobile viewport protection on focus
-                if (window.innerWidth <= 900) {
-                    // Prevent mobile browser zoom on focus
-                    document.body.style.zoom = '1';
-                    document.documentElement.style.zoom = '1';
-                    document.body.style.transform = 'scale(1)';
-                    document.documentElement.style.transform = 'scale(1)';
-                    
-                    // Force viewport consistency
-                    setTimeout(() => {
-                        const viewport = document.querySelector('meta[name="viewport"]');
-                        if (viewport) {
-                            viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-                        }
-                    }, 50);
-                }
             });
             
-            // Mobile-specific touch handler with viewport protection
-            searchInput.addEventListener('touchstart', function(e) {
-                // Prevent default zoom behavior on mobile
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Focus without triggering viewport changes
-                setTimeout(() => {
-                    this.focus();
-                }, 50);
-            }, { passive: false });
+            // Mobile-specific touch handler to ensure keyboard appears
+            searchInput.addEventListener('touchstart', function() {
+                this.focus();
+            });
             
             // Prevent clicks inside search input from bubbling up
             searchInput.addEventListener('click', function(e) {
@@ -3758,70 +3706,7 @@
             if (window !== window.top) {
                 document.body.classList.add('iframe-context');
                 console.log('🔗 Iframe context detected - applying mobile control adjustments');
-                
-                // Add mobile viewport handling for iframe context
-                initMobileViewportHandling();
             }
-        }
-        
-        // Mobile viewport handling to prevent keyboard scaling issues
-        function initMobileViewportHandling() {
-            // Store original viewport settings
-            const originalViewport = document.querySelector('meta[name="viewport"]');
-            const originalContent = originalViewport ? originalViewport.content : 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-            
-            // Prevent viewport changes when keyboard appears
-            let isKeyboardOpen = false;
-            let viewportChangeTimeout = null;
-            
-            // Monitor for keyboard appearance
-            const handleViewportChange = () => {
-                if (viewportChangeTimeout) {
-                    clearTimeout(viewportChangeTimeout);
-                }
-                
-                viewportChangeTimeout = setTimeout(() => {
-                    // Force viewport to stay consistent
-                    const viewport = document.querySelector('meta[name="viewport"]');
-                    if (viewport) {
-                        viewport.content = originalContent;
-                    }
-                    
-                    // Prevent zoom changes
-                    document.body.style.zoom = '1';
-                    document.documentElement.style.zoom = '1';
-                    document.body.style.transform = 'scale(1)';
-                    document.documentElement.style.transform = 'scale(1)';
-                }, 100);
-            };
-            
-            // Listen for resize events that might indicate keyboard appearance
-            window.addEventListener('resize', handleViewportChange);
-            
-            // Monitor for input focus events
-            document.addEventListener('focusin', function(e) {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                    isKeyboardOpen = true;
-                    handleViewportChange();
-                }
-            });
-            
-            document.addEventListener('focusout', function(e) {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                    isKeyboardOpen = false;
-                    // Delay viewport reset to allow keyboard to close
-                    setTimeout(handleViewportChange, 300);
-                }
-            });
-            
-            // Prevent mobile browser zoom on input focus
-            document.addEventListener('touchstart', function(e) {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                    // Prevent default zoom behavior
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            }, { passive: false });
         }
 
         // Initialize when page loads
