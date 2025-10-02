@@ -2056,7 +2056,7 @@ DO NOT use file:// URLs with this version
                     return {
                         id: user.user_id,
                         label: name,
-                        title: `${name} - ${taps} taps, ${connections} connections`,
+                        // title: `${name} - ${taps} taps, ${connections} connections`, // Removed old popup
                         size: size,
                         color: getActivityColor(taps),
                         mass: 1.0,
@@ -4830,7 +4830,7 @@ Remember: You're helping someone explore and understand their social network dat
                             id: nodeId,
                             size: nodeProps.size,
                             color: nodeProps.color,
-                            title: `${allNodes[nodeId].label} - ${nodeProps.taps} taps, ${nodeProps.connections} connections`
+                            // title: `${allNodes[nodeId].label} - ${nodeProps.taps} taps, ${nodeProps.connections} connections` // Removed old popup
                         });
                     }
                 });
@@ -5501,7 +5501,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 size: timelineProps.size,
                                 color: timelineProps.color,
                                 font: { size: 12, face: 'Arial', color: '#ffffff' },
-                                title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                // title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections` // Removed old popup
                             });
                         } else {
                             finalNodeUpdates.push({
@@ -5593,7 +5593,7 @@ Remember: You're helping someone explore and understand their social network dat
                                     id: node.id, 
                                     size: timelineProps.size,
                                     color: timelineProps.color,
-                                    title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                    // title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections` // Removed old popup
                                 });
                             }
                         });
@@ -5654,7 +5654,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 size: timelineProps.size,
                                 color: timelineProps.color,
                                 font: { size: 12, face: 'Arial', color: '#ffffff' },
-                                title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                // title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections` // Removed old popup
                             });
                         });
                         nodes.update(globalModeNodeUpdates);
