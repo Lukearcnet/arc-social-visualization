@@ -2465,6 +2465,50 @@
             updateDisplay();
         }
         
+        // Find user by name in completeLocationData
+        function findUserByName(userName) {
+            const seenUsers = new Set();
+            const matches = [];
+            
+            // Safety guard for undefined values
+            const lower = v => (v ?? '').toString().toLowerCase();
+            
+            // Search through all users in tap data
+            completeLocationData.forEach(tap => {
+                // Check user1
+                if (lower(tap.user1_name).includes(userName.toLowerCase()) && !seenUsers.has(tap.user1_id)) {
+                    matches.push({
+                        id: tap.user1_id,
+                        name: tap.user1_name,
+                        location: tap.user1_home || 'Unknown location'
+                    });
+                    seenUsers.add(tap.user1_id);
+                }
+                
+                // Check user2
+                if (lower(tap.user2_name).includes(userName.toLowerCase()) && !seenUsers.has(tap.user2_id)) {
+                    matches.push({
+                        id: tap.user2_id,
+                        name: tap.user2_name,
+                        location: tap.user2_home || 'Unknown location'
+                    });
+                    seenUsers.add(tap.user2_id);
+                }
+            });
+            
+            // Find exact match first
+            const exactMatch = matches.find(user => 
+                user.name.toLowerCase().trim() === userName.toLowerCase().trim()
+            );
+            
+            if (exactMatch) {
+                return exactMatch;
+            }
+            
+            // If no exact match, return the first partial match
+            return matches.length > 0 ? matches[0] : null;
+        }
+        
         // Toggle search functionality for floating search bar
         function toggleSearch() {
             const searchToggleBtn = document.getElementById('searchToggleBtn');
@@ -3448,34 +3492,17 @@
             console.log('🔍 8th Bedrock - userName param:', userName);
             if (userName) {
                 console.log('🎯 Auto-selecting user from URL:', userName);
-                // Simulate typing in search and selecting the user
+                // Direct user selection without going through search UI
                 setTimeout(() => {
-                    const searchInput = document.getElementById('userSearchInput');
-                    if (searchInput) {
-                        searchInput.value = userName;
-                        // Trigger search
-                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        // After a longer delay, select the first result (should be the user)
-                        setTimeout(() => {
-                            const searchResults = document.getElementById('searchResults');
-                            const firstResult = searchResults.querySelector('.search-result');
-                            if (firstResult) {
-                                console.log('🎯 Clicking search result for:', userName);
-                                firstResult.click();
-                            } else {
-                                console.log('❌ No search result found for:', userName);
-                                // Try again after another delay
-                                setTimeout(() => {
-                                    const retryResult = searchResults.querySelector('.search-result');
-                                    if (retryResult) {
-                                        console.log('🎯 Retry: Clicking search result for:', userName);
-                                        retryResult.click();
-                                    }
-                                }, 1000);
-                            }
-                        }, 1500); // Increased delay
+                    // Find user in completeLocationData
+                    const user = findUserByName(userName);
+                    if (user) {
+                        console.log('✅ Found user for auto-selection:', user.name, 'ID:', user.id);
+                        selectUser(user.id, user.name);
+                    } else {
+                        console.log('❌ User not found for auto-selection:', userName);
                     }
-                }, 1500); // Increased initial delay
+                }, 1000);
             }
             
             // Sidebar is now working properly with browser zoom fixed
