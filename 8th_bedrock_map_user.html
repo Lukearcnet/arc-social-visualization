@@ -1455,28 +1455,43 @@
             updateDualTimelineDisplay(0, 100);
             updateRangeHighlighting(0, 100);
             
-            // Add debugging for click events
+            // Add comprehensive debugging for click events
             leftSlider.addEventListener('mousedown', function(e) {
-                console.log('🖱️ Left slider mousedown - event target:', e.target.id);
+                console.log('🖱️ LEFT SLIDER MOUSEDOWN - event target:', e.target.id, 'event type:', e.type, 'clientX:', e.clientX, 'clientY:', e.clientY);
+                console.log('🖱️ LEFT SLIDER - this.id:', this.id, 'this === leftSlider:', this === leftSlider, 'this === rightSlider:', this === rightSlider);
             });
             
             rightSlider.addEventListener('mousedown', function(e) {
-                console.log('🖱️ Right slider mousedown - event target:', e.target.id);
+                console.log('🖱️ RIGHT SLIDER MOUSEDOWN - event target:', e.target.id, 'event type:', e.type, 'clientX:', e.clientX, 'clientY:', e.clientY);
+                console.log('🖱️ RIGHT SLIDER - this.id:', this.id, 'this === leftSlider:', this === leftSlider, 'this === rightSlider:', this === rightSlider);
             });
             
-            // Add debugging for input events
+            // Add comprehensive debugging for input events
             leftSlider.addEventListener('input', function(e) {
-                console.log('📊 Left slider input event - value:', e.target.value);
+                console.log('📊 LEFT SLIDER INPUT - event target:', e.target.id, 'value:', e.target.value, 'this.id:', this.id);
+                console.log('📊 LEFT SLIDER INPUT - this === leftSlider:', this === leftSlider, 'this === rightSlider:', this === rightSlider);
             });
             
             rightSlider.addEventListener('input', function(e) {
-                console.log('📊 Right slider input event - value:', e.target.value);
+                console.log('📊 RIGHT SLIDER INPUT - event target:', e.target.id, 'value:', e.target.value, 'this.id:', this.id);
+                console.log('📊 RIGHT SLIDER INPUT - this === leftSlider:', this === leftSlider, 'this === rightSlider:', this === rightSlider);
             });
+            
+            // Add debugging for click events on the container
+            const dualSliderContainer = document.querySelector('.dual-slider-container');
+            if (dualSliderContainer) {
+                dualSliderContainer.addEventListener('click', function(e) {
+                    console.log('🖱️ CONTAINER CLICK - event target:', e.target.id, 'event type:', e.type, 'clientX:', e.clientX, 'clientY:', e.clientY);
+                    console.log('🖱️ CONTAINER CLICK - target classList:', e.target.classList.toString());
+                });
+            }
             
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
                 slider.addEventListener('input', function() {
-                    console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                    console.log(`🎚️ FOREACH INPUT - Slider moved: ${this.id} = ${this.value}%`);
+                    console.log(`🎚️ FOREACH INPUT - this === leftSlider: ${this === leftSlider}, this === rightSlider: ${this === rightSlider}`);
+                    console.log(`🎚️ FOREACH INPUT - event target: ${event.target.id}, event type: ${event.type}`);
                     
                     // Clear any pending update
                     if (updateTimeout) {
@@ -1489,30 +1504,30 @@
                             const leftValue = parseInt(leftSlider.value);
                             const rightValue = parseInt(rightSlider.value);
                             
-                            console.log(`🎚️ Slider values: Left=${leftValue}%, Right=${rightValue}%`);
+                            console.log(`🎚️ FOREACH TIMEOUT - Slider values: Left=${leftValue}%, Right=${rightValue}%`);
                             
                             // Calculate minimum gap
                             const minGap = 1; // Minimum 1% gap
                             
                             // Handle left slider movement
                             if (this === leftSlider) {
-                                console.log(`🎚️ Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
+                                console.log(`🎚️ FOREACH - Processing LEFT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Left slider cannot go past right slider minus minimum gap
                                 if (leftValue >= rightValue - minGap) {
                                     const newValue = Math.max(0, rightValue - minGap);
                                     leftSlider.value = newValue;
-                                    console.log(`🎚️ Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
+                                    console.log(`🎚️ FOREACH - Left slider constrained from ${leftValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                             
                             // Handle right slider movement  
                             if (this === rightSlider) {
-                                console.log(`🎚️ Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
+                                console.log(`🎚️ FOREACH - Processing RIGHT slider movement: ${leftValue}% -> ${rightValue}%`);
                                 // Right slider cannot go before left slider plus minimum gap
                                 if (rightValue <= leftValue + minGap) {
                                     const newValue = Math.min(100, leftValue + minGap);
                                     rightSlider.value = newValue;
-                                    console.log(`🎚️ Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
+                                    console.log(`🎚️ FOREACH - Right slider constrained from ${rightValue}% to ${newValue}% (min gap: ${minGap}%)`);
                                 }
                             }
                             
