@@ -157,6 +157,16 @@
             margin-bottom: var(--space-4);
         }
         
+        .timeline-control-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .timeline-control-group > label {
+            font-size: 15px !important;
+            font-weight: 500 !important;
+            margin-bottom: 16px !important;
+        }
+        
         .control-group label {
             display: block;
             margin-bottom: var(--space-1);
@@ -333,6 +343,13 @@
             color: var(--fg-muted);
         }
         
+        /* Timeline Slider Container - Matching 10th bedrock */
+        .timeline-slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
         /* Dual Slider Container - Adapted from 10th bedrock */
         .dual-slider-container {
             position: relative;
@@ -356,14 +373,6 @@
             z-index: 1;
         }
         
-        /* Dual slider positioning */
-        .timeline-slider-left {
-            z-index: 2; /* Left slider behind right slider */
-        }
-        
-        .timeline-slider-right {
-            z-index: 3; /* Right slider on top */
-        }
         
         /* Timeline info layout for dual slider */
         .timeline-date-left,
@@ -954,12 +963,14 @@
                 </div>
                 
                 <!-- Timeline Slider -->
-                <div class="control-group">
+                <div class="timeline-control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
-                        <div class="dual-slider-container">
-                            <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
-                            <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
+                        <div class="timeline-slider-container">
+                            <div class="dual-slider-container">
+                                <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
+                                <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
+                            </div>
                         </div>
                         <div class="timeline-info">
                             <div class="timeline-date-left">
