@@ -904,6 +904,12 @@
             -webkit-text-size-adjust: 100%;
         }
         
+        /* Restore original font sizes for control buttons (not form inputs) */
+        .map-controls-floating .control-btn,
+        .control-btn {
+            font-size: var(--text-sm) !important; /* 0.8rem - original size */
+        }
+        
         /* Specifically target search inputs with maximum specificity */
         .search-input { 
             font-size: 16px !important; 
