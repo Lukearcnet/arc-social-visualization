@@ -263,6 +263,18 @@
             pointer-events: none;
         }
         
+        /* Left slider should only be interactive on the left half */
+        .timeline-slider-left {
+            z-index: 2;
+            clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
+        }
+        
+        /* Right slider should only be interactive on the right half */
+        .timeline-slider-right {
+            z-index: 3;
+            clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+        }
+        
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
