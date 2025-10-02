@@ -340,20 +340,17 @@ DO NOT use file:// URLs with this version
                 margin-bottom: var(--space-4);
             }
             
-            /* Mode Button Styling - Match Activity Level Text */
+            /* Mode Button Styling - Match 8th bedrock */
             .mode-btn {
-                padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 1.2);
+                flex: 1;
+                padding: var(--space-1) var(--space-2);
                 border: none;
                 background: transparent;
                 color: var(--fg-muted);
                 border-radius: var(--radius-1);
                 cursor: pointer;
-                font-size: 0.8rem !important; /* Match Activity Level font size */
-                font-weight: 500 !important; /* Match Activity Level font weight */
-                letter-spacing: 0.05em;
+                font-size: var(--text-md);
                 transition: all 0.2s ease;
-                width: 100%;
-                text-align: center;
             }
             
             .mode-btn.active {
