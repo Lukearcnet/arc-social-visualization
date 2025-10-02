@@ -1924,7 +1924,7 @@
             const userCount = uniqueUsers.size;
             const daysDiff = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
             
-            document.getElementById('connectionCount').textContent = `${userCount} users • ${daysDiff} days`;
+            document.getElementById('connectionCount').textContent = `${userCount} users\n${daysDiff} days`;
             
             // Update profile stats if a user is selected
             if (currentMode === 'user' && selectedUserId) {
