@@ -2531,25 +2531,19 @@
             const searchInput = document.getElementById('expandableSearchInput');
             const searchResults = document.getElementById('expandableSearchResults');
             
-            console.log('🔍 TOGGLE SEARCH - expanded:', searchToggleBtn.classList.contains('expanded'), 'recentKeyboardActivity:', recentKeyboardActivity);
-            
             // Don't close if there's recent keyboard activity (prevents space key from closing)
             if (searchToggleBtn.classList.contains('expanded') && !recentKeyboardActivity) {
                 // Close search
-                console.log('🔍 TOGGLE SEARCH - CLOSING');
                 searchToggleBtn.classList.remove('expanded');
                 searchInput.value = '';
                 searchResults.classList.remove('show');
                 searchResults.innerHTML = '';
             } else if (!searchToggleBtn.classList.contains('expanded')) {
                 // Open search
-                console.log('🔍 TOGGLE SEARCH - OPENING');
                 searchToggleBtn.classList.add('expanded');
                 setTimeout(() => {
                     searchInput.focus();
                 }, 100);
-            } else {
-                console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
             }
         }
         
@@ -3070,12 +3064,6 @@
         
         // Update view options numbers based on timeline and degree filtering
         function updateViewOptionsNumbers(filteredEvents, startTime, endTime) {
-            console.log('🔍 updateViewOptionsNumbers called with:');
-            console.log('  - filteredEventsLength:', filteredEvents.length);
-            console.log('  - currentMode:', currentMode);
-            console.log('  - selectedUserId:', selectedUserId);
-            console.log('  - globalViewEnabled:', globalViewEnabled);
-            console.log('  - degreeFilters:', degreeFilters);
             
             // For user mode with degree filtering, count only degree-filtered connections
             if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
@@ -3088,16 +3076,6 @@
                 }
                 const degreeConnections = window.cachedDegreeConnections.connections;
                 
-                // Debug: Check the structure of filteredEvents
-                if (filteredEvents.length > 0) {
-                    console.log('🔍 Sample filtered event:');
-                    console.log('  - Event:', filteredEvents[0]);
-                    console.log('  - Keys:', Object.keys(filteredEvents[0]));
-                    console.log('  - source_id:', filteredEvents[0].source_id);
-                    console.log('  - target_id:', filteredEvents[0].target_id);
-                    console.log('  - user1_id:', filteredEvents[0].user1_id);
-                    console.log('  - user2_id:', filteredEvents[0].user2_id);
-                }
                 
                 // Filter events by degree connections that are actually visible
                 const degreeFilteredEvents = filteredEvents.filter(event => {
@@ -3169,12 +3147,6 @@
                     if (event.user2_id) activeUsers.add(event.user2_id);
                 });
                 
-                // Debug: Log the final counts
-                console.log('🔍 Degree-filtered counts:');
-                console.log('  - visibleTaps:', visibleTaps);
-                console.log('  - totalTaps:', totalTaps);
-                console.log('  - activeUsers:', activeUsers.size);
-                console.log('  - degreeFilteredEventsLength:', degreeFilteredEvents.length);
                 
                 // Update the display
                 document.getElementById('visibleTaps').textContent = visibleTaps;
@@ -3749,19 +3721,13 @@
             // Check for userName parameter and auto-select user
             const urlParams = new URLSearchParams(window.location.search);
             const userName = urlParams.get('userName');
-            console.log('🔍 8th Bedrock - URL params:', window.location.search);
-            console.log('🔍 8th Bedrock - userName param:', userName);
             if (userName) {
-                console.log('🎯 Auto-selecting user from URL:', userName);
                 // Direct user selection without going through search UI
                 setTimeout(() => {
                     // Find user in completeLocationData
                     const user = findUserByName(userName);
                     if (user) {
-                        console.log('✅ Found user for auto-selection:', user.name, 'ID:', user.id);
                         selectUser(user.id, user.name);
-                    } else {
-                        console.log('❌ User not found for auto-selection:', userName);
                     }
                 }, 1000);
             }
