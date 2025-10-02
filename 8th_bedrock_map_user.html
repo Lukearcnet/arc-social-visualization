@@ -3706,7 +3706,79 @@
             if (window !== window.top) {
                 document.body.classList.add('iframe-context');
                 console.log('🔗 Iframe context detected - applying mobile control adjustments');
+                
+                // Apply mobile container locking for iframe context
+                if (window.innerWidth <= 900) {
+                    lockMobileContainer();
+                }
             }
+        }
+        
+        // Lock mobile container to prevent viewport scaling issues
+        function lockMobileContainer() {
+            console.log('🔒 Locking mobile container to prevent viewport scaling');
+            
+            // Lock viewport meta tag
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+            }
+            
+            // Lock body and document scaling
+            document.body.style.transform = 'scale(1)';
+            document.documentElement.style.transform = 'scale(1)';
+            document.body.style.zoom = '1';
+            document.documentElement.style.zoom = '1';
+            
+            // Lock container positioning
+            document.body.style.position = 'relative';
+            document.body.style.width = '100%';
+            document.body.style.height = '100%';
+            document.body.style.overflow = 'hidden';
+            
+            // Prevent mobile browser adjustments
+            preventMobileBrowserAdjustments();
+            
+            // Lock viewport on resize events
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    // Re-lock viewport after any resize
+                    document.body.style.transform = 'scale(1)';
+                    document.documentElement.style.transform = 'scale(1)';
+                    document.body.style.zoom = '1';
+                    document.documentElement.style.zoom = '1';
+                }, 100);
+            });
+        }
+        
+        // Prevent mobile browser adjustments that could affect container
+        function preventMobileBrowserAdjustments() {
+            // Prevent zoom on input focus
+            document.addEventListener('focusin', function(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    // Prevent mobile browser zoom
+                    document.body.style.zoom = '1';
+                    document.documentElement.style.zoom = '1';
+                    document.body.style.transform = 'scale(1)';
+                    document.documentElement.style.transform = 'scale(1)';
+                }
+            });
+            
+            // Prevent touch zoom
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Prevent keyboard zoom shortcuts
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=')) {
+                    e.preventDefault();
+                }
+            });
         }
 
         // Initialize when page loads
