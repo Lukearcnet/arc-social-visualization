@@ -1476,8 +1476,14 @@
             updateDualTimelineDisplay(0, 100);
             updateRangeHighlighting(0, 100);
             
+            // Add debugging for input events (matching 10th version)
+            leftSlider.addEventListener('input', function(e) {
+                console.log('📊 Left slider input event - value:', e.target.value);
+            });
             
-            
+            rightSlider.addEventListener('input', function(e) {
+                console.log('📊 Right slider input event - value:', e.target.value);
+            });
             
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
