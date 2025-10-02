@@ -2505,6 +2505,14 @@
         
         // Update view options numbers based on timeline and degree filtering
         function updateViewOptionsNumbers(filteredEvents, startTime, endTime) {
+            console.log('🔍 updateViewOptionsNumbers called with:', {
+                filteredEventsLength: filteredEvents.length,
+                currentMode,
+                selectedUserId,
+                globalViewEnabled,
+                degreeFilters
+            });
+            
             // For user mode with degree filtering, count only degree-filtered connections
             if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
                 // Get degree connections for the selected user
@@ -2515,6 +2523,12 @@
                     };
                 }
                 const degreeConnections = window.cachedDegreeConnections.connections;
+                
+                // Debug: Check the structure of filteredEvents
+                if (filteredEvents.length > 0) {
+                    console.log('🔍 Sample filtered event:', filteredEvents[0]);
+                    console.log('🔍 Event keys:', Object.keys(filteredEvents[0]));
+                }
                 
                 // Filter events by degree connections that are actually visible
                 const degreeFilteredEvents = filteredEvents.filter(event => {
@@ -2584,6 +2598,14 @@
                 degreeFilteredEvents.forEach(event => {
                     if (event.user1_id) activeUsers.add(event.user1_id);
                     if (event.user2_id) activeUsers.add(event.user2_id);
+                });
+                
+                // Debug: Log the final counts
+                console.log('🔍 Degree-filtered counts:', {
+                    visibleTaps,
+                    totalTaps,
+                    activeUsers: activeUsers.size,
+                    degreeFilteredEventsLength: degreeFilteredEvents.length
                 });
                 
                 // Update the display
