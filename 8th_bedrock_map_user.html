@@ -2505,13 +2505,12 @@
         
         // Update view options numbers based on timeline and degree filtering
         function updateViewOptionsNumbers(filteredEvents, startTime, endTime) {
-            console.log('🔍 updateViewOptionsNumbers called with:', {
-                filteredEventsLength: filteredEvents.length,
-                currentMode,
-                selectedUserId,
-                globalViewEnabled,
-                degreeFilters
-            });
+            console.log('🔍 updateViewOptionsNumbers called with:');
+            console.log('  - filteredEventsLength:', filteredEvents.length);
+            console.log('  - currentMode:', currentMode);
+            console.log('  - selectedUserId:', selectedUserId);
+            console.log('  - globalViewEnabled:', globalViewEnabled);
+            console.log('  - degreeFilters:', degreeFilters);
             
             // For user mode with degree filtering, count only degree-filtered connections
             if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
@@ -2526,8 +2525,13 @@
                 
                 // Debug: Check the structure of filteredEvents
                 if (filteredEvents.length > 0) {
-                    console.log('🔍 Sample filtered event:', filteredEvents[0]);
-                    console.log('🔍 Event keys:', Object.keys(filteredEvents[0]));
+                    console.log('🔍 Sample filtered event:');
+                    console.log('  - Event:', filteredEvents[0]);
+                    console.log('  - Keys:', Object.keys(filteredEvents[0]));
+                    console.log('  - source_id:', filteredEvents[0].source_id);
+                    console.log('  - target_id:', filteredEvents[0].target_id);
+                    console.log('  - user1_id:', filteredEvents[0].user1_id);
+                    console.log('  - user2_id:', filteredEvents[0].user2_id);
                 }
                 
                 // Filter events by degree connections that are actually visible
@@ -2601,12 +2605,11 @@
                 });
                 
                 // Debug: Log the final counts
-                console.log('🔍 Degree-filtered counts:', {
-                    visibleTaps,
-                    totalTaps,
-                    activeUsers: activeUsers.size,
-                    degreeFilteredEventsLength: degreeFilteredEvents.length
-                });
+                console.log('🔍 Degree-filtered counts:');
+                console.log('  - visibleTaps:', visibleTaps);
+                console.log('  - totalTaps:', totalTaps);
+                console.log('  - activeUsers:', activeUsers.size);
+                console.log('  - degreeFilteredEventsLength:', degreeFilteredEvents.length);
                 
                 // Update the display
                 document.getElementById('visibleTaps').textContent = visibleTaps;
