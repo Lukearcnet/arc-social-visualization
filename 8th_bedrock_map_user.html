@@ -1243,7 +1243,13 @@
             degree1: true,
             degree2: false,
             degree3: false
-        }; // Track degree filter states
+        };
+        
+        // Search state management
+        let originalUserId = null;        // The logged-in user
+        let originalUserName = null;      // The logged-in user's name  
+        let currentlyViewingUserId = null; // Who we're currently viewing (original or searched)
+        let isViewingSearchedUser = false; // Are we viewing a searched user or original? // Track degree filter states
         
         // Initialize the application
         async function init() {
@@ -2440,6 +2446,8 @@
                 // Hide user-specific elements
                 document.getElementById('profileSection').style.display = 'none';
                 document.getElementById('degreeFiltersGroup').style.display = 'none';
+                // Hide search functionality in global mode
+                document.querySelector('.search-control-floating').style.display = 'none';
                 // Enable showAll mode to skip timeline filtering (like Global version)
                 showAllEnabled = true;
                 // Set timeline to full range to show all data in global view
@@ -2457,6 +2465,8 @@
                 // Show user-specific elements
                 document.getElementById('profileSection').style.display = 'block';
                 document.getElementById('degreeFiltersGroup').style.display = 'block';
+                // Show search functionality in user mode
+                document.querySelector('.search-control-floating').style.display = 'block';
                 // Disable showAll mode when returning to user view
                 showAllEnabled = false;
             }
@@ -2548,47 +2558,78 @@
                     return;
                 }
                 
-                // Search through all users in edges data
+                // Search through degree connections of original user only
                 const matches = [];
                 const seenUsers = new Set();
                 
                 // Safety guard for undefined values
                 const lower = v => (v ?? '').toString().toLowerCase();
                 
-                // Search through all users in tap data (which has home locations)
-                completeLocationData.forEach(tap => {
-                    // Check user1
-                    if (lower(tap.user1_name).includes(query) && !seenUsers.has(tap.user1_id)) {
-                        matches.push({
-                            id: tap.user1_id,
-                            name: tap.user1_name,
-                            location: tap.user1_home || 'Unknown location'
-                        });
-                        seenUsers.add(tap.user1_id);
-                    }
+                // Only search if we have an original user
+                if (originalUserId) {
+                    // Get degree connections for the original user
+                    const degreeConnections = calculateDegreeConnections(originalUserId);
+                    const allDegreeUsers = new Set([
+                        ...degreeConnections.degree1,
+                        ...degreeConnections.degree2,
+                        ...degreeConnections.degree3
+                    ]);
                     
-                    // Check user2
-                    if (lower(tap.user2_name).includes(query) && !seenUsers.has(tap.user2_id)) {
-                        matches.push({
-                            id: tap.user2_id,
-                            name: tap.user2_name,
-                            location: tap.user2_home || 'Unknown location'
-                        });
-                        seenUsers.add(tap.user2_id);
-                    }
-                });
+                    // Search through degree connections only
+                    completeLocationData.forEach(tap => {
+                        // Check user1
+                        if (lower(tap.user1_name).includes(query) && 
+                            !seenUsers.has(tap.user1_id) && 
+                            allDegreeUsers.has(tap.user1_id)) {
+                            
+                            // Determine degree level
+                            let degreeLevel = '';
+                            if (degreeConnections.degree1.has(tap.user1_id)) degreeLevel = '1st';
+                            else if (degreeConnections.degree2.has(tap.user1_id)) degreeLevel = '2nd';
+                            else if (degreeConnections.degree3.has(tap.user1_id)) degreeLevel = '3rd';
+                            
+                            matches.push({
+                                id: tap.user1_id,
+                                name: tap.user1_name,
+                                location: tap.user1_home || 'Unknown location',
+                                degree: degreeLevel
+                            });
+                            seenUsers.add(tap.user1_id);
+                        }
+                        
+                        // Check user2
+                        if (lower(tap.user2_name).includes(query) && 
+                            !seenUsers.has(tap.user2_id) && 
+                            allDegreeUsers.has(tap.user2_id)) {
+                            
+                            // Determine degree level
+                            let degreeLevel = '';
+                            if (degreeConnections.degree1.has(tap.user2_id)) degreeLevel = '1st';
+                            else if (degreeConnections.degree2.has(tap.user2_id)) degreeLevel = '2nd';
+                            else if (degreeConnections.degree3.has(tap.user2_id)) degreeLevel = '3rd';
+                            
+                            matches.push({
+                                id: tap.user2_id,
+                                name: tap.user2_name,
+                                location: tap.user2_home || 'Unknown location',
+                                degree: degreeLevel
+                            });
+                            seenUsers.add(tap.user2_id);
+                        }
+                    });
+                }
                 
                 // Display results
                 if (matches.length > 0) {
                     searchResults.innerHTML = matches.slice(0, 10).map(user => `
-                        <div class="search-result-item" onclick="selectUser('${user.id}', '${user.name}')">
+                        <div class="search-result-item" onclick="selectSearchedUser('${user.id}', '${user.name}')">
                             <div class="user-name">${user.name}</div>
-                            <div class="user-location">${user.location}</div>
+                            <div class="user-location">${user.location} • ${user.degree} degree</div>
                         </div>
                     `).join('');
                     searchResults.classList.add('show');
                 } else {
-                    searchResults.innerHTML = '<div class="search-result-item" style="color: var(--fg-muted); cursor: default;">No users found</div>';
+                    searchResults.innerHTML = '<div class="search-result-item" style="color: var(--fg-muted); cursor: default;">No connections found</div>';
                     searchResults.classList.add('show');
                 }
             });
@@ -2692,6 +2733,12 @@
         function selectUser(userId, userName) {
             selectedUserId = userId;
             
+            // Set original user variables (for search functionality)
+            originalUserId = userId;
+            originalUserName = userName;
+            currentlyViewingUserId = userId;
+            isViewingSearchedUser = false;
+            
             // Update search input
             document.getElementById('userSearchInput').value = userName;
             document.getElementById('searchResults').innerHTML = '';
@@ -2717,6 +2764,150 @@
             
             // Don't auto-fit map when selecting users - let user control the view
             
+        }
+        
+        // Select searched user (shows only their 1st degree connections)
+        function selectSearchedUser(userId, userName) {
+            console.log('🔍 Selecting searched user:', userName, 'ID:', userId);
+            
+            // Set state variables
+            currentlyViewingUserId = userId;
+            isViewingSearchedUser = true;
+            
+            // Collapse search bar
+            const searchToggleBtn = document.getElementById('searchToggleBtn');
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            
+            searchToggleBtn.classList.remove('expanded');
+            searchInput.value = '';
+            searchResults.classList.remove('show');
+            searchResults.innerHTML = '';
+            
+            // Show only the searched user's 1st degree connections
+            const searchedUserConnections = calculateDegreeConnections(userId);
+            const firstDegreeConnections = searchedUserConnections.degree1;
+            
+            // Filter events to show only the searched user's 1st degree connections
+            const filteredEvents = completeLocationData.filter(event => {
+                const sourceUserId = event.user1_id;
+                const targetUserId = event.user2_id;
+                
+                // Show events where either user is the searched user or their 1st degree connection
+                return (sourceUserId === userId || targetUserId === userId) ||
+                       (firstDegreeConnections.has(sourceUserId) || firstDegreeConnections.has(targetUserId));
+            }).map(tap => ({
+                source_id: tap.user1_id,
+                target_id: tap.user2_id,
+                source_name: tap.user1_name,
+                target_name: tap.user2_name,
+                latitude: tap.latitude,
+                longitude: tap.longitude,
+                location: tap.location,
+                formatted_location: tap.formatted_location,
+                venue_context: tap.venue_context,
+                time: tap.time,
+                formatted_time: tap.formatted_time,
+                timestamp: new Date(tap.time).getTime()
+            }));
+            
+            // Update markers with searched user's connections
+            updateMarkersWithSearchedUser(filteredEvents);
+            
+            console.log('🔍 Showing searched user connections:', filteredEvents.length, 'events');
+        }
+        
+        // Update markers for searched user (1st degree only)
+        function updateMarkersWithSearchedUser(filteredEvents) {
+            // Clear existing markers
+            clearMarkers();
+            
+            // Create markers for searched user's connections
+            filteredEvents.forEach(event => {
+                const location = {
+                    latitude: event.latitude,
+                    longitude: event.longitude,
+                    location: event.location,
+                    formatted_location: event.formatted_location,
+                    venue_context: event.venue_context
+                };
+                
+                // Create marker for this connection
+                const marker = L.circleMarker([location.latitude, location.longitude], {
+                    radius: 8,
+                    fillColor: '#0E76A8', // Deep azure blue for searched user's connections
+                    color: '#0E76A8',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.6
+                });
+                
+                // Add popup
+                const popupContent = `
+                    <div class="custom-popup">
+                        <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
+                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Time: ${event.formatted_time}</div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                marker.addTo(map);
+                markers.push(marker);
+            });
+        }
+        
+        // Revert to original user view
+        function revertToOriginalUser() {
+            console.log('🔄 Reverting to original user:', originalUserName);
+            
+            // Reset state variables
+            currentlyViewingUserId = originalUserId;
+            isViewingSearchedUser = false;
+            
+            // Clear search bar
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            searchInput.value = '';
+            searchResults.classList.remove('show');
+            searchResults.innerHTML = '';
+            
+            // Reset to original user's view using existing logic
+            if (originalUserId && originalUserName) {
+                // Use the existing selectUser function to restore original user's view
+                selectUser(originalUserId, originalUserName);
+            }
+            
+            console.log('🔄 Reverted to original user view');
+        }
+        
+        // Setup control panel click listeners for reversion
+        function setupControlPanelReversion() {
+            // Get all control panel elements
+            const controlPanel = document.querySelector('.sidebar');
+            const profileSection = document.getElementById('profileSection');
+            const degreeFiltersGroup = document.getElementById('degreeFiltersGroup');
+            const timelineControlGroup = document.querySelector('.timeline-control-group');
+            
+            // Add click listeners to control panel elements
+            const controlElements = [
+                controlPanel,
+                profileSection,
+                degreeFiltersGroup,
+                timelineControlGroup
+            ];
+            
+            controlElements.forEach(element => {
+                if (element) {
+                    element.addEventListener('click', function(e) {
+                        // Only revert if we're currently viewing a searched user
+                        if (isViewingSearchedUser) {
+                            console.log('🔄 Control panel clicked - reverting to original user');
+                            revertToOriginalUser();
+                        }
+                    });
+                }
+            });
         }
         
         // Update user profile section
@@ -3484,6 +3675,9 @@
             
             // Initialize floating search
             initFloatingSearch();
+            
+            // Setup control panel reversion listeners
+            setupControlPanelReversion();
             
             // Check for userName parameter and auto-select user
             const urlParams = new URLSearchParams(window.location.search);
