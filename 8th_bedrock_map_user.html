@@ -1568,9 +1568,10 @@
             // Add event listeners for both sliders
             [leftSlider, rightSlider].forEach(slider => {
                 slider.addEventListener('input', function() {
-                    console.log(`🎚️ FOREACH INPUT - Slider moved: ${this.id} = ${this.value}%`);
-                    console.log(`🎚️ FOREACH INPUT - this === leftSlider: ${this === leftSlider}, this === rightSlider: ${this === rightSlider}`);
-                    console.log(`🎚️ FOREACH INPUT - event target: ${event.target.id}, event type: ${event.type}`);
+                    // Reduced logging for performance
+                    // console.log(`🎚️ FOREACH INPUT - Slider moved: ${this.id} = ${this.value}%`);
+                    // console.log(`🎚️ FOREACH INPUT - this === leftSlider: ${this === leftSlider}, this === rightSlider: ${this === rightSlider}`);
+                    // console.log(`🎚️ FOREACH INPUT - event target: ${event.target.id}, event type: ${event.type}`);
                     
                     // Clear any pending update
                     if (updateTimeout) {
@@ -1583,7 +1584,7 @@
                             const leftValue = parseInt(leftSlider.value);
                             const rightValue = parseInt(rightSlider.value);
                             
-                            console.log(`🎚️ FOREACH TIMEOUT - Slider values: Left=${leftValue}%, Right=${rightValue}%`);
+                            // console.log(`🎚️ FOREACH TIMEOUT - Slider values: Left=${leftValue}%, Right=${rightValue}%`);
                             
                             // Calculate minimum gap
                             const minGap = 1; // Minimum 1% gap
@@ -1682,6 +1683,20 @@
             if (isUpdating) return;
             isUpdating = true;
             
+            // Clear any pending timeline updates to prevent lag
+            if (window.timelineUpdateTimeout) {
+                clearTimeout(window.timelineUpdateTimeout);
+            }
+            
+            // Debounce timeline updates to reduce lag
+            window.timelineUpdateTimeout = setTimeout(() => {
+                performTimelineUpdate(startPercentage, endPercentage);
+            }, 50); // 50ms debounce
+        }
+        
+        // Separate function for the actual timeline update logic
+        function performTimelineUpdate(startPercentage, endPercentage) {
+            
             console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
             
             // Calculate start and end times based on complete location data
@@ -1769,9 +1784,9 @@
                 const timelinePercentage = rightValue - leftValue; // This represents how much of the timeline is visible
                 
                 // Debug: Log the actual values
-                console.log(`🔍 Debug: leftValue=${leftValue}, rightValue=${rightValue}, timelinePercentage=${timelinePercentage}%`);
-                
-                console.log(`🎯 Timeline percentage: ${timelinePercentage.toFixed(1)}%`);
+                // Reduced logging for performance
+                // console.log(`🔍 Debug: leftValue=${leftValue}, rightValue=${rightValue}, timelinePercentage=${timelinePercentage}%`);
+                // console.log(`🎯 Timeline percentage: ${timelinePercentage.toFixed(1)}%`);
                 
                 // User-centric mode with timeline-degree integration
                 filteredEvents = completeLocationData.filter(event => {
@@ -1787,13 +1802,20 @@
                     
                     // TIMELINE-DEGREE INTEGRATION: When timeline < 100%, show all degrees but still respect degree boundaries
                     if (timelinePercentage < 100) {
-                        console.log('🎯 Timeline < 100%: Showing all enabled degrees automatically');
+                        // console.log('🎯 Timeline < 100%: Showing all enabled degrees automatically');
                         // Timeline < 100%: Show all enabled degrees automatically, but still respect degree boundaries
                         if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
                             shouldShow = true; // Direct connections to selected user
                         } else {
                             // For other connections, check if they're within the enabled degree boundaries
-                            const degreeConnections = calculateDegreeConnections(selectedUserId);
+                            // Cache degree connections to avoid recalculating on every event
+                            if (!window.cachedDegreeConnections || window.cachedDegreeConnections.userId !== selectedUserId) {
+                                window.cachedDegreeConnections = {
+                                    userId: selectedUserId,
+                                    connections: calculateDegreeConnections(selectedUserId)
+                                };
+                            }
+                            const degreeConnections = window.cachedDegreeConnections.connections;
                             
                             // Check if this connection involves users within the enabled degree boundaries
                             let isWithinDegreeBoundaries = false;
@@ -1811,7 +1833,7 @@
                             shouldShow = isWithinDegreeBoundaries;
                         }
                     } else {
-                        console.log('🎯 Timeline = 100%: Using normal degree filtering');
+                        // console.log('🎯 Timeline = 100%: Using normal degree filtering');
                         // Timeline = 100%: Use normal degree filtering
                         if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
                             shouldShow = true; // Always show direct connections
@@ -1866,7 +1888,7 @@
             }
             
             // Create markers for filtered events
-            console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
+            // console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
                 if (event.latitude && event.longitude) {
                     const location = {
@@ -2053,7 +2075,7 @@
             }
             
             // Create markers for filtered events
-            console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
+            // console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
                 // Use location data from the timeline event (which now includes actual tap data)
                 if (event.latitude && event.longitude) {
