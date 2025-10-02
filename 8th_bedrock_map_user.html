@@ -2793,9 +2793,9 @@
                 const sourceUserId = event.user1_id;
                 const targetUserId = event.user2_id;
                 
-                // Show events where either user is the searched user or their 1st degree connection
-                return (sourceUserId === userId || targetUserId === userId) ||
-                       (firstDegreeConnections.has(sourceUserId) || firstDegreeConnections.has(targetUserId));
+                // Show events where the searched user is involved AND the other user is their 1st degree connection
+                return (sourceUserId === userId && firstDegreeConnections.has(targetUserId)) ||
+                       (targetUserId === userId && firstDegreeConnections.has(sourceUserId));
             }).map(tap => ({
                 source_id: tap.user1_id,
                 target_id: tap.user2_id,
@@ -2834,7 +2834,7 @@
                 
                 // Create marker for this connection
                 const marker = L.circleMarker([location.latitude, location.longitude], {
-                    radius: 8,
+                    radius: 4, // Match normal marker size
                     fillColor: '#0E76A8', // Deep azure blue for searched user's connections
                     color: '#0E76A8',
                     weight: 2,
