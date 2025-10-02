@@ -284,6 +284,16 @@ DO NOT use file:// URLs with this version
                 border-bottom: none;
             }
             
+            .search-result-name {
+                text-align: left;
+                line-height: 1.2;
+            }
+            
+            .search-result-info {
+                text-align: right;
+                white-space: nowrap;
+            }
+            
             /* Timeline Slider Section (moved outside profile-section) */
             .animation-section {
                 padding: calc(var(--space-4) / 2 * 0.6) 16px;
@@ -3743,8 +3753,8 @@ Remember: You're helping someone explore and understand their social network dat
                         
                         return `
                             <div class="search-result-item" onclick="selectNodeByIdExpandable('${item.id}')">
-                                <span>${item.name}</span>
-                                <span>${item.taps} taps${pathInfo}</span>
+                                <div class="search-result-name">${item.name}</div>
+                                <div class="search-result-info">${item.taps} taps${pathInfo}</div>
                             </div>
                         `;
                     }).join('');
