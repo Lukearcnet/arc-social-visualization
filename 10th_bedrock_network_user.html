@@ -3817,6 +3817,18 @@ Remember: You're helping someone explore and understand their social network dat
                 showUserPopup(nodeId);
             }
             
+            function selectNodeByIdSilent(nodeId) {
+                // Filter the network to show only connections from this user's perspective
+                filterNetworkByUser(nodeId);
+                network.selectNodes([nodeId]);
+                network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
+                selectNode(nodeId);
+                document.getElementById('searchResults').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+                
+                // Don't show popup for silent selection (used for initial load)
+            }
+            
             function showUserPopup(nodeId) {
                 const node = allNodes[nodeId];
                 if (!node) return;
@@ -5757,8 +5769,8 @@ Remember: You're helping someone explore and understand their social network dat
                             if (exactMatches.length > 1) {
                                 console.log('🔍 Multiple users found, selected the one with most taps:', exactMatches.map(u => ({ name: u.name, taps: u.taps, id: u.id })));
                             }
-                            // Directly select the user without going through search
-                            selectNodeById(exactMatch.id);
+                            // Directly select the user without going through search (silent - no popup)
+                            selectNodeByIdSilent(exactMatch.id);
                         } else {
                             console.log('❌ No exact match found for:', userName);
                             console.log('🔍 DEBUG: Available user names:', searchIndex.map(u => u.name));
@@ -5778,7 +5790,14 @@ Remember: You're helping someone explore and understand their social network dat
                                     const searchResults = document.getElementById('searchResults');
                                     const firstResult = searchResults.querySelector('.search-result-item');
                                     if (firstResult) {
-                                        firstResult.click();
+                                        // Extract nodeId from onclick attribute and use silent selection
+                                        const onclickAttr = firstResult.getAttribute('onclick');
+                                        const nodeIdMatch = onclickAttr.match(/selectNodeById\('([^']+)'\)/);
+                                        if (nodeIdMatch) {
+                                            selectNodeByIdSilent(nodeIdMatch[1]);
+                                        } else {
+                                            firstResult.click(); // Fallback to original behavior
+                                        }
                                     }
                                 }, 500);
                             }
