@@ -1634,36 +1634,11 @@
                     timestamp: new Date(tap.time).getTime()
                 }));
             } else if (currentMode === 'user' && selectedUserId) {
-                // User-centric mode: filter by degree connections within time range
-                const userNode = allNodes[selectedUserId];
-                if (!userNode) return;
-                
-                const profileData = userNode.profile_data;
-                const degree1Connections = profileData.degree_1_connections || [];
-                const degree2Connections = profileData.degree_2_connections || [];
-                const degree3Connections = profileData.degree_3_connections || [];
-                
-                // Collect degree-filtered connections
-                const degreeFilteredConnections = new Set();
-                degreeFilteredConnections.add(selectedUserId);
-                
-                if (degreeFilters.degree1) {
-                    degree1Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                }
-                if (degreeFilters.degree2) {
-                    degree2Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                }
-                if (degreeFilters.degree3) {
-                    degree3Connections.forEach(connId => degreeFilteredConnections.add(connId));
-                }
-                
-                // Filter events within time range and degree connections
+                // User-centric mode: filter by time range only
+                // Degree filtering will be handled by the existing degree filter system
                 filteredEvents = completeLocationData.filter(event => {
                     const eventTime = new Date(event.time).getTime();
-                    const isInTimeRange = eventTime >= startTime && eventTime <= endTime;
-                    const isInDegreeFilter = degreeFilteredConnections.has(event.user1_id) && 
-                                           degreeFilteredConnections.has(event.user2_id);
-                    return isInTimeRange && isInDegreeFilter;
+                    return eventTime >= startTime && eventTime <= endTime;
                 }).map(tap => ({
                     source_id: tap.user1_id,
                     source_name: tap.user1_name,
@@ -1725,77 +1700,6 @@
             });
         }
         
-        // Update timeline display
-        function updateTimelineDisplay() {
-            const timelineValue = timelineSlider.value;
-            
-            // Calculate current time based on appropriate data range
-            let earliestTime, latestTime, currentTime;
-            
-            if (currentMode === 'user' && selectedUserId) {
-                // In user mode with degree filters, use complete location data for timeline range
-                if (completeLocationData.length > 0) {
-                    const timestamps = completeLocationData.map(tap => new Date(tap.time).getTime()).sort((a, b) => a - b);
-                    earliestTime = timestamps[0];
-                    latestTime = timestamps[timestamps.length - 1];
-                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                } else {
-                    // Fallback to timeline data
-                    earliestTime = timelineData[0].timestamp;
-                    latestTime = timelineData[timelineData.length - 1].timestamp;
-                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                }
-            } else {
-                // Normal mode, use timeline data
-                if (timelineData.length > 0) {
-                    earliestTime = timelineData[0].timestamp;
-                    latestTime = timelineData[timelineData.length - 1].timestamp;
-                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                } else {
-                    // Fallback if no timeline data
-                    document.getElementById('timelineValue').textContent = 'No data';
-                    document.getElementById('currentTime').textContent = 'No events';
-                    return;
-                }
-            }
-            
-            // Format current time as date
-            const currentDate = new Date(currentTime);
-            const formattedDate = currentDate.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            });
-            
-            // Update display
-            document.getElementById('timelineValue').textContent = formattedDate;
-            
-            // Update the current time display based on mode
-            if (globalViewEnabled) {
-                // In global view mode, show all taps info
-                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
-                document.getElementById('currentTime').textContent = 
-                    timelineValue === '100' ? 'All taps shown' : `${allLocationData.length} total taps (${modeText})`;
-            } else if (currentMode === 'user' && selectedUserId) {
-                // In user mode, show degree-filtered event count
-                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
-                document.getElementById('currentTime').textContent = 
-                    timelineValue === '100' ? 'All degree-filtered taps shown' : `${completeLocationData.length} total taps (${modeText})`;
-            } else {
-                // In global mode, show normal timeline info
-                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
-                document.getElementById('currentTime').textContent = 
-                    timelineValue === '100' ? 'All taps shown' : `${timelineData.length} total taps (${modeText})`;
-            }
-            
-            // Update profile stats if a user is selected
-            if (currentMode === 'user' && selectedUserId) {
-                updateProfileStats(selectedUserId, currentTime);
-            }
-            
-            // Update markers based on timeline
-            updateMarkers(currentTime);
-        }
         
         // Update markers based on timeline and mode
         function updateMarkers(currentTime) {
