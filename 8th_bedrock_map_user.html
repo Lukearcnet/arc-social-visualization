@@ -266,11 +266,26 @@
         /* Left slider positioning - behind right slider */
         .timeline-slider-left {
             z-index: 2;
+            /* Only allow pointer events on the left half */
+            clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
         }
         
         /* Right slider positioning - on top of left slider */
         .timeline-slider-right {
             z-index: 3;
+            /* Only allow pointer events on the right half */
+            clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+        }
+        
+        /* Override clip-path for slider thumbs to keep them circular */
+        .timeline-slider-left::-webkit-slider-thumb,
+        .timeline-slider-left::-moz-range-thumb {
+            clip-path: none !important;
+        }
+        
+        .timeline-slider-right::-webkit-slider-thumb,
+        .timeline-slider-right::-moz-range-thumb {
+            clip-path: none !important;
         }
         
         .timeline-slider::-webkit-slider-thumb {
