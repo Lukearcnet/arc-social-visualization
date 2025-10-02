@@ -268,12 +268,13 @@ DO NOT use file:// URLs with this version
                 padding: var(--space-1) var(--space-2); /* Match connection details */
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 display: flex;
-                justify-content: space-between;
+                justify-content: flex-start;
                 align-items: center;
                 transition: background-color 0.2s ease;
                 color: #ffffff;
                 font-size: 0.72rem; /* Match connection details font size */
                 cursor: pointer;
+                gap: 8px; /* Add gap between name and taps info */
             }
             
             .search-result-item:hover {
