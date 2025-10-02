@@ -1918,7 +1918,7 @@ DO NOT use file:// URLs with this version
                 const safeUsers = Array.isArray(users) ? users : [];
                 searchIndex = safeUsers.map(user => ({
                     id: user.user_id,
-                    name: `${user.basic_info.first_name} ${user.basic_info.last_name}`,
+                    name: `${user.basic_info.first_name} ${user.basic_info.last_name}`.trim(), // Trim whitespace
                     username: user.basic_info.username,
                     taps: user.profile_stats.tap_count,
                     connections: user.profile_stats.connections_count,
@@ -5742,9 +5742,9 @@ Remember: You're helping someone explore and understand their social network dat
                         console.log('🔍 DEBUG: searchIndex length:', searchIndex.length);
                         console.log('🔍 DEBUG: First 5 users in searchIndex:', searchIndex.slice(0, 5).map(u => ({ name: u.name, id: u.id })));
                         
-                        // Look for exact match in searchIndex
+                        // Look for exact match in searchIndex (trim both sides for safety)
                         const exactMatch = searchIndex.find(user => 
-                            user.name.toLowerCase() === userName.toLowerCase()
+                            user.name.toLowerCase().trim() === userName.toLowerCase().trim()
                         );
                         
                         if (exactMatch) {
