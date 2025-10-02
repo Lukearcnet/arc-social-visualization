@@ -1802,39 +1802,33 @@
                     }
                     const degreeConnections = window.cachedDegreeConnections.connections;
                     
-                    // Filter events based on selected degree filters
+                    // Optimized degree filtering for better performance
                     filteredEvents = filteredEvents.filter(event => {
                         const sourceUserId = event.source_id;
                         const targetUserId = event.target_id;
                         
-                        let shouldShow = false;
-                        
-                        // For 1st degree: Only show connections that directly involve the selected user
-                        if (degreeFilters.degree1) {
-                            if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
-                                shouldShow = true;
-                            }
+                        // Quick check: if either user is the selected user, it's always 1st degree
+                        if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                            return degreeFilters.degree1;
                         }
                         
-                        // For 2nd degree: Show connections where at least one user is a 1st degree connection to selected user
-                        if (degreeFilters.degree2) {
-                            if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
-                                if (degreeConnections.degree1.has(sourceUserId) || degreeConnections.degree1.has(targetUserId)) {
-                                    shouldShow = true;
-                                }
-                            }
+                        // For other connections, check degree levels efficiently
+                        const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                        const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                        const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                        const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                        
+                        // 2nd degree: at least one user is 1st degree connection
+                        if (degreeFilters.degree2 && (sourceInDegree1 || targetInDegree1)) {
+                            return true;
                         }
                         
-                        // For 3rd degree: Show connections between 2nd degree users
-                        if (degreeFilters.degree3) {
-                            if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
-                                if (degreeConnections.degree2.has(sourceUserId) || degreeConnections.degree2.has(targetUserId)) {
-                                    shouldShow = true;
-                                }
-                            }
+                        // 3rd degree: at least one user is 2nd degree connection
+                        if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                            return true;
                         }
                         
-                        return shouldShow;
+                        return false;
                     });
                 }
             } else {
@@ -2537,37 +2531,53 @@
                 degree3: new Set()
             };
             
-            // Find 1st degree connections (direct connections to the user)
+            // Optimized: Single pass through data for better performance
+            const userConnections = new Map(); // userId -> Set of connected users
+            
+            // Build connection map in one pass
             completeLocationData.forEach(tap => {
-                if (tap.user1_id === userId) {
-                    connections.degree1.add(tap.user2_id);
-                } else if (tap.user2_id === userId) {
-                    connections.degree1.add(tap.user1_id);
+                const user1 = tap.user1_id;
+                const user2 = tap.user2_id;
+                
+                if (!userConnections.has(user1)) {
+                    userConnections.set(user1, new Set());
                 }
+                if (!userConnections.has(user2)) {
+                    userConnections.set(user2, new Set());
+                }
+                
+                userConnections.get(user1).add(user2);
+                userConnections.get(user2).add(user1);
             });
+            
+            // Find 1st degree connections (direct connections to the user)
+            if (userConnections.has(userId)) {
+                userConnections.get(userId).forEach(connectedUser => {
+                    connections.degree1.add(connectedUser);
+                });
+            }
             
             // Find 2nd degree connections (connections of 1st degree users)
             connections.degree1.forEach(firstDegreeUser => {
-                completeLocationData.forEach(tap => {
-                    if (tap.user1_id === firstDegreeUser && tap.user2_id !== userId) {
-                        connections.degree2.add(tap.user2_id);
-                    } else if (tap.user2_id === firstDegreeUser && tap.user1_id !== userId) {
-                        connections.degree2.add(tap.user1_id);
-                    }
-                });
+                if (userConnections.has(firstDegreeUser)) {
+                    userConnections.get(firstDegreeUser).forEach(connectedUser => {
+                        if (connectedUser !== userId) {
+                            connections.degree2.add(connectedUser);
+                        }
+                    });
+                }
             });
             
             // Find 3rd degree connections (connections of 2nd degree users)
             connections.degree2.forEach(secondDegreeUser => {
-                completeLocationData.forEach(tap => {
-                    if (tap.user1_id === secondDegreeUser && tap.user2_id !== userId && !connections.degree1.has(tap.user2_id)) {
-                        connections.degree3.add(tap.user2_id);
-                    } else if (tap.user2_id === secondDegreeUser && tap.user1_id !== userId && !connections.degree1.has(tap.user1_id)) {
-                        connections.degree3.add(tap.user1_id);
-                    }
-                });
+                if (userConnections.has(secondDegreeUser)) {
+                    userConnections.get(secondDegreeUser).forEach(connectedUser => {
+                        if (connectedUser !== userId && !connections.degree1.has(connectedUser)) {
+                            connections.degree3.add(connectedUser);
+                        }
+                    });
+                }
             });
-            
             
             return connections;
         }
