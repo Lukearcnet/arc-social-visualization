@@ -3701,13 +3701,31 @@ Remember: You're helping someone explore and understand their social network dat
                     this.focus();
                 });
                 
+                // Prevent clicks inside search input from bubbling up
+                expandableSearchInput.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Prevent clicks inside search results from bubbling up
+                expandableSearchResults.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
                 // Hide results when clicking outside (but not during keyboard activity)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
+                    const expandableSearchInput = document.getElementById('expandableSearchInput');
+                    const expandableSearchResults = document.getElementById('expandableSearchResults');
+                    
                     console.log('🔍 DOCUMENT CLICK - type:', e.type, 'target:', e.target, 'contains:', searchToggleBtn.contains(e.target), 'recentKeyboardActivity:', recentKeyboardActivity, 'detail:', e.detail);
                     
-                    // Only close if it's a mouse click, not during recent keyboard activity, and not from space key
-                    if (e.type === 'click' && !searchToggleBtn.contains(e.target) && !recentKeyboardActivity) {
+                    // Check if click is inside search area (button, input, or results)
+                    const isInsideSearchArea = searchToggleBtn.contains(e.target) || 
+                                            expandableSearchInput.contains(e.target) || 
+                                            expandableSearchResults.contains(e.target);
+                    
+                    // Only close if it's a mouse click, not during recent keyboard activity, and not inside search area
+                    if (e.type === 'click' && !isInsideSearchArea && !recentKeyboardActivity) {
                         console.log('🔍 DOCUMENT CLICK - CLOSING SEARCH');
                         expandableSearchResults.classList.remove('show');
                         if (searchToggleBtn.classList.contains('expanded')) {
@@ -3716,7 +3734,7 @@ Remember: You're helping someone explore and understand their social network dat
                             expandableSearchResults.innerHTML = '';
                         }
                     } else {
-                        console.log('🔍 DOCUMENT CLICK - NOT CLOSING SEARCH - recentKeyboardActivity:', recentKeyboardActivity, 'contains:', searchToggleBtn.contains(e.target));
+                        console.log('🔍 DOCUMENT CLICK - NOT CLOSING SEARCH - recentKeyboardActivity:', recentKeyboardActivity, 'isInsideSearchArea:', isInsideSearchArea);
                     }
                 });
             }
