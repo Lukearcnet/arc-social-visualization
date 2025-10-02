@@ -217,22 +217,22 @@ DO NOT use file:// URLs with this version
             }
             
             /* Hidden input field that appears when expanded */
-            .search-toggle-btn .search-input {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                padding: 8px 12px;
-                border: none;
-                background: transparent;
-                color: var(--fg);
-                font-size: var(--text-md);
-                outline: none;
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.2s ease;
-            }
+        .search-toggle-btn .search-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--fg);
+            font-size: 16px; /* Prevent iOS focus zoom - must be ≥16px */
+            outline: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
             
             .search-toggle-btn.expanded .search-input {
                 opacity: 1;
@@ -1467,9 +1467,20 @@ DO NOT use file:// URLs with this version
                 }
             }
 
-            /* ========================================
-               MOBILE RESPONSIVE DESIGN
-               ======================================== */
+        /* ========================================
+           iOS FOCUS ZOOM PREVENTION
+           ======================================== */
+        
+        /* Prevent iOS Safari focus zoom by ensuring all form controls are ≥16px */
+        input, textarea, select, button {
+            font-size: 16px;             /* prevent iOS focus zoom */
+            line-height: 1.2;            /* avoid vertical clipping when bumped to 16px */
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* ========================================
+           MOBILE RESPONSIVE DESIGN
+           ======================================== */
             
             /* Hamburger Button */
             .mobile-hamburger {
