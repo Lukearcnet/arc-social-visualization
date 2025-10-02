@@ -263,16 +263,14 @@
             pointer-events: none;
         }
         
-        /* Left slider should only be interactive on the left half */
+        /* Left slider positioning - behind right slider */
         .timeline-slider-left {
             z-index: 2;
-            clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
         }
         
-        /* Right slider should only be interactive on the right half */
+        /* Right slider positioning - on top of left slider */
         .timeline-slider-right {
             z-index: 3;
-            clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
         }
         
         .timeline-slider::-webkit-slider-thumb {
@@ -1489,12 +1487,51 @@
                 console.log('📊 RIGHT SLIDER INPUT - this === leftSlider:', this === leftSlider, 'this === rightSlider:', this === rightSlider);
             });
             
-            // Add debugging for click events on the container
+            // Add intelligent click detection to prevent right slider from intercepting left slider clicks
             const dualSliderContainer = document.querySelector('.dual-slider-container');
             if (dualSliderContainer) {
                 dualSliderContainer.addEventListener('click', function(e) {
-                    console.log('🖱️ CONTAINER CLICK - event target:', e.target.id, 'event type:', e.type, 'clientX:', e.clientX, 'clientY:', e.clientY);
-                    console.log('🖱️ CONTAINER CLICK - target classList:', e.target.classList.toString());
+                    // Only handle clicks on the container itself, not on sliders
+                    if (e.target === dualSliderContainer) {
+                        const rect = this.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const clickPercentage = (clickX / rect.width) * 100;
+                        
+                        const leftValue = parseInt(leftSlider.value);
+                        const rightValue = parseInt(rightSlider.value);
+                        const minGap = 1;
+                        
+                        // Determine which slider to move based on click position
+                        if (clickPercentage < leftValue) {
+                            // Click is to the left of left slider - move left slider
+                            const newValue = Math.max(0, Math.min(clickPercentage, rightValue - minGap));
+                            leftSlider.value = newValue;
+                            updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                            updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                        } else if (clickPercentage > rightValue) {
+                            // Click is to the right of right slider - move right slider
+                            const newValue = Math.min(100, Math.max(clickPercentage, leftValue + minGap));
+                            rightSlider.value = newValue;
+                            updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                            updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                        } else {
+                            // Click is between sliders - move the closer one
+                            const distanceToLeft = Math.abs(clickPercentage - leftValue);
+                            const distanceToRight = Math.abs(clickPercentage - rightValue);
+                            
+                            if (distanceToLeft < distanceToRight) {
+                                // Move left slider
+                                const newValue = Math.max(0, Math.min(clickPercentage, rightValue - minGap));
+                                leftSlider.value = newValue;
+                            } else {
+                                // Move right slider
+                                const newValue = Math.min(100, Math.max(clickPercentage, leftValue + minGap));
+                                rightSlider.value = newValue;
+                            }
+                            updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                            updateRangeHighlighting(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                        }
+                    }
                 });
             }
             
