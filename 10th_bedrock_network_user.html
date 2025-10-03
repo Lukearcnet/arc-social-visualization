@@ -4054,6 +4054,8 @@ Remember: You're helping someone explore and understand their social network dat
             let lastVisibleNodeCount = 0;
             let isPhysicsBurstActive = false;
             let physicsBurstTimeout = null;
+            let isTimelineDragging = false;
+            let continuousPhysicsActive = false;
             
             // Initialize settings toggle functionality
             function initSettingsToggle() {
@@ -4126,61 +4128,130 @@ Remember: You're helping someone explore and understand their social network dat
                     physicsBurstTimeout = null;
                 }
                 
+                // Stop continuous physics
+                if (continuousPhysicsActive) {
+                    stopContinuousPhysics();
+                }
+                
                 // Stop any active physics burst
                 if (isPhysicsBurstActive) {
                     stopPhysicsBurst();
                 }
                 
                 isPhysicsBurstActive = false;
+                continuousPhysicsActive = false;
             }
             
-            // Trigger Dynamic Physics (Debounced)
+            // Trigger Dynamic Physics (Continuous)
             function triggerDynamicPhysics() {
                 if (!dynamicLayoutEnabled) return;
                 
-                console.log('🎯 Triggering Dynamic Physics (debounced)');
+                console.log('🎯 Triggering Dynamic Physics (continuous)');
                 
-                // Clear existing timer
-                if (physicsDebounceTimer) {
-                    clearTimeout(physicsDebounceTimer);
+                // Start continuous physics if not already active
+                if (!continuousPhysicsActive) {
+                    startContinuousPhysics();
                 }
                 
-                // Set new debounced timer (500ms - much longer to reduce frequency)
-                physicsDebounceTimer = setTimeout(() => {
-                    executePhysicsBurst();
-                }, 500);
+                // Update physics parameters based on current state
+                updateContinuousPhysics();
             }
             
-            // Execute Physics Burst
-            function executePhysicsBurst() {
-                if (!dynamicLayoutEnabled || isPhysicsBurstActive) return;
+            // Start Continuous Physics
+            function startContinuousPhysics() {
+                if (continuousPhysicsActive) return;
                 
-                console.log('🚀 Executing Physics Burst');
+                console.log('🌊 Starting Continuous Physics');
+                continuousPhysicsActive = true;
                 
-                // Get current visible nodes
+                // Enable physics with continuous settings
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: {
+                            gravitationalConstant: -100,
+                            centralGravity: 0.005,
+                            springLength: 250,
+                            springConstant: 0.1,
+                            damping: 0.9,
+                            avoidOverlap: 1.2
+                        },
+                        maxVelocity: 8,
+                        minVelocity: 0.05,
+                        timestep: 0.3,
+                        stabilization: {
+                            enabled: false, // Keep physics running continuously
+                            iterations: 0,
+                            updateInterval: 25,
+                            onlyDynamicEdges: false,
+                            fit: false
+                        }
+                    }
+                });
+            }
+            
+            // Update Continuous Physics Parameters
+            function updateContinuousPhysics() {
+                if (!continuousPhysicsActive) return;
+                
                 const visibleNodes = getVisibleNodes();
                 const visibleNodeCount = visibleNodes.length;
                 
                 // Check performance thresholds
                 if (visibleNodeCount > 800) {
                     console.log('⚠️ Too many nodes for dynamic layout, falling back to static');
+                    stopContinuousPhysics();
                     return;
                 }
                 
-                // Check hysteresis (only update if significant change)
-                const nodeCountChange = Math.abs(visibleNodeCount - lastVisibleNodeCount);
-                const changePercentage = (nodeCountChange / Math.max(visibleNodeCount, lastVisibleNodeCount, 1)) * 100;
+                // Calculate adaptive physics parameters
+                const physicsParams = calculateAdaptivePhysics(visibleNodeCount);
                 
-                if (changePercentage < 25 && lastVisibleNodeCount > 0) {
-                    console.log('📊 Change too small, skipping physics burst');
-                    return;
+                // Adjust physics for dragging vs settled state
+                if (isTimelineDragging) {
+                    // During dragging: more viscous, slower movement
+                    physicsParams.forceAtlas2Based.damping = 0.95; // Higher damping
+                    physicsParams.maxVelocity = Math.min(physicsParams.maxVelocity, 4); // Slower max velocity
+                    physicsParams.timestep = 0.2; // Slower timestep
+                } else {
+                    // When settled: normal physics for natural settling
+                    physicsParams.forceAtlas2Based.damping = 0.9;
                 }
                 
-                // Update last count
-                lastVisibleNodeCount = visibleNodeCount;
+                // Update physics parameters smoothly
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: physicsParams.forceAtlas2Based,
+                        maxVelocity: physicsParams.maxVelocity,
+                        minVelocity: physicsParams.minVelocity,
+                        timestep: physicsParams.timestep,
+                        stabilization: {
+                            enabled: false, // Keep continuous
+                            iterations: 0,
+                            updateInterval: 25,
+                            onlyDynamicEdges: false,
+                            fit: false
+                        }
+                    }
+                });
                 
-                // Start physics burst
-                startPhysicsBurst(visibleNodeCount);
+                console.log(`🌊 Updated continuous physics for ${visibleNodeCount} nodes (dragging: ${isTimelineDragging})`);
+            }
+            
+            // Stop Continuous Physics
+            function stopContinuousPhysics() {
+                if (!continuousPhysicsActive) return;
+                
+                console.log('🛑 Stopping Continuous Physics');
+                continuousPhysicsActive = false;
+                
+                // Disable physics
+                network.setOptions({
+                    physics: { enabled: false }
+                });
             }
             
             // Get visible nodes count
@@ -5140,6 +5211,26 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Add event listeners for both sliders
                 [leftSlider, rightSlider].forEach(slider => {
+                    // Track timeline dragging state
+                    slider.addEventListener('mousedown', function() {
+                        isTimelineDragging = true;
+                        console.log('🎚️ Timeline drag started');
+                    });
+                    
+                    slider.addEventListener('mouseup', function() {
+                        isTimelineDragging = false;
+                        console.log('🎚️ Timeline drag ended');
+                    });
+                    
+                    slider.addEventListener('touchstart', function() {
+                        isTimelineDragging = true;
+                        console.log('🎚️ Timeline touch started');
+                    });
+                    
+                    slider.addEventListener('touchend', function() {
+                        isTimelineDragging = false;
+                        console.log('🎚️ Timeline touch ended');
+                    });
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
                         
