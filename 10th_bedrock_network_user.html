@@ -4213,18 +4213,8 @@ Remember: You're helping someone explore and understand their social network dat
                 // Calculate adaptive physics parameters
                 const physicsParams = calculateAdaptivePhysics(visibleNodeCount);
                 
-                // Adjust physics for dragging vs settled state
-                if (isTimelineDragging) {
-                    // During dragging: very responsive, smooth movement
-                    physicsParams.forceAtlas2Based.damping = 0.85; // Lower damping for more responsiveness
-                    physicsParams.maxVelocity = Math.min(physicsParams.maxVelocity, 6); // Moderate max velocity
-                    physicsParams.timestep = 0.4; // Faster timestep for quicker response
-                    physicsParams.forceAtlas2Based.springConstant = 0.15; // Stronger springs for immediate response
-                } else {
-                    // When settled: normal physics for natural settling
-                    physicsParams.forceAtlas2Based.damping = 0.9;
-                    physicsParams.forceAtlas2Based.springConstant = 0.1;
-                }
+                // Keep original physics parameters - only adjust timeline sync sensitivity
+                // No changes to physics speed/springiness, just timeline responsiveness
                 
                 // Update physics parameters smoothly
                 network.setOptions({
@@ -4274,12 +4264,12 @@ Remember: You're helping someone explore and understand their social network dat
                     clearInterval(timelineDragInterval);
                 }
                 
-                // Update physics every 50ms during dragging for ultra-smooth response
+                // Update physics every 16ms during dragging for maximum responsiveness (60fps)
                 timelineDragInterval = setInterval(() => {
                     if (isTimelineDragging && continuousPhysicsActive) {
                         updateContinuousPhysics();
                     }
-                }, 50); // 20fps updates during dragging
+                }, 16); // 60fps updates during dragging for maximum timeline sync sensitivity
             }
             
             function stopTimelineDragPhysics() {
@@ -5279,6 +5269,11 @@ Remember: You're helping someone explore and understand their social network dat
                     });
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                        
+                        // Immediate physics update on every timeline change for maximum sensitivity
+                        if (dynamicLayoutEnabled && continuousPhysicsActive) {
+                            updateContinuousPhysics();
+                        }
                         
                     // Clear any pending update
                     if (updateTimeout) {
