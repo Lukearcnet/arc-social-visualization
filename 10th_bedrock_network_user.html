@@ -4128,6 +4128,12 @@ Remember: You're helping someone explore and understand their social network dat
                     physicsBurstTimeout = null;
                 }
                 
+                // Clear timeline drag interval
+                if (timelineDragInterval) {
+                    clearInterval(timelineDragInterval);
+                    timelineDragInterval = null;
+                }
+                
                 // Stop continuous physics
                 if (continuousPhysicsActive) {
                     stopContinuousPhysics();
@@ -4140,20 +4146,19 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 isPhysicsBurstActive = false;
                 continuousPhysicsActive = false;
+                isTimelineDragging = false;
             }
             
             // Trigger Dynamic Physics (Continuous)
             function triggerDynamicPhysics() {
                 if (!dynamicLayoutEnabled) return;
                 
-                console.log('🎯 Triggering Dynamic Physics (continuous)');
-                
                 // Start continuous physics if not already active
                 if (!continuousPhysicsActive) {
                     startContinuousPhysics();
                 }
                 
-                // Update physics parameters based on current state
+                // Update physics parameters immediately for smooth response
                 updateContinuousPhysics();
             }
             
@@ -4210,13 +4215,15 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Adjust physics for dragging vs settled state
                 if (isTimelineDragging) {
-                    // During dragging: more viscous, slower movement
-                    physicsParams.forceAtlas2Based.damping = 0.95; // Higher damping
-                    physicsParams.maxVelocity = Math.min(physicsParams.maxVelocity, 4); // Slower max velocity
-                    physicsParams.timestep = 0.2; // Slower timestep
+                    // During dragging: very responsive, smooth movement
+                    physicsParams.forceAtlas2Based.damping = 0.85; // Lower damping for more responsiveness
+                    physicsParams.maxVelocity = Math.min(physicsParams.maxVelocity, 6); // Moderate max velocity
+                    physicsParams.timestep = 0.4; // Faster timestep for quicker response
+                    physicsParams.forceAtlas2Based.springConstant = 0.15; // Stronger springs for immediate response
                 } else {
                     // When settled: normal physics for natural settling
                     physicsParams.forceAtlas2Based.damping = 0.9;
+                    physicsParams.forceAtlas2Based.springConstant = 0.1;
                 }
                 
                 // Update physics parameters smoothly
@@ -4252,6 +4259,41 @@ Remember: You're helping someone explore and understand their social network dat
                 network.setOptions({
                     physics: { enabled: false }
                 });
+            }
+            
+            // Timeline Drag Physics - High frequency updates during dragging
+            let timelineDragInterval = null;
+            
+            function startTimelineDragPhysics() {
+                if (!dynamicLayoutEnabled || !continuousPhysicsActive) return;
+                
+                console.log('🎚️ Starting high-frequency timeline drag physics');
+                
+                // Clear any existing interval
+                if (timelineDragInterval) {
+                    clearInterval(timelineDragInterval);
+                }
+                
+                // Update physics every 50ms during dragging for ultra-smooth response
+                timelineDragInterval = setInterval(() => {
+                    if (isTimelineDragging && continuousPhysicsActive) {
+                        updateContinuousPhysics();
+                    }
+                }, 50); // 20fps updates during dragging
+            }
+            
+            function stopTimelineDragPhysics() {
+                console.log('🎚️ Stopping high-frequency timeline drag physics');
+                
+                if (timelineDragInterval) {
+                    clearInterval(timelineDragInterval);
+                    timelineDragInterval = null;
+                }
+                
+                // Final physics update when dragging ends
+                if (continuousPhysicsActive) {
+                    updateContinuousPhysics();
+                }
             }
             
             // Get visible nodes count
@@ -5215,21 +5257,25 @@ Remember: You're helping someone explore and understand their social network dat
                     slider.addEventListener('mousedown', function() {
                         isTimelineDragging = true;
                         console.log('🎚️ Timeline drag started');
+                        startTimelineDragPhysics();
                     });
                     
                     slider.addEventListener('mouseup', function() {
                         isTimelineDragging = false;
                         console.log('🎚️ Timeline drag ended');
+                        stopTimelineDragPhysics();
                     });
                     
                     slider.addEventListener('touchstart', function() {
                         isTimelineDragging = true;
                         console.log('🎚️ Timeline touch started');
+                        startTimelineDragPhysics();
                     });
                     
                     slider.addEventListener('touchend', function() {
                         isTimelineDragging = false;
                         console.log('🎚️ Timeline touch ended');
+                        stopTimelineDragPhysics();
                     });
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
