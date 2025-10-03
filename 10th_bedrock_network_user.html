@@ -2113,6 +2113,15 @@ DO NOT use file:// URLs with this version
             let allNodes;
             let allEdges;
             let simulation; // D3-force simulation
+            
+            // Helper function to ensure simulation is initialized
+            function ensureSimulation() {
+                if (!simulation) {
+                    console.log('⚠️ Simulation not initialized, skipping D3 operation');
+                    return false;
+                }
+                return true;
+            }
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
@@ -2383,6 +2392,31 @@ DO NOT use file:// URLs with this version
                 allNodes = nodes.get({ returnType: "Object" });
                 allEdges = edges.get({ returnType: "Object" });
                 totalEdgesInDataset = edgeData.length;
+                
+                // Initialize D3-force simulation after data is loaded
+                console.log('🌊 Initializing D3-force simulation...');
+                simulation = d3.forceSimulation(nodes.get())
+                    .force("link", d3.forceLink(edges.get())
+                        .id(d => d.id)
+                        .strength(d => Math.min(1, (d.tap_count || 1) / 10))
+                        .distance(d => 250)) // Base spring length
+                    .force("charge", d3.forceManyBody().strength(-100))
+                    .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
+                    .force("collision", d3.forceCollide(20))
+                    .alphaDecay(0.01) // Slow decay for continuous physics
+                    .velocityDecay(0.9); // Damping
+                
+                console.log('✅ D3-force simulation initialized');
+                
+                // Connect D3 simulation to vis.js rendering
+                simulation.on("tick", () => {
+                    const updates = nodes.get().map(n => ({
+                        id: n.id,
+                        x: n.x,
+                        y: n.y
+                    }));
+                    nodes.update(updates);
+                });
                 
             }
             
@@ -3443,31 +3477,6 @@ Remember: You're helping someone explore and understand their social network dat
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
                 
-                // Initialize D3-force simulation
-                console.log('🌊 Initializing D3-force simulation...');
-                simulation = d3.forceSimulation(nodes.get())
-                    .force("link", d3.forceLink(edges.get())
-                        .id(d => d.id)
-                        .strength(d => Math.min(1, (d.tap_count || 1) / 10))
-                        .distance(d => 250)) // Base spring length
-                    .force("charge", d3.forceManyBody().strength(-100))
-                    .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
-                    .force("collision", d3.forceCollide(20))
-                    .alphaDecay(0.01) // Slow decay for continuous physics
-                    .velocityDecay(0.9); // Damping
-                
-                console.log('✅ D3-force simulation initialized');
-                
-                // Connect D3 simulation to vis.js rendering
-                simulation.on("tick", () => {
-                    const updates = nodes.get().map(n => ({
-                        id: n.id,
-                        x: n.x,
-                        y: n.y
-                    }));
-                    nodes.update(updates);
-                });
-                
                 // Debug: Check edge visibility after network creation
                 console.log('🔍 Debug: Checking edge visibility after network creation...');
                 const allEdgesData = edges.get();
@@ -4178,8 +4187,10 @@ Remember: You're helping someone explore and understand their social network dat
                 continuousPhysicsActive = true;
                 
                 // Start D3 simulation with continuous settings
-                simulation.alphaDecay(0.01); // Slow decay for continuous physics
-                simulation.alpha(0.3).restart();
+                if (ensureSimulation()) {
+                    simulation.alphaDecay(0.01); // Slow decay for continuous physics
+                    simulation.alpha(0.3).restart();
+                }
             }
             
             // Update Continuous Physics Parameters
@@ -4195,6 +4206,8 @@ Remember: You're helping someone explore and understand their social network dat
                     stopContinuousPhysics();
                     return;
                 }
+                
+                if (!ensureSimulation()) return;
                 
                 // Calculate adaptive physics parameters
                 const physicsParams = calculateAdaptivePhysics(visibleNodeCount);
@@ -4225,7 +4238,9 @@ Remember: You're helping someone explore and understand their social network dat
                 continuousPhysicsActive = false;
                 
                 // Stop D3 simulation
-                simulation.stop();
+                if (ensureSimulation()) {
+                    simulation.stop();
+                }
             }
             
             // Timeline Drag Physics - High frequency updates during dragging
@@ -4386,9 +4401,11 @@ Remember: You're helping someone explore and understand their social network dat
                 });
                 
                 // Apply positioning updates to D3 simulation
-                simulation.nodes(nodes.get());
-                simulation.force("link").links(edges.get());
-                simulation.alpha(0.3).restart();
+                if (ensureSimulation()) {
+                    simulation.nodes(nodes.get());
+                    simulation.force("link").links(edges.get());
+                    simulation.alpha(0.3).restart();
+                }
                 
                 console.log(`✅ Positioned ${nodeUpdates.length} nodes near centroid (${centroidX.toFixed(1)}, ${centroidY.toFixed(1)})`);
             }
@@ -4730,12 +4747,16 @@ Remember: You're helping someone explore and understand their social network dat
             function stabilize() {
                 if (isFrozen) {
                     // Unfreeze - start D3 simulation
-                    simulation.alpha(0.3).restart();
+                    if (ensureSimulation()) {
+                        simulation.alpha(0.3).restart();
+                    }
                     isFrozen = false;
                     document.querySelector('.control-btn[onclick="stabilize()"]').textContent = 'Freeze';
                 } else {
                     // Freeze - stop D3 simulation
-                    simulation.stop();
+                    if (ensureSimulation()) {
+                        simulation.stop();
+                    }
                     isFrozen = true;
                     document.querySelector('.control-btn[onclick="stabilize()"]').textContent = 'Unfreeze';
                 }
@@ -4743,7 +4764,7 @@ Remember: You're helping someone explore and understand their social network dat
         
             function resetView() {
                 network.fit();
-                if (!isFrozen) {
+                if (!isFrozen && ensureSimulation()) {
                     simulation.alpha(0.5).restart();
                 }
             }
@@ -4984,8 +5005,10 @@ Remember: You're helping someone explore and understand their social network dat
                 currentFilterUser = userId;
                 
                 // Update D3 simulation with new data
-                simulation.nodes(nodes.get());
-                simulation.force("link").links(edges.get());
+                if (ensureSimulation()) {
+                    simulation.nodes(nodes.get());
+                    simulation.force("link").links(edges.get());
+                }
                 
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
@@ -5021,8 +5044,10 @@ Remember: You're helping someone explore and understand their social network dat
                 }
                 
                 // Update D3 simulation with new data
-                simulation.nodes(nodes.get());
-                simulation.force("link").links(edges.get());
+                if (ensureSimulation()) {
+                    simulation.nodes(nodes.get());
+                    simulation.force("link").links(edges.get());
+                }
                 
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
@@ -5357,8 +5382,10 @@ Remember: You're helping someone explore and understand their social network dat
                 isUpdating = true;
                 
                 // Update D3 simulation with new data
-                simulation.nodes(nodes.get());
-                simulation.force("link").links(edges.get());
+                if (ensureSimulation()) {
+                    simulation.nodes(nodes.get());
+                    simulation.force("link").links(edges.get());
+                }
                 
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
