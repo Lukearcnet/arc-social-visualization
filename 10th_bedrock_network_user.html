@@ -2415,11 +2415,12 @@ DO NOT use file:// URLs with this version
                         .id(d => d.id)
                         .strength(d => Math.min(1, (d.tap_count || 1) / 10))
                         .distance(d => 150)) // Reduced spring length for tighter layout
-                    .force("charge", d3.forceManyBody().strength(-300)) // Increased repulsion for better spacing
+                    .force("charge", d3.forceManyBody().strength(-800)) // Much stronger repulsion to prevent overlap
                     .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
-                    .force("collision", d3.forceCollide(15)) // Reduced collision radius for smaller nodes
-                    .alphaDecay(0.01) // Slow decay for continuous physics
-                    .velocityDecay(0.9); // Damping
+                    .force("collision", d3.forceCollide(25)) // Increased collision radius to prevent overlap
+                    .force("radial", d3.forceRadial(200, window.innerWidth / 2, window.innerHeight / 2).strength(0.1)) // Subtle radial force for orbital motion
+                    .alphaDecay(0.005) // Even slower decay for more continuous movement
+                    .velocityDecay(0.85); // Reduced damping for more dynamic movement
                 
                 console.log('✅ D3-force simulation initialized');
                 
@@ -2432,6 +2433,14 @@ DO NOT use file:// URLs with this version
                     }));
                     nodes.update(updates);
                 });
+                
+                // Add subtle continuous movement to prevent static appearance
+                setInterval(() => {
+                    if (simulation && simulation.alpha() < 0.1) {
+                        // Gently restart simulation when it gets too static
+                        simulation.alpha(0.1).restart();
+                    }
+                }, 3000); // Check every 3 seconds
                 
                 // Hide loading screen and set initial zoom after D3 simulation is ready
                 setTimeout(() => {
@@ -4246,11 +4255,12 @@ Remember: You're helping someone explore and understand their social network dat
                 // Calculate adaptive physics parameters
                 const physicsParams = calculateAdaptivePhysics(visibleNodeCount);
                 
-                // Update D3 simulation parameters
-                simulation.force("charge").strength(physicsParams.forceAtlas2Based.gravitationalConstant);
+                // Update D3 simulation parameters with enhanced repulsion
+                simulation.force("charge").strength(Math.min(-800, physicsParams.forceAtlas2Based.gravitationalConstant * 2)); // Enhanced repulsion
                 simulation.force("link").distance(physicsParams.forceAtlas2Based.springLength);
                 simulation.force("center").strength(physicsParams.forceAtlas2Based.centralGravity);
-                simulation.velocityDecay(physicsParams.forceAtlas2Based.damping);
+                simulation.force("collision").radius(25); // Ensure collision radius for overlap prevention
+                simulation.velocityDecay(0.85); // Reduced damping for more dynamic movement
                 
                 // Adjust for timeline dragging
                 if (isTimelineDragging) {
@@ -4334,11 +4344,12 @@ Remember: You're helping someone explore and understand their social network dat
                 // Calculate adaptive physics parameters
                 const physicsParams = calculateAdaptivePhysics(nodeCount);
                 
-                // Update D3 simulation with burst parameters
-                simulation.force("charge").strength(physicsParams.forceAtlas2Based.gravitationalConstant);
+                // Update D3 simulation with burst parameters and enhanced repulsion
+                simulation.force("charge").strength(Math.min(-800, physicsParams.forceAtlas2Based.gravitationalConstant * 2)); // Enhanced repulsion
                 simulation.force("link").distance(physicsParams.forceAtlas2Based.springLength);
                 simulation.force("center").strength(physicsParams.forceAtlas2Based.centralGravity);
-                simulation.velocityDecay(physicsParams.forceAtlas2Based.damping);
+                simulation.force("collision").radius(25); // Ensure collision radius for overlap prevention
+                simulation.velocityDecay(0.85); // Reduced damping for more dynamic movement
                 
                 // Start burst with high energy
                 simulation.alphaDecay(0.05); // Faster decay for burst
