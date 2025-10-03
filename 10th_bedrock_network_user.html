@@ -42,6 +42,7 @@ DO NOT use file:// URLs with this version
         <!-- Vis.js Network -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
         
         <!-- Bootstrap -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
@@ -2111,6 +2112,7 @@ DO NOT use file:// URLs with this version
             let edges;
             let allNodes;
             let allEdges;
+            let simulation; // D3-force simulation
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
@@ -3361,26 +3363,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Network options
                 const options = {
                     physics: {
-                        enabled: true,
-                        solver: 'forceAtlas2Based',
-                        forceAtlas2Based: {
-                            gravitationalConstant: -100, // Reduced from -150 to decrease rotation
-                            centralGravity: 0.005,
-                            springLength: 250, // Longer springs = more spacing
-                            springConstant: 0.1,
-                            damping: 0.9, // Increased damping for smoother movement
-                            avoidOverlap: 1.2 // Higher overlap avoidance = more spacing
-                        },
-                        maxVelocity: 8, // Reduced max velocity for smoother movement
-                        minVelocity: 0.05, // Reduced min velocity for smoother movement
-                        timestep: 0.3, // Reduced timestep for smoother physics
-                        stabilization: {
-                            enabled: true,
-                            iterations: 200,
-                            updateInterval: 25, // Faster updates for smoother animation
-                            onlyDynamicEdges: false,
-                            fit: false
-                        }
+                        enabled: false // Disable vis.js physics - using D3-force instead
                     },
                     nodes: {
                         font: { size: 14.4, face: 'Arial' },
@@ -3459,6 +3442,31 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
+                
+                // Initialize D3-force simulation
+                console.log('🌊 Initializing D3-force simulation...');
+                simulation = d3.forceSimulation(nodes.get())
+                    .force("link", d3.forceLink(edges.get())
+                        .id(d => d.id)
+                        .strength(d => Math.min(1, (d.tap_count || 1) / 10))
+                        .distance(d => 250)) // Base spring length
+                    .force("charge", d3.forceManyBody().strength(-100))
+                    .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
+                    .force("collision", d3.forceCollide(20))
+                    .alphaDecay(0.01) // Slow decay for continuous physics
+                    .velocityDecay(0.9); // Damping
+                
+                console.log('✅ D3-force simulation initialized');
+                
+                // Connect D3 simulation to vis.js rendering
+                simulation.on("tick", () => {
+                    const updates = nodes.get().map(n => ({
+                        id: n.id,
+                        x: n.x,
+                        y: n.y
+                    }));
+                    nodes.update(updates);
+                });
                 
                 // Debug: Check edge visibility after network creation
                 console.log('🔍 Debug: Checking edge visibility after network creation...');
@@ -4169,31 +4177,9 @@ Remember: You're helping someone explore and understand their social network dat
                 console.log('🌊 Starting Continuous Physics');
                 continuousPhysicsActive = true;
                 
-                // Enable physics with continuous settings
-                network.setOptions({
-                    physics: {
-                        enabled: true,
-                        solver: 'forceAtlas2Based',
-                        forceAtlas2Based: {
-                            gravitationalConstant: -100,
-                            centralGravity: 0.005,
-                            springLength: 250,
-                            springConstant: 0.1,
-                            damping: 0.9,
-                            avoidOverlap: 1.2
-                        },
-                        maxVelocity: 8,
-                        minVelocity: 0.05,
-                        timestep: 0.3,
-                        stabilization: {
-                            enabled: false, // Keep physics running continuously
-                            iterations: 0,
-                            updateInterval: 25,
-                            onlyDynamicEdges: false,
-                            fit: false
-                        }
-                    }
-                });
+                // Start D3 simulation with continuous settings
+                simulation.alphaDecay(0.01); // Slow decay for continuous physics
+                simulation.alpha(0.3).restart();
             }
             
             // Update Continuous Physics Parameters
@@ -4213,27 +4199,20 @@ Remember: You're helping someone explore and understand their social network dat
                 // Calculate adaptive physics parameters
                 const physicsParams = calculateAdaptivePhysics(visibleNodeCount);
                 
-                // Keep original physics parameters - only adjust timeline sync sensitivity
-                // No changes to physics speed/springiness, just timeline responsiveness
+                // Update D3 simulation parameters
+                simulation.force("charge").strength(physicsParams.forceAtlas2Based.gravitationalConstant);
+                simulation.force("link").distance(physicsParams.forceAtlas2Based.springLength);
+                simulation.force("center").strength(physicsParams.forceAtlas2Based.centralGravity);
+                simulation.velocityDecay(physicsParams.forceAtlas2Based.damping);
                 
-                // Update physics parameters smoothly
-                network.setOptions({
-                    physics: {
-                        enabled: true,
-                        solver: 'forceAtlas2Based',
-                        forceAtlas2Based: physicsParams.forceAtlas2Based,
-                        maxVelocity: physicsParams.maxVelocity,
-                        minVelocity: physicsParams.minVelocity,
-                        timestep: physicsParams.timestep,
-                        stabilization: {
-                            enabled: false, // Keep continuous
-                            iterations: 0,
-                            updateInterval: 25,
-                            onlyDynamicEdges: false,
-                            fit: false
-                        }
-                    }
-                });
+                // Adjust for timeline dragging
+                if (isTimelineDragging) {
+                    simulation.alphaDecay(0.01); // Very slow decay during dragging
+                    simulation.alpha(0.1).restart();
+                } else {
+                    simulation.alphaDecay(0.01); // Normal continuous decay
+                    simulation.alpha(0.3).restart();
+                }
                 
                 console.log(`🌊 Updated continuous physics for ${visibleNodeCount} nodes (dragging: ${isTimelineDragging})`);
             }
@@ -4245,10 +4224,8 @@ Remember: You're helping someone explore and understand their social network dat
                 console.log('🛑 Stopping Continuous Physics');
                 continuousPhysicsActive = false;
                 
-                // Disable physics
-                network.setOptions({
-                    physics: { enabled: false }
-                });
+                // Stop D3 simulation
+                simulation.stop();
             }
             
             // Timeline Drag Physics - High frequency updates during dragging
@@ -4308,35 +4285,20 @@ Remember: You're helping someone explore and understand their social network dat
                 // Calculate adaptive physics parameters
                 const physicsParams = calculateAdaptivePhysics(nodeCount);
                 
-                // Enable physics with adaptive parameters
-                network.setOptions({
-                    physics: {
-                        enabled: true,
-                        solver: 'forceAtlas2Based',
-                        forceAtlas2Based: physicsParams.forceAtlas2Based,
-                        maxVelocity: physicsParams.maxVelocity,
-                        minVelocity: physicsParams.minVelocity,
-                        timestep: physicsParams.timestep,
-                        stabilization: {
-                            enabled: true,
-                            iterations: physicsParams.iterations,
-                            updateInterval: 25,
-                            onlyDynamicEdges: false,
-                            fit: false // Prevent camera jumps
-                        }
-                    }
-                });
+                // Update D3 simulation with burst parameters
+                simulation.force("charge").strength(physicsParams.forceAtlas2Based.gravitationalConstant);
+                simulation.force("link").distance(physicsParams.forceAtlas2Based.springLength);
+                simulation.force("center").strength(physicsParams.forceAtlas2Based.centralGravity);
+                simulation.velocityDecay(physicsParams.forceAtlas2Based.damping);
+                
+                // Start burst with high energy
+                simulation.alphaDecay(0.05); // Faster decay for burst
+                simulation.alpha(0.5).restart();
                 
                 // Set timeout to stop physics burst
                 physicsBurstTimeout = setTimeout(() => {
                     stopPhysicsBurst();
                 }, 1000); // 1 second max burst (shorter)
-                
-                // Listen for stabilization event
-                network.on('stabilizationIterationsDone', function() {
-                    console.log('✅ Physics stabilized, stopping burst');
-                    stopPhysicsBurst();
-                });
             }
             
             // Stop Physics Burst
@@ -4345,19 +4307,14 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 console.log('🛑 Stopping Physics Burst');
                 
-                // Disable physics
-                network.setOptions({
-                    physics: { enabled: false }
-                });
+                // Stop D3 simulation
+                simulation.stop();
                 
                 // Clear timeout
                 if (physicsBurstTimeout) {
                     clearTimeout(physicsBurstTimeout);
                     physicsBurstTimeout = null;
                 }
-                
-                // Remove event listener
-                network.off('stabilizationIterationsDone');
                 
                 isPhysicsBurstActive = false;
             }
@@ -4428,8 +4385,10 @@ Remember: You're helping someone explore and understand their social network dat
                     };
                 });
                 
-                // Apply positioning updates
-                network.setData({ nodes: nodeUpdates });
+                // Apply positioning updates to D3 simulation
+                simulation.nodes(nodes.get());
+                simulation.force("link").links(edges.get());
+                simulation.alpha(0.3).restart();
                 
                 console.log(`✅ Positioned ${nodeUpdates.length} nodes near centroid (${centroidX.toFixed(1)}, ${centroidY.toFixed(1)})`);
             }
@@ -4770,40 +4729,13 @@ Remember: You're helping someone explore and understand their social network dat
 
             function stabilize() {
                 if (isFrozen) {
-                    // Unfreeze - enable physics
-                    network.setOptions({
-                        physics: {
-                            enabled: true,
-                            solver: 'forceAtlas2Based',
-                            forceAtlas2Based: {
-                                gravitationalConstant: -100,
-                                centralGravity: 0.005,
-                                springLength: 250,
-                                springConstant: 0.1,
-                                damping: 0.9,
-                                avoidOverlap: 1.2
-                            },
-                            maxVelocity: 8,
-                            minVelocity: 0.05,
-                            timestep: 0.3,
-                            stabilization: {
-                                enabled: true,
-                                iterations: 200,
-                                updateInterval: 25,
-                                onlyDynamicEdges: false,
-                                fit: false
-                            }
-                        }
-                    });
+                    // Unfreeze - start D3 simulation
+                    simulation.alpha(0.3).restart();
                     isFrozen = false;
                     document.querySelector('.control-btn[onclick="stabilize()"]').textContent = 'Freeze';
                 } else {
-                    // Freeze - disable physics
-                    network.setOptions({
-                        physics: {
-                            enabled: false
-                        }
-                    });
+                    // Freeze - stop D3 simulation
+                    simulation.stop();
                     isFrozen = true;
                     document.querySelector('.control-btn[onclick="stabilize()"]').textContent = 'Unfreeze';
                 }
@@ -4812,7 +4744,7 @@ Remember: You're helping someone explore and understand their social network dat
             function resetView() {
                 network.fit();
                 if (!isFrozen) {
-                    network.stabilize(50);
+                    simulation.alpha(0.5).restart();
                 }
             }
         
@@ -5051,6 +4983,10 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 currentFilterUser = userId;
                 
+                // Update D3 simulation with new data
+                simulation.nodes(nodes.get());
+                simulation.force("link").links(edges.get());
+                
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
                 const user = allNodes[userId];
@@ -5083,6 +5019,10 @@ Remember: You're helping someone explore and understand their social network dat
                 if (!currentFilterUser) {
                     return;
                 }
+                
+                // Update D3 simulation with new data
+                simulation.nodes(nodes.get());
+                simulation.force("link").links(edges.get());
                 
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
@@ -5415,6 +5355,10 @@ Remember: You're helping someone explore and understand their social network dat
                 // Prevent multiple simultaneous updates
                 if (isUpdating) return;
                 isUpdating = true;
+                
+                // Update D3 simulation with new data
+                simulation.nodes(nodes.get());
+                simulation.force("link").links(edges.get());
                 
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
