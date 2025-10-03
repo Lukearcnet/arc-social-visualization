@@ -2298,11 +2298,11 @@ DO NOT use file:// URLs with this version
                     const taps = user.profile_stats.tap_count;
                     const connections = user.profile_stats.connections_count;
                     
-                    // Use same sizing formula as timeline: 10px base + 0.167px per tap, max 60px
-                    let size = 10; // Base size
+                    // Reduced sizing formula: 6px base + 0.1px per tap, max 25px
+                    let size = 6; // Reduced base size
                     if (taps > 0) {
-                        // Same formula as timeline sizing: 300 taps = 60px max size
-                        size = Math.max(10, Math.min(60, 10 + (taps * 0.167)));
+                        // Reduced formula: 190 taps = 25px max size
+                        size = Math.max(6, Math.min(25, 6 + (taps * 0.1)));
                     }
                     
                     return {
@@ -2414,10 +2414,10 @@ DO NOT use file:// URLs with this version
                     .force("link", d3.forceLink(edgesForD3)
                         .id(d => d.id)
                         .strength(d => Math.min(1, (d.tap_count || 1) / 10))
-                        .distance(d => 250)) // Base spring length
-                    .force("charge", d3.forceManyBody().strength(-100))
+                        .distance(d => 150)) // Reduced spring length for tighter layout
+                    .force("charge", d3.forceManyBody().strength(-300)) // Increased repulsion for better spacing
                     .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
-                    .force("collision", d3.forceCollide(20))
+                    .force("collision", d3.forceCollide(15)) // Reduced collision radius for smaller nodes
                     .alphaDecay(0.01) // Slow decay for continuous physics
                     .velocityDecay(0.9); // Damping
                 
@@ -2432,6 +2432,23 @@ DO NOT use file:// URLs with this version
                     }));
                     nodes.update(updates);
                 });
+                
+                // Hide loading screen and set initial zoom after D3 simulation is ready
+                setTimeout(() => {
+                    document.getElementById('loadingContainer').style.display = 'none';
+                    console.log('✅ Loading screen hidden after D3 initialization');
+                    
+                    // Set initial zoom out for better overview
+                    if (network) {
+                        network.fit({
+                            animation: {
+                                duration: 1000,
+                                easingFunction: "easeInOutQuad"
+                            }
+                        });
+                        console.log('🔍 Initial zoom out applied');
+                    }
+                }, 500);
                 
             }
             
@@ -5785,7 +5802,7 @@ Remember: You're helping someone explore and understand their social network dat
             // Calculate node properties based on filtered events
             function calculateTimelineNodeProperties(nodeId, filteredEvents) {
                 const node = allNodes[nodeId];
-                if (!node) return { size: 10, color: "#87CEEB" }; // Default values
+                if (!node) return { size: 6, color: "#87CEEB" }; // Default values
                 
                 // Count events involving this node in the filtered time range
                 let timelineTaps = 0;
@@ -5805,11 +5822,11 @@ Remember: You're helping someone explore and understand their social network dat
                 timelineConnections.delete(nodeId);
                 const connectionCount = timelineConnections.size;
                 
-                // Calculate size with new formula: 10px base + 0.167px per tap, max 60px
-                let size = 10; // Base size
+                // Calculate size with reduced formula: 6px base + 0.1px per tap, max 25px
+                let size = 6; // Reduced base size
                 if (timelineTaps > 0) {
-                    // New sizing: 300 taps = 60px max size
-                    size = Math.max(10, Math.min(60, 10 + (timelineTaps * 0.167)));
+                    // Reduced sizing: 190 taps = 25px max size
+                    size = Math.max(6, Math.min(25, 6 + (timelineTaps * 0.1)));
                 }
                 
                 // New 6-step color gradient: Dark grey → White (100 taps max)
