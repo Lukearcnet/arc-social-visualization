@@ -335,6 +335,84 @@ DO NOT use file:// URLs with this version
                 pointer-events: auto;
             }
             
+            /* Settings Content Styling */
+            .settings-content {
+                padding: 16px;
+                height: 100%;
+                overflow-y: auto;
+            }
+            
+            .settings-section {
+                margin-bottom: 20px;
+            }
+            
+            .settings-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .settings-label {
+                color: var(--fg-primary);
+                font-size: 14px;
+                font-weight: 500;
+                margin: 0;
+            }
+            
+            /* Toggle Switch Styling */
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 44px;
+                height: 24px;
+            }
+            
+            .toggle-input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            
+            .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(255, 255, 255, 0.2);
+                transition: 0.3s;
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
+            
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 2px;
+                bottom: 2px;
+                background-color: white;
+                transition: 0.3s;
+                border-radius: 50%;
+            }
+            
+            .toggle-input:checked + .toggle-slider {
+                background-color: var(--accent);
+                border-color: var(--accent);
+            }
+            
+            .toggle-input:checked + .toggle-slider:before {
+                transform: translateX(20px);
+            }
+            
+            .toggle-switch:hover .toggle-slider {
+                border-color: rgba(255, 255, 255, 0.5);
+            }
+            
             .search-toggle-btn .search-input::placeholder {
                 color: var(--fg-muted);
             }
@@ -1924,7 +2002,17 @@ DO NOT use file:// URLs with this version
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                         </svg>
                         <div id="settingsContainer" class="settings-container">
-                            <!-- Settings content will go here -->
+                            <div class="settings-content">
+                                <div class="settings-section">
+                                    <div class="settings-item">
+                                        <label class="settings-label">Sync Timeline and Physics</label>
+                                        <div class="toggle-switch">
+                                            <input type="checkbox" id="syncTimelinePhysics" class="toggle-input">
+                                            <span class="toggle-slider"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </button>
                 </div>
@@ -3930,6 +4018,18 @@ Remember: You're helping someone explore and understand their social network dat
                     // Open settings
                     console.log('⚙️ TOGGLE SETTINGS - OPENING');
                     settingsToggleBtn.classList.add('expanded');
+                }
+            }
+            
+            // Initialize settings toggle functionality
+            function initSettingsToggle() {
+                const syncToggle = document.getElementById('syncTimelinePhysics');
+                
+                if (syncToggle) {
+                    syncToggle.addEventListener('change', function() {
+                        console.log('⚙️ SYNC TIMELINE & PHYSICS:', this.checked ? 'ENABLED' : 'DISABLED');
+                        // TODO: Implement actual sync functionality
+                    });
                 }
             }
             
@@ -5975,6 +6075,7 @@ Remember: You're helping someone explore and understand their social network dat
                 initSearch();
                 initExpandableSearch();
                 initTimelineSlider();
+                initSettingsToggle();
                 
                 // Check for userName parameter and auto-select user
                 const urlParams = new URLSearchParams(window.location.search);
