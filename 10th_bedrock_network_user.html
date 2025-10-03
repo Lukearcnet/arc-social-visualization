@@ -356,7 +356,7 @@ DO NOT use file:// URLs with this version
             
             .settings-label {
                 color: var(--fg-primary);
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: 500;
                 margin: 0;
             }
@@ -411,6 +411,16 @@ DO NOT use file:// URLs with this version
             
             .toggle-switch:hover .toggle-slider {
                 border-color: rgba(255, 255, 255, 0.5);
+            }
+            
+            /* Ensure the toggle slider is clickable */
+            .toggle-slider {
+                cursor: pointer;
+            }
+            
+            /* Make sure the toggle switch container is clickable */
+            .toggle-switch {
+                cursor: pointer;
             }
             
             .search-toggle-btn .search-input::placeholder {
@@ -4026,10 +4036,23 @@ Remember: You're helping someone explore and understand their social network dat
                 const syncToggle = document.getElementById('syncTimelinePhysics');
                 
                 if (syncToggle) {
+                    console.log('⚙️ Initializing settings toggle...');
+                    
                     syncToggle.addEventListener('change', function() {
                         console.log('⚙️ SYNC TIMELINE & PHYSICS:', this.checked ? 'ENABLED' : 'DISABLED');
                         // TODO: Implement actual sync functionality
                     });
+                    
+                    // Also add click event to the slider for better UX
+                    const toggleSlider = syncToggle.nextElementSibling;
+                    if (toggleSlider) {
+                        toggleSlider.addEventListener('click', function() {
+                            syncToggle.checked = !syncToggle.checked;
+                            syncToggle.dispatchEvent(new Event('change'));
+                        });
+                    }
+                } else {
+                    console.error('⚙️ Settings toggle element not found!');
                 }
             }
             
