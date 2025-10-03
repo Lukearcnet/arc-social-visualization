@@ -4185,9 +4185,10 @@ Remember: You're helping someone explore and understand their social network dat
             
             // Get visible nodes count
             function getVisibleNodes() {
-                const allNodeIds = network.getNodes();
+                // Get all node IDs from the nodes dataset
+                const allNodeIds = nodes.getIds();
                 return allNodeIds.filter(nodeId => {
-                    const node = network.getNode(nodeId);
+                    const node = nodes.get(nodeId);
                     return node && !node.hidden;
                 });
             }
