@@ -354,6 +354,20 @@ DO NOT use file:// URLs with this version
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             }
             
+            .settings-item-content {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                margin-right: 12px;
+            }
+            
+            .settings-description {
+                color: var(--fg-muted);
+                font-size: 11px;
+                margin-top: 2px;
+                line-height: 1.3;
+            }
+            
             .settings-label {
                 color: var(--fg-primary);
                 font-size: 12px;
@@ -2015,7 +2029,10 @@ DO NOT use file:// URLs with this version
                             <div class="settings-content">
                                 <div class="settings-section">
                                     <div class="settings-item">
-                                        <label class="settings-label">Sync Timeline and Physics</label>
+                                        <div class="settings-item-content">
+                                            <label class="settings-label">Dynamic Layout</label>
+                                            <div class="settings-description">Adaptive physics that recalculates layout when timeline or filters change</div>
+                                        </div>
                                         <div class="toggle-switch">
                                             <input type="checkbox" id="syncTimelinePhysics" class="toggle-input">
                                             <span class="toggle-slider"></span>
@@ -4031,6 +4048,13 @@ Remember: You're helping someone explore and understand their social network dat
                 }
             }
             
+            // Dynamic Layout System - Global Variables
+            let dynamicLayoutEnabled = false;
+            let physicsDebounceTimer = null;
+            let lastVisibleNodeCount = 0;
+            let isPhysicsBurstActive = false;
+            let physicsBurstTimeout = null;
+            
             // Initialize settings toggle functionality
             function initSettingsToggle() {
                 const syncToggle = document.getElementById('syncTimelinePhysics');
@@ -4039,8 +4063,19 @@ Remember: You're helping someone explore and understand their social network dat
                     console.log('⚙️ Initializing settings toggle...');
                     
                     syncToggle.addEventListener('change', function() {
-                        console.log('⚙️ SYNC TIMELINE & PHYSICS:', this.checked ? 'ENABLED' : 'DISABLED');
-                        // TODO: Implement actual sync functionality
+                        const isEnabled = this.checked;
+                        console.log('⚙️ DYNAMIC LAYOUT:', isEnabled ? 'ENABLED' : 'DISABLED');
+                        
+                        // Store state globally
+                        dynamicLayoutEnabled = isEnabled;
+                        
+                        if (isEnabled) {
+                            // Initialize dynamic layout system
+                            initDynamicLayoutSystem();
+                        } else {
+                            // Clean up any active physics bursts
+                            cleanupDynamicLayout();
+                        }
                     });
                     
                     // Also add click event to the slider for better UX
@@ -4054,6 +4089,304 @@ Remember: You're helping someone explore and understand their social network dat
                 } else {
                     console.error('⚙️ Settings toggle element not found!');
                 }
+            }
+            
+            // Initialize Dynamic Layout System
+            function initDynamicLayoutSystem() {
+                console.log('🎯 Initializing Dynamic Layout System');
+                
+                // Reset state
+                lastVisibleNodeCount = 0;
+                isPhysicsBurstActive = false;
+                
+                // Clear any existing timers
+                if (physicsDebounceTimer) {
+                    clearTimeout(physicsDebounceTimer);
+                    physicsDebounceTimer = null;
+                }
+                
+                if (physicsBurstTimeout) {
+                    clearTimeout(physicsBurstTimeout);
+                    physicsBurstTimeout = null;
+                }
+            }
+            
+            // Cleanup Dynamic Layout System
+            function cleanupDynamicLayout() {
+                console.log('🧹 Cleaning up Dynamic Layout System');
+                
+                // Clear timers
+                if (physicsDebounceTimer) {
+                    clearTimeout(physicsDebounceTimer);
+                    physicsDebounceTimer = null;
+                }
+                
+                if (physicsBurstTimeout) {
+                    clearTimeout(physicsBurstTimeout);
+                    physicsBurstTimeout = null;
+                }
+                
+                // Stop any active physics burst
+                if (isPhysicsBurstActive) {
+                    stopPhysicsBurst();
+                }
+                
+                isPhysicsBurstActive = false;
+            }
+            
+            // Trigger Dynamic Physics (Debounced)
+            function triggerDynamicPhysics() {
+                if (!dynamicLayoutEnabled) return;
+                
+                console.log('🎯 Triggering Dynamic Physics (debounced)');
+                
+                // Clear existing timer
+                if (physicsDebounceTimer) {
+                    clearTimeout(physicsDebounceTimer);
+                }
+                
+                // Set new debounced timer (150ms)
+                physicsDebounceTimer = setTimeout(() => {
+                    executePhysicsBurst();
+                }, 150);
+            }
+            
+            // Execute Physics Burst
+            function executePhysicsBurst() {
+                if (!dynamicLayoutEnabled || isPhysicsBurstActive) return;
+                
+                console.log('🚀 Executing Physics Burst');
+                
+                // Get current visible nodes
+                const visibleNodes = getVisibleNodes();
+                const visibleNodeCount = visibleNodes.length;
+                
+                // Check performance thresholds
+                if (visibleNodeCount > 800) {
+                    console.log('⚠️ Too many nodes for dynamic layout, falling back to static');
+                    return;
+                }
+                
+                // Check hysteresis (only update if significant change)
+                const nodeCountChange = Math.abs(visibleNodeCount - lastVisibleNodeCount);
+                const changePercentage = (nodeCountChange / Math.max(visibleNodeCount, lastVisibleNodeCount, 1)) * 100;
+                
+                if (changePercentage < 10 && lastVisibleNodeCount > 0) {
+                    console.log('📊 Change too small, skipping physics burst');
+                    return;
+                }
+                
+                // Update last count
+                lastVisibleNodeCount = visibleNodeCount;
+                
+                // Start physics burst
+                startPhysicsBurst(visibleNodeCount);
+            }
+            
+            // Get visible nodes count
+            function getVisibleNodes() {
+                const allNodeIds = network.getNodes();
+                return allNodeIds.filter(nodeId => {
+                    const node = network.getNode(nodeId);
+                    return node && !node.hidden;
+                });
+            }
+            
+            // Start Physics Burst
+            function startPhysicsBurst(nodeCount) {
+                console.log(`🎯 Starting Physics Burst for ${nodeCount} nodes`);
+                
+                isPhysicsBurstActive = true;
+                
+                // Apply warm-start positioning for newly visible nodes
+                applyWarmStartPositioning();
+                
+                // Calculate adaptive physics parameters
+                const physicsParams = calculateAdaptivePhysics(nodeCount);
+                
+                // Enable physics with adaptive parameters
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: physicsParams.forceAtlas2Based,
+                        maxVelocity: physicsParams.maxVelocity,
+                        minVelocity: physicsParams.minVelocity,
+                        timestep: physicsParams.timestep,
+                        stabilization: {
+                            enabled: true,
+                            iterations: physicsParams.iterations,
+                            updateInterval: 25,
+                            onlyDynamicEdges: false,
+                            fit: false // Prevent camera jumps
+                        }
+                    }
+                });
+                
+                // Set timeout to stop physics burst
+                physicsBurstTimeout = setTimeout(() => {
+                    stopPhysicsBurst();
+                }, 2000); // 2 second max burst
+                
+                // Listen for stabilization event
+                network.on('stabilizationIterationsDone', function() {
+                    console.log('✅ Physics stabilized, stopping burst');
+                    stopPhysicsBurst();
+                });
+            }
+            
+            // Stop Physics Burst
+            function stopPhysicsBurst() {
+                if (!isPhysicsBurstActive) return;
+                
+                console.log('🛑 Stopping Physics Burst');
+                
+                // Disable physics
+                network.setOptions({
+                    physics: { enabled: false }
+                });
+                
+                // Clear timeout
+                if (physicsBurstTimeout) {
+                    clearTimeout(physicsBurstTimeout);
+                    physicsBurstTimeout = null;
+                }
+                
+                // Remove event listener
+                network.off('stabilizationIterationsDone');
+                
+                isPhysicsBurstActive = false;
+            }
+            
+            // Apply Warm-Start Positioning
+            function applyWarmStartPositioning() {
+                console.log('🔥 Applying warm-start positioning');
+                
+                const visibleNodes = getVisibleNodes();
+                const allNodes = network.getNodes();
+                
+                // Find newly visible nodes (nodes that were hidden but are now visible)
+                const newlyVisibleNodes = visibleNodes.filter(nodeId => {
+                    const node = network.getNode(nodeId);
+                    return node && !node.hidden && !node.fixed;
+                });
+                
+                if (newlyVisibleNodes.length === 0) {
+                    console.log('📊 No newly visible nodes to position');
+                    return;
+                }
+                
+                console.log(`🎯 Positioning ${newlyVisibleNodes.length} newly visible nodes`);
+                
+                // Calculate centroid of visible nodes
+                const visiblePositions = visibleNodes
+                    .filter(nodeId => {
+                        const node = network.getNode(nodeId);
+                        return node && node.x !== undefined && node.y !== undefined;
+                    })
+                    .map(nodeId => {
+                        const node = network.getNode(nodeId);
+                        return { x: node.x, y: node.y };
+                    });
+                
+                let centroidX = 0;
+                let centroidY = 0;
+                
+                if (visiblePositions.length > 0) {
+                    centroidX = visiblePositions.reduce((sum, pos) => sum + pos.x, 0) / visiblePositions.length;
+                    centroidY = visiblePositions.reduce((sum, pos) => sum + pos.y, 0) / visiblePositions.length;
+                } else if (currentFilterUser) {
+                    // If no visible positions, use selected user as anchor
+                    const userNode = network.getNode(currentFilterUser);
+                    if (userNode && userNode.x !== undefined && userNode.y !== undefined) {
+                        centroidX = userNode.x;
+                        centroidY = userNode.y;
+                    }
+                }
+                
+                // Position newly visible nodes near centroid
+                const nodeUpdates = newlyVisibleNodes.map(nodeId => {
+                    // Add some random offset to prevent overlap
+                    const offsetX = (Math.random() - 0.5) * 200;
+                    const offsetY = (Math.random() - 0.5) * 200;
+                    
+                    return {
+                        id: nodeId,
+                        x: centroidX + offsetX,
+                        y: centroidY + offsetY,
+                        fixed: false // Allow physics to move them
+                    };
+                });
+                
+                // Apply positioning updates
+                network.setData({ nodes: nodeUpdates });
+                
+                console.log(`✅ Positioned ${nodeUpdates.length} nodes near centroid (${centroidX.toFixed(1)}, ${centroidY.toFixed(1)})`);
+            }
+            
+            // Calculate Adaptive Physics Parameters
+            function calculateAdaptivePhysics(nodeCount) {
+                console.log(`📊 Calculating adaptive physics for ${nodeCount} nodes`);
+                
+                // Base parameters
+                let springLength = 250;
+                let gravitationalConstant = -100;
+                let centralGravity = 0.005;
+                let maxVelocity = 8;
+                let iterations = 200;
+                
+                // Adaptive scaling based on node count
+                if (nodeCount < 50) {
+                    // Small graphs: tighter, faster
+                    springLength = Math.max(100, springLength * 0.6);
+                    gravitationalConstant = -50;
+                    centralGravity = 0.01;
+                    maxVelocity = 12;
+                    iterations = 150;
+                } else if (nodeCount < 200) {
+                    // Medium graphs: balanced
+                    springLength = springLength * 0.8;
+                    gravitationalConstant = -75;
+                    centralGravity = 0.007;
+                    maxVelocity = 10;
+                    iterations = 180;
+                } else if (nodeCount < 500) {
+                    // Large graphs: more spacing, slower
+                    springLength = springLength * 1.2;
+                    gravitationalConstant = -125;
+                    centralGravity = 0.003;
+                    maxVelocity = 6;
+                    iterations = 250;
+                } else {
+                    // Very large graphs: maximum spacing
+                    springLength = springLength * 1.5;
+                    gravitationalConstant = -150;
+                    centralGravity = 0.002;
+                    maxVelocity = 4;
+                    iterations = 300;
+                }
+                
+                // User-centric adjustments
+                if (currentFilterUser) {
+                    // Increase central gravity to anchor selected user
+                    centralGravity *= 1.5;
+                    console.log('👤 User-centric mode: increased central gravity');
+                }
+                
+                return {
+                    forceAtlas2Based: {
+                        gravitationalConstant: gravitationalConstant,
+                        centralGravity: centralGravity,
+                        springLength: springLength,
+                        springConstant: 0.1,
+                        damping: 0.9,
+                        avoidOverlap: 1.2
+                    },
+                    maxVelocity: maxVelocity,
+                    minVelocity: 0.05,
+                    timestep: 0.3,
+                    iterations: iterations
+                };
             }
             
             // Display expandable search results
@@ -4607,6 +4940,9 @@ Remember: You're helping someone explore and understand their social network dat
             function filterNetworkByUser(userId) {
                 
                 currentFilterUser = userId;
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 const user = allNodes[userId];
                 if (!user || !user.profile_data) {
                     return;
@@ -4637,6 +4973,9 @@ Remember: You're helping someone explore and understand their social network dat
                 if (!currentFilterUser) {
                     return;
                 }
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 
                 const user = allNodes[currentFilterUser];
                 if (!user || !user.profile_data) {
@@ -5408,6 +5747,9 @@ Remember: You're helping someone explore and understand their social network dat
                 // Prevent multiple simultaneous updates
                 if (isUpdating) return;
                 isUpdating = true;
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 
                 
                 // Calculate how many events to show based on percentage
