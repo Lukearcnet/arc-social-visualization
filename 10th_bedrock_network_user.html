@@ -5277,6 +5277,9 @@ Remember: You're helping someone explore and understand their social network dat
                 if (isUpdating) return;
                 isUpdating = true;
                 
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
+                
                 console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
                 
                 // Calculate start and end event indices
