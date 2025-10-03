@@ -2131,6 +2131,46 @@ DO NOT use file:// URLs with this version
                     target: e.to
                 }));
             }
+            
+            // Rebind strategy for timeline/degree changes
+            function rebindSimulation() {
+                if (!ensureSimulation()) return;
+                
+                const edgesForD3 = transformEdgesForD3();
+                simulation.nodes(nodes.get());
+                simulation.force("link").links(edgesForD3);
+                simulation.alpha(0.6).restart();        // quick burst on change
+                // sim will cool towards alphaTarget automatically
+                
+                console.log("SIM REBIND",
+                    "nodes:", simulation.nodes().length,
+                    "links:", simulation.force("link").links().length,
+                    "alpha:", simulation.alpha(),
+                    "alphaTarget:", simulation.alphaTarget(),
+                    "velDecay:", simulation.velocityDecay()
+                );
+            }
+            
+            // Drag behavior that tugs neighbors
+            function onDragStart(e, datum) {
+                if (!ensureSimulation()) return;
+                simulation.alphaTarget(0.2).restart();  // energize while dragging
+                datum.fx = datum.x;
+                datum.fy = datum.y;
+            }
+            
+            function onDrag(e, datum) {
+                if (!ensureSimulation()) return;
+                datum.fx = e.x;
+                datum.fy = e.y;
+            }
+            
+            function onDragEnd(e, datum) {
+                if (!ensureSimulation()) return;
+                datum.fx = null;
+                datum.fy = null;                 // release back to physics
+                simulation.alphaTarget(0.015);          // return to idle motion
+            }
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
@@ -2410,19 +2450,69 @@ DO NOT use file:// URLs with this version
                 
                 console.log('🔗 Edge transformation complete:', edgesForD3.length, 'edges');
                 
-                simulation = d3.forceSimulation(nodes.get())
+                // Utilities for node sizing
+                const sizeOf = n => (n.size || 14);                // vis.js node px size
+                const nodeRadius = n => Math.max(6, sizeOf(n) / 2);
+                const pad = 3;                                     // extra padding for collide
+                
+                // Scales (tweakable constants)
+                const linkDist = d3.scaleLinear().domain([1, 10]).range([80, 280]); // tap_count -> distance
+                const linkStrength = d3.scaleLinear().domain([1, 10]).range([0.05, 0.6]);
+                
+                // Build / update simulation
+                if (!window.simulation) {
+                    window.simulation = d3.forceSimulation(nodes.get());
+                }
+                simulation = window.simulation;
+                
+                simulation
                     .force("link", d3.forceLink(edgesForD3)
                         .id(d => d.id)
-                        .strength(d => Math.min(1, (d.tap_count || 1) / 10))
-                        .distance(d => 150)) // Reduced spring length for tighter layout
-                    .force("charge", d3.forceManyBody().strength(-800)) // Much stronger repulsion to prevent overlap
+                        .distance(d => linkDist(Math.min(10, d.tap_count || 1)))
+                        .strength(d => linkStrength(Math.min(10, d.tap_count || 1))))
+                    .force("charge", d3.forceManyBody()
+                        .strength(-40)             // more negative = more spread
+                        .distanceMin(10)
+                        .distanceMax(600))
+                    .force("collide", d3.forceCollide()
+                        .radius(n => nodeRadius(n) + pad)
+                        .iterations(2))
                     .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
-                    .force("collision", d3.forceCollide(25)) // Increased collision radius to prevent overlap
-                    .force("radial", d3.forceRadial(200, window.innerWidth / 2, window.innerHeight / 2).strength(0.1)) // Subtle radial force for orbital motion
-                    .alphaDecay(0.005) // Even slower decay for more continuous movement
-                    .velocityDecay(0.85); // Reduced damping for more dynamic movement
+                    .velocityDecay(0.4)          // lower = more motion; higher = more damping
+                    .alphaDecay(0.02);           // how quickly the sim cools
+                
+                // Keep a slight idle motion (orbit-like)
+                simulation.alphaTarget(0.015);        // >0 keeps gentle movement
+                
+                // Performance guardrails for large graphs
+                const nodeCount = nodes.get().length;
+                if (nodeCount > 1500) {
+                    console.log('⚠️ Large graph detected, applying performance optimizations');
+                    simulation.alphaTarget(0.005);
+                    simulation.velocityDecay(0.5);
+                    simulation.force("link").strength(d => Math.min(0.4, linkStrength(Math.min(10, d.tap_count || 1))));
+                    simulation.force("collide").iterations(1);
+                }
                 
                 console.log('✅ D3-force simulation initialized');
+                
+                // Validation output
+                console.log("SIM INIT",
+                    "nodes:", simulation.nodes().length,
+                    "links:", simulation.force("link").links().length,
+                    "alpha:", simulation.alpha(),
+                    "alphaTarget:", simulation.alphaTarget(),
+                    "velDecay:", simulation.velocityDecay()
+                );
+                
+                // Log first 5 collide radii
+                const firstNodes = simulation.nodes().slice(0, 5);
+                console.log("First 5 collide radii:", firstNodes.map(n => {
+                    const sizeOf = n => (n.size || 14);
+                    const nodeRadius = n => Math.max(6, sizeOf(n) / 2);
+                    const pad = 3;
+                    return nodeRadius(n) + pad;
+                }));
                 
                 // Connect D3 simulation to vis.js rendering
                 simulation.on("tick", () => {
@@ -2434,13 +2524,6 @@ DO NOT use file:// URLs with this version
                     nodes.update(updates);
                 });
                 
-                // Add subtle continuous movement to prevent static appearance
-                setInterval(() => {
-                    if (simulation && simulation.alpha() < 0.1) {
-                        // Gently restart simulation when it gets too static
-                        simulation.alpha(0.1).restart();
-                    }
-                }, 3000); // Check every 3 seconds
                 
                 // Hide loading screen and set initial zoom after D3 simulation is ready
                 setTimeout(() => {
@@ -5056,14 +5139,11 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 currentFilterUser = userId;
                 
-                // Update D3 simulation with new data
-                if (ensureSimulation()) {
-                    simulation.nodes(nodes.get());
-                    simulation.force("link").links(transformEdgesForD3());
-                }
-                
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
+                
+                // Rebind simulation with new data
+                rebindSimulation();
                 const user = allNodes[userId];
                 if (!user || !user.profile_data) {
                     return;
@@ -5095,14 +5175,11 @@ Remember: You're helping someone explore and understand their social network dat
                     return;
                 }
                 
-                // Update D3 simulation with new data
-                if (ensureSimulation()) {
-                    simulation.nodes(nodes.get());
-                    simulation.force("link").links(transformEdgesForD3());
-                }
-                
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
+                
+                // Rebind simulation with new data
+                rebindSimulation();
                 
                 const user = allNodes[currentFilterUser];
                 if (!user || !user.profile_data) {
@@ -5433,14 +5510,11 @@ Remember: You're helping someone explore and understand their social network dat
                 if (isUpdating) return;
                 isUpdating = true;
                 
-                // Update D3 simulation with new data
-                if (ensureSimulation()) {
-                    simulation.nodes(nodes.get());
-                    simulation.force("link").links(transformEdgesForD3());
-                }
-                
                 // Trigger dynamic physics if enabled
                 triggerDynamicPhysics();
+                
+                // Rebind simulation with new data
+                rebindSimulation();
                 
                 console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
                 
