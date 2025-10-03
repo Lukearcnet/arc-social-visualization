@@ -153,6 +153,16 @@ DO NOT use file:// URLs with this version
                 flex-direction: column;
             }
             
+            /* Settings Control - Below Search */
+            .settings-control-floating {
+                position: absolute;
+                top: 156px; /* Below search button with 8px gap (108px + 40px button height + 8px gap) */
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+            }
+            
             .network-controls-floating .control-btn {
                 background: rgba(20, 20, 20, 0.9);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -193,6 +203,21 @@ DO NOT use file:// URLs with this version
             }
             
             .search-control-floating .search-toggle-btn:hover {
+                background: rgba(40, 40, 40, 0.9);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
+            /* Settings button in its own container */
+            .settings-control-floating .settings-toggle-btn {
+                background: rgba(20, 20, 20, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: var(--fg);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                backdrop-filter: blur(10px);
+            }
+            
+            .settings-control-floating .settings-toggle-btn:hover {
                 background: rgba(40, 40, 40, 0.9);
                 border-color: rgba(255, 255, 255, 0.4);
             }
@@ -244,6 +269,68 @@ DO NOT use file:// URLs with this version
         }
             
             .search-toggle-btn.expanded .search-input {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            /* Settings Toggle Button */
+            .settings-toggle-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px !important;
+                min-width: auto !important;
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            
+            .settings-toggle-btn svg {
+                width: 16px;
+                height: 16px;
+                transition: opacity 0.2s ease;
+            }
+            
+            /* Settings button expanded state - use width/opacity instead of transform */
+            .settings-toggle-btn.expanded {
+                width: 210px; /* 30% less than search (300px * 0.7 = 210px) */
+                min-width: 210px !important;
+                max-width: 210px !important;
+                padding: 8px 12px !important;
+                justify-content: flex-start;
+                z-index: 1001;
+                /* Ensure no transforms on expanded state */
+                transform: none !important;
+            }
+            
+            /* While the container is visible/focused, guarantee no transforms up the chain */
+            .settings-toggle-btn.expanded,
+            .settings-toggle-btn.expanded * {
+                transform: none !important;
+            }
+            
+            .settings-toggle-btn.expanded svg {
+                opacity: 0;
+            }
+            
+            /* Settings container that appears when expanded */
+            .settings-container {
+                position: absolute;
+                top: 100%; /* Position below the button */
+                left: 0;
+                width: 100%;
+                height: 400px; /* 10x the height of search input (40px * 10 = 400px) */
+                background: rgba(20, 20, 20, 0.98); /* Same as sidebar background */
+                border: 1px solid rgba(64, 64, 64, 0.8);
+                border-radius: var(--radius-1);
+                backdrop-filter: blur(20px);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
+                z-index: 1002;
+                overflow: hidden;
+            }
+            
+            .settings-toggle-btn.expanded .settings-container {
                 opacity: 1;
                 pointer-events: auto;
             }
@@ -1456,6 +1543,11 @@ DO NOT use file:// URLs with this version
                     top: 98px !important; /* Move up 10px to follow control buttons (108px - 10px) */
                     z-index: 10000 !important;
                 }
+                
+                body.iframe-context .settings-control-floating {
+                    top: 146px !important; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+                    z-index: 10000 !important;
+                }
             }
 
         /* ========================================
@@ -1634,6 +1726,11 @@ DO NOT use file:// URLs with this version
                 /* Search control positioning on mobile - follow control buttons */
                 .search-control-floating {
                     top: 98px; /* Move up 10px to follow control buttons (108px - 10px) */
+                }
+                
+                /* Settings control positioning on mobile - below search button */
+                .settings-control-floating {
+                    top: 146px; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
                 }
             }
 
@@ -1816,6 +1913,19 @@ DO NOT use file:// URLs with this version
                         </svg>
                         <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
                         <div id="expandableSearchResults" class="search-results"></div>
+                    </button>
+                </div>
+                
+                <!-- Settings Button - Below Search -->
+                <div class="settings-control-floating">
+                    <button class="control-btn settings-toggle-btn" id="settingsToggleBtn" onclick="toggleSettings()" title="Physics Settings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <div id="settingsContainer" class="settings-container">
+                            <!-- Settings content will go here -->
+                        </div>
                     </button>
                 </div>
             </div>
@@ -3738,16 +3848,27 @@ Remember: You're helping someone explore and understand their social network dat
                     e.stopPropagation();
                 });
                 
+                // Prevent clicks inside settings container from bubbling up
+                settingsContainer.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
                 // Hide results when clicking outside (but not during keyboard activity)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
                     const expandableSearchInput = document.getElementById('expandableSearchInput');
                     const expandableSearchResults = document.getElementById('expandableSearchResults');
+                    const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+                    const settingsContainer = document.getElementById('settingsContainer');
                     
                     // Check if click is inside search area (button, input, or results)
                     const isInsideSearchArea = searchToggleBtn.contains(e.target) || 
                                             expandableSearchInput.contains(e.target) || 
                                             expandableSearchResults.contains(e.target);
+                    
+                    // Check if click is inside settings area (button or container)
+                    const isInsideSettingsArea = settingsToggleBtn.contains(e.target) || 
+                                              settingsContainer.contains(e.target);
                     
                     // Only close if it's a mouse click, not during recent keyboard activity, and not inside search area
                     if (e.type === 'click' && !isInsideSearchArea && !recentKeyboardActivity) {
@@ -3756,6 +3877,13 @@ Remember: You're helping someone explore and understand their social network dat
                             searchToggleBtn.classList.remove('expanded');
                             expandableSearchInput.value = '';
                             expandableSearchResults.innerHTML = '';
+                        }
+                    }
+                    
+                    // Close settings if clicking outside settings area
+                    if (e.type === 'click' && !isInsideSettingsArea) {
+                        if (settingsToggleBtn.classList.contains('expanded')) {
+                            settingsToggleBtn.classList.remove('expanded');
                         }
                     }
                 });
@@ -3784,6 +3912,24 @@ Remember: You're helping someone explore and understand their social network dat
                     // Let mobile browser handle focus naturally - no forced focus
                 } else {
                     console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
+                }
+            }
+            
+            // Toggle settings interface
+            function toggleSettings() {
+                const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+                const settingsContainer = document.getElementById('settingsContainer');
+                
+                console.log('⚙️ TOGGLE SETTINGS - expanded:', settingsToggleBtn.classList.contains('expanded'));
+                
+                if (settingsToggleBtn.classList.contains('expanded')) {
+                    // Close settings
+                    console.log('⚙️ TOGGLE SETTINGS - CLOSING');
+                    settingsToggleBtn.classList.remove('expanded');
+                } else {
+                    // Open settings
+                    console.log('⚙️ TOGGLE SETTINGS - OPENING');
+                    settingsToggleBtn.classList.add('expanded');
                 }
             }
             
