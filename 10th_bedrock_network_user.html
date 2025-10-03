@@ -2122,6 +2122,15 @@ DO NOT use file:// URLs with this version
                 }
                 return true;
             }
+            
+            // Helper function to transform edges for D3 (from/to → source/target)
+            function transformEdgesForD3() {
+                return edges.get().map(e => ({
+                    ...e,
+                    source: e.from,
+                    target: e.to
+                }));
+            }
             let totalEdgesInDataset = 0; // Store total edges for consistent reference
             let globalViewEnabled = false; // Track Global View toggle state
             let searchIndex = []; // Will be populated dynamically
@@ -2395,8 +2404,14 @@ DO NOT use file:// URLs with this version
                 
                 // Initialize D3-force simulation after data is loaded
                 console.log('🌊 Initializing D3-force simulation...');
+                
+                // Transform edges for D3 (from/to → source/target)
+                const edgesForD3 = transformEdgesForD3();
+                
+                console.log('🔗 Edge transformation complete:', edgesForD3.length, 'edges');
+                
                 simulation = d3.forceSimulation(nodes.get())
-                    .force("link", d3.forceLink(edges.get())
+                    .force("link", d3.forceLink(edgesForD3)
                         .id(d => d.id)
                         .strength(d => Math.min(1, (d.tap_count || 1) / 10))
                         .distance(d => 250)) // Base spring length
@@ -3476,6 +3491,8 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
                 console.log('✅ vis.Network created successfully');
+                console.log('🔍 Network object type:', typeof network);
+                console.log('🔍 Network has selectNodes method:', typeof network.selectNodes);
                 
                 // Debug: Check edge visibility after network creation
                 console.log('🔍 Debug: Checking edge visibility after network creation...');
@@ -4403,7 +4420,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Apply positioning updates to D3 simulation
                 if (ensureSimulation()) {
                     simulation.nodes(nodes.get());
-                    simulation.force("link").links(edges.get());
+                    simulation.force("link").links(transformEdgesForD3());
                     simulation.alpha(0.3).restart();
                 }
                 
@@ -4566,6 +4583,13 @@ Remember: You're helping someone explore and understand their social network dat
             function selectNodeByIdSilent(nodeId) {
                 // Filter the network to show only connections from this user's perspective
                 filterNetworkByUser(nodeId);
+                
+                // Safety check for network object
+                if (!network || typeof network.selectNodes !== 'function') {
+                    console.log('⚠️ Network not ready, skipping selectNodeByIdSilent');
+                    return;
+                }
+                
                 network.selectNodes([nodeId]);
                 network.focus(nodeId, { scale: 0.35, animation: true }); // Zoomed out view
                 selectNode(nodeId);
@@ -5007,7 +5031,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update D3 simulation with new data
                 if (ensureSimulation()) {
                     simulation.nodes(nodes.get());
-                    simulation.force("link").links(edges.get());
+                    simulation.force("link").links(transformEdgesForD3());
                 }
                 
                 // Trigger dynamic physics if enabled
@@ -5046,7 +5070,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update D3 simulation with new data
                 if (ensureSimulation()) {
                     simulation.nodes(nodes.get());
-                    simulation.force("link").links(edges.get());
+                    simulation.force("link").links(transformEdgesForD3());
                 }
                 
                 // Trigger dynamic physics if enabled
@@ -5384,7 +5408,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Update D3 simulation with new data
                 if (ensureSimulation()) {
                     simulation.nodes(nodes.get());
-                    simulation.force("link").links(edges.get());
+                    simulation.force("link").links(transformEdgesForD3());
                 }
                 
                 // Trigger dynamic physics if enabled
