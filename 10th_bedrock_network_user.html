@@ -4145,10 +4145,10 @@ Remember: You're helping someone explore and understand their social network dat
                     clearTimeout(physicsDebounceTimer);
                 }
                 
-                // Set new debounced timer (150ms)
+                // Set new debounced timer (500ms - much longer to reduce frequency)
                 physicsDebounceTimer = setTimeout(() => {
                     executePhysicsBurst();
-                }, 150);
+                }, 500);
             }
             
             // Execute Physics Burst
@@ -4171,7 +4171,7 @@ Remember: You're helping someone explore and understand their social network dat
                 const nodeCountChange = Math.abs(visibleNodeCount - lastVisibleNodeCount);
                 const changePercentage = (nodeCountChange / Math.max(visibleNodeCount, lastVisibleNodeCount, 1)) * 100;
                 
-                if (changePercentage < 10 && lastVisibleNodeCount > 0) {
+                if (changePercentage < 25 && lastVisibleNodeCount > 0) {
                     console.log('📊 Change too small, skipping physics burst');
                     return;
                 }
@@ -4227,7 +4227,7 @@ Remember: You're helping someone explore and understand their social network dat
                 // Set timeout to stop physics burst
                 physicsBurstTimeout = setTimeout(() => {
                     stopPhysicsBurst();
-                }, 2000); // 2 second max burst
+                }, 1000); // 1 second max burst (shorter)
                 
                 // Listen for stabilization event
                 network.on('stabilizationIterationsDone', function() {
@@ -4274,6 +4274,12 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 if (newlyVisibleNodes.length === 0) {
                     console.log('📊 No newly visible nodes to position');
+                    return;
+                }
+                
+                // Skip warm-start positioning if too many nodes (performance)
+                if (newlyVisibleNodes.length > 50) {
+                    console.log(`📊 Too many nodes (${newlyVisibleNodes.length}), skipping warm-start positioning`);
                     return;
                 }
                 
