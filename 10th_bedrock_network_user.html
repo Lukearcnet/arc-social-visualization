@@ -4264,11 +4264,11 @@ Remember: You're helping someone explore and understand their social network dat
                 console.log('🔥 Applying warm-start positioning');
                 
                 const visibleNodes = getVisibleNodes();
-                const allNodes = network.getNodes();
+                const allNodes = nodes.getIds();
                 
                 // Find newly visible nodes (nodes that were hidden but are now visible)
                 const newlyVisibleNodes = visibleNodes.filter(nodeId => {
-                    const node = network.getNode(nodeId);
+                    const node = nodes.get(nodeId);
                     return node && !node.hidden && !node.fixed;
                 });
                 
@@ -4282,11 +4282,11 @@ Remember: You're helping someone explore and understand their social network dat
                 // Calculate centroid of visible nodes
                 const visiblePositions = visibleNodes
                     .filter(nodeId => {
-                        const node = network.getNode(nodeId);
+                        const node = nodes.get(nodeId);
                         return node && node.x !== undefined && node.y !== undefined;
                     })
                     .map(nodeId => {
-                        const node = network.getNode(nodeId);
+                        const node = nodes.get(nodeId);
                         return { x: node.x, y: node.y };
                     });
                 
@@ -4298,7 +4298,7 @@ Remember: You're helping someone explore and understand their social network dat
                     centroidY = visiblePositions.reduce((sum, pos) => sum + pos.y, 0) / visiblePositions.length;
                 } else if (currentFilterUser) {
                     // If no visible positions, use selected user as anchor
-                    const userNode = network.getNode(currentFilterUser);
+                    const userNode = nodes.get(currentFilterUser);
                     if (userNode && userNode.x !== undefined && userNode.y !== undefined) {
                         centroidX = userNode.x;
                         centroidY = userNode.y;
