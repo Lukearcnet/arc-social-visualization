@@ -121,6 +121,146 @@
             border-color: rgba(255, 255, 255, 0.4);
         }
         
+        /* Search Control - Separate Container */
+        .search-control-floating {
+            position: absolute;
+            top: 108px; /* Move up 6px from 114px for better positioning */
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-control-floating .search-toggle-btn {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--fg);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .search-control-floating .search-toggle-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .search-toggle-btn svg {
+            width: 16px;
+            height: 16px;
+            transition: opacity 0.2s ease;
+        }
+        
+        /* Search button expanded state - use width/opacity instead of transform */
+        .search-toggle-btn.expanded {
+            width: 300px;
+            min-width: 300px !important;
+            max-width: 300px !important;
+            padding: 8px 12px !important;
+            justify-content: flex-start;
+            z-index: 1001;
+            /* Ensure no transforms on expanded state */
+            transform: none !important;
+        }
+        
+        /* While the input is visible/focused, guarantee no transforms up the chain */
+        .search-toggle-btn.expanded,
+        .search-toggle-btn.expanded * {
+            transform: none !important;
+        }
+        
+        .search-toggle-btn.expanded svg {
+            opacity: 0;
+        }
+        
+        /* Hidden input field that appears when expanded */
+        .search-toggle-btn .search-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--fg);
+            font-size: 16px; /* Prevent iOS focus zoom - must be ≥16px */
+            outline: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        
+        .search-toggle-btn.expanded .search-input {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .search-toggle-btn .search-input::placeholder {
+            color: var(--fg-muted);
+        }
+        
+        /* Search results dropdown */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: none;
+            border-radius: 0 0 var(--radius-1) var(--radius-1);
+            backdrop-filter: blur(10px);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1003;
+            display: none;
+            border-radius: var(--radius-1); /* Add rounded corners to entire container */
+        }
+        
+        .search-results.show {
+            display: block;
+        }
+        
+        .search-result-item {
+            padding: var(--space-1) var(--space-2);
+            background: rgba(20, 20, 20, 0.95);
+            margin-bottom: var(--space-1);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+            font-size: 0.63rem; /* 30% smaller than var(--text-md) */
+            color: var(--fg);
+            transition: background 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .search-result-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .search-result-name {
+            text-align: left;
+            line-height: 1.2;
+        }
+        
+        .search-result-info {
+            text-align: right;
+            white-space: nowrap;
+        }
+        
         /* Header Styling - Normalized from bedrock 5 */
         .header {
             background: #000000; /* Pure black instead of var(--bg-1) */
@@ -155,6 +295,16 @@
         
         .control-group {
             margin-bottom: var(--space-4);
+        }
+        
+        .timeline-control-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .timeline-control-group > label {
+            font-size: 15px !important;
+            font-weight: 500 !important;
+            margin-bottom: 16px !important;
         }
         
         .control-group label {
@@ -250,33 +400,64 @@
         }
         
         .timeline-slider {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--stroke);
-            outline: none;
+            position: absolute;
+            inset: 0; /* stretch full width of container */
+            height: 20px; /* = thumb size; gives us vertical room */
+            background: transparent;
+            border: 0;
+            margin: 0;
+            cursor: pointer;
             -webkit-appearance: none;
+            appearance: none;
+            pointer-events: none; /* track ignores hits; thumbs still catch them */
+            top: 50%;
+            transform: translateY(-50%); /* center the input (and thus the track) */
+        }
+        
+        /* Left slider positioning - on top of right slider */
+        .timeline-slider-left {
+            z-index: 3;
+        }
+        
+        /* Right slider positioning - behind left slider */
+        .timeline-slider-right {
+            z-index: 2;
+        }
+        
+        /* WEBKIT (Chrome/Safari) — define track height and vertically center thumb */
+        .timeline-slider::-webkit-slider-runnable-track {
+            height: 6px; /* same as container */
+            background: transparent; /* you're drawing the bar with the container */
+            border-radius: 3px;
         }
         
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
             width: 20px;
-            height: 20px;
+            height: 20px; /* thumb size */
             border-radius: 50%;
-            background: var(--fg);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            /* Center the 20px thumb over the 6px track: (track - thumb)/2 = -7px */
+            margin-top: calc((6px - 20px) / 2);
+        }
+        
+        /* FIREFOX */
+        .timeline-slider::-moz-range-track {
+            height: 6px;
+            background: transparent;
+            border-radius: 3px;
         }
         
         .timeline-slider::-moz-range-thumb {
             width: 20px;
             height: 20px;
-            border-radius: 50%;
-            background: var(--fg);
-            cursor: pointer;
             border: none;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            pointer-events: auto;
         }
         
         .timeline-slider:disabled {
@@ -299,6 +480,50 @@
             margin-top: var(--space-1);
             font-size: var(--text-sm);
             color: var(--fg-muted);
+        }
+        
+        
+        /* Dual Slider Container - Adapted from 10th bedrock */
+        .dual-slider-container {
+            position: relative;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            touch-action: none;
+        }
+        
+        /* Proximity-based z-index classes */
+        .timeline-slider.on-top { z-index: 3; }
+        .timeline-slider.below  { z-index: 2; }
+        
+        /* Range highlighting between handles */
+        .dual-slider-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: var(--range-left, 0%);
+            width: var(--range-width, 100%);
+            height: 6px;
+            background: rgba(3, 218, 238, 0.3);
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        
+        /* Timeline info layout for dual slider */
+        .timeline-date-left,
+        .timeline-date-right {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .timeline-center {
+            flex: 1;
+            text-align: center;
+            font-weight: 500;
+            white-space: pre-line; /* Allow newlines to display */
         }
         
         /* Mode Toggle - Normalized from bedrock 5 */
@@ -665,8 +890,48 @@
                 top: 10px !important;
                 z-index: 10000 !important;
             }
+            
+            body.iframe-context .search-control-floating {
+                top: 98px !important; /* Move up 10px to follow control buttons (108px - 10px) */
+                z-index: 10000 !important;
+            }
+            
         }
 
+        /* ========================================
+           iOS FOCUS ZOOM PREVENTION
+           ======================================== */
+        
+        /* Prevent iOS Safari focus zoom by ensuring all form controls are ≥16px */
+        input, textarea, select, button {
+            font-size: 16px !important;  /* Win every cascade - prevent iOS focus zoom */
+            line-height: 1.25;           /* avoid vertical clipping when bumped to 16px */
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* Restore original font sizes for control buttons (not form inputs) */
+        .map-controls-floating .control-btn,
+        .control-btn {
+            font-size: var(--text-sm) !important; /* 0.8rem - original size */
+        }
+        
+        /* Specifically target search inputs with maximum specificity */
+        .search-input { 
+            font-size: 16px !important; 
+            line-height: 1.25; 
+        }
+        
+        /* iOS can consider placeholder styling - ensure it's also 16px */
+        .search-input::placeholder { 
+            font-size: 16px !important; 
+            opacity: 0.6; 
+        }
+        
+        /* Ensure root won't shrink below 16px effective size on mobile */
+        html { 
+            -webkit-text-size-adjust: 100%; 
+        }
+        
         /* ========================================
            MOBILE RESPONSIVE DESIGN
            ======================================== */
@@ -797,6 +1062,11 @@
             .map-controls-floating {
                 top: 27px;
             }
+            
+            /* Search control positioning on mobile - follow control buttons */
+            .search-control-floating {
+                top: 98px; /* Move up 10px to follow control buttons (108px - 10px) */
+            }
         }
 
         @media (min-width: 901px) {
@@ -876,15 +1146,26 @@
                 </div>
                 
                 <!-- Timeline Slider -->
-                <div class="control-group">
+                <div class="timeline-control-group">
                     <label>Timeline</label>
                     <div class="timeline-container">
-                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100">
-                        <div class="timeline-info">
-                            <span id="timelineValue">100%</span>
-                            <span id="currentTime">All taps shown</span>
+                        <div class="dual-slider-container">
+                            <input type="range" class="timeline-slider timeline-slider-left" id="timelineSliderLeft" min="0" max="100" value="0">
+                            <input type="range" class="timeline-slider timeline-slider-right" id="timelineSliderRight" min="0" max="100" value="100">
                         </div>
-                        <div class="timeline-options" style="margin-top: 24px;">
+                        <div class="timeline-info">
+                            <div class="timeline-date-left">
+                                <span id="startDate">Start Date</span>
+                            </div>
+                            <div class="timeline-center">
+                                <span id="connectionCount">246 total users</span>
+                            </div>
+                            <div class="timeline-date-right">
+                                <span id="endDate">End Date</span>
+                            </div>
+                        </div>
+                        <!-- Cumulative section hidden - not needed with dual range slider -->
+                        <div class="timeline-options" style="margin-top: 24px; display: none;">
                             <label class="degree-checkbox">
                                 <input type="checkbox" id="cumulativeCheck" checked>
                                 <span class="checkmark"></span>
@@ -898,7 +1179,7 @@
                 <div class="control-group">
                     <label>View Options</label>
                     <div class="mode-toggle">
-                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See Full Arc Network</button>
                     </div>
                 </div>
                 
@@ -965,6 +1246,18 @@
                 <button class="control-btn" onclick="fitMapToBounds()">Fit to Data</button>
                 <button class="control-btn" onclick="resetMapView()">Reset View</button>
             </div>
+            
+            <!-- Search Button - Separate Container -->
+            <div class="search-control-floating">
+                <button class="control-btn search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()" title="Search Users">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
+                    <div id="expandableSearchResults" class="search-results"></div>
+                </button>
+            </div>
         </div>
     </div>
     
@@ -987,8 +1280,10 @@
         let timelineData = [];
         let tapLocationData = {};
         let edgesData = [];
-        let timelineSlider;
         let clusteringEnabled = true;
+        let updateTimeout = null;
+        let isUpdating = false;
+        let isSliderDragging = false;
         let completeLocationData = []; // Make this global
         let allLocationData = []; // Store all unfiltered data for global view
         let showAllEnabled = false; // Track Show All toggle state
@@ -998,7 +1293,13 @@
             degree1: true,
             degree2: false,
             degree3: false
-        }; // Track degree filter states
+        };
+        
+        // Search state management
+        let originalUserId = null;        // The logged-in user
+        let originalUserName = null;      // The logged-in user's name  
+        let currentlyViewingUserId = null; // Who we're currently viewing (original or searched)
+        let isViewingSearchedUser = false; // Are we viewing a searched user or original? // Track degree filter states
         
         // Initialize the application
         async function init() {
@@ -1378,12 +1679,156 @@
             
         }
         
-        // Initialize timeline slider
+        // Initialize dual timeline slider
         function initTimeline() {
-            timelineSlider = document.getElementById('timelineSlider');
-            timelineSlider.addEventListener('input', function() {
-                // Always update timeline display, but handle Show All mode differently
-                updateTimelineDisplay();
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (!leftSlider || !rightSlider) return;
+            
+            // Set initial state to full range (0-100%) - show all connections initially
+            leftSlider.value = 0;
+            rightSlider.value = 100;
+            updateDualTimelineDisplay(0, 100);
+            updateRangeHighlighting(0, 100);
+            
+            // Proximity-based z-index solution for dual sliders
+            (function () {
+                const container = document.querySelector('.dual-slider-container');
+                const left = leftSlider;
+                const right = rightSlider;
+                const minGap = 1; // in slider units (0–100 here)
+
+                // Initialize z-order
+                function setTop(which) {
+                    const top = which === 'left' ? left : right;
+                    const other = which === 'left' ? right : left;
+                    top.classList.add('on-top');  top.classList.remove('below');
+                    other.classList.add('below'); other.classList.remove('on-top');
+                }
+                setTop('right'); // start with right on top; will swap based on pointer
+
+                // Map value to pixel X inside container
+                function valueToPx(input) {
+                    const rect = container.getBoundingClientRect();
+                    const min = Number(input.min), max = Number(input.max), val = Number(input.value);
+                    const t = (val - min) / (max - min);
+                    return rect.left + t * rect.width;
+                }
+
+                function closestHandle(clientX) {
+                    const dl = Math.abs(clientX - valueToPx(left));
+                    const dr = Math.abs(clientX - valueToPx(right));
+                    return dl <= dr ? 'left' : 'right';
+                }
+
+                // Before the user presses, make the nearer handle the top one (throttled for performance)
+                let proximityTimeout;
+                container.addEventListener('pointermove', (e) => {
+                    if (container.dataset.lock) return; // don't swap while dragging
+                    clearTimeout(proximityTimeout);
+                    proximityTimeout = setTimeout(() => {
+                        setTop(closestHandle(e.clientX));
+                    }, 16); // ~60fps throttling
+                });
+
+                // Lock z-index to the active handle during drag
+                [left, right].forEach((el) => {
+                    el.addEventListener('pointerdown', () => {
+                        setTop(el === left ? 'left' : 'right');
+                        container.dataset.lock = '1';
+                    }, { passive: true });
+                });
+
+                // Unlock on release (use capture on window to catch releases outside)
+                window.addEventListener('pointerup', () => { container.dataset.lock = ''; }, true);
+
+                // Enforce a minimum gap and keep values sane
+                function clampValues() {
+                    const lv = Number(left.value), rv = Number(right.value);
+                    if (lv > rv - minGap) left.value = rv - minGap;
+                    if (rv < lv + minGap) right.value = lv + minGap;
+                }
+
+                // Note: Input handling is done by the forEach loop below
+                // This proximity solution only handles z-index management
+
+                // Optional: track click to jump the nearer handle to the clicked spot
+                container.addEventListener('pointerdown', (e) => {
+                    const which = closestHandle(e.clientX);
+                    const target = which === 'left' ? left : right;
+                    setTop(which);
+
+                    const rect = container.getBoundingClientRect();
+                    const min = Number(target.min), max = Number(target.max);
+                    const t = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                    const next = Math.round(min + t * (max - min));
+
+                    target.value = next;
+                    clampValues();
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            })();
+            
+            // Add event listeners for both sliders - optimized for maximum responsiveness
+            [leftSlider, rightSlider].forEach(slider => {
+                slider.addEventListener('input', function() {
+                    // Immediate processing for maximum responsiveness
+                    if (!isUpdating) {
+                        const leftValue = parseInt(leftSlider.value);
+                        const rightValue = parseInt(rightSlider.value);
+                        
+                        // Calculate minimum gap
+                        const minGap = 1; // Minimum 1% gap
+                        
+                        // Handle left slider movement
+                        if (this === leftSlider) {
+                            // Left slider cannot go past right slider minus minimum gap
+                            if (leftValue >= rightValue - minGap) {
+                                const newValue = Math.max(0, rightValue - minGap);
+                                leftSlider.value = newValue;
+                            }
+                        }
+                        
+                        // Handle right slider movement  
+                        if (this === rightSlider) {
+                            // Right slider cannot go before left slider plus minimum gap
+                            if (rightValue <= leftValue + minGap) {
+                                const newValue = Math.min(100, leftValue + minGap);
+                                rightSlider.value = newValue;
+                            }
+                        }
+                        
+                        // Immediate timeline and range updates for maximum responsiveness
+                        updateDualTimelineDisplay(leftValue, rightValue);
+                        updateRangeHighlighting(leftValue, rightValue);
+                    }
+                });
+                
+                slider.addEventListener('mousedown', function() {
+                    isSliderDragging = true;
+                });
+                
+                slider.addEventListener('mouseup', function() {
+                    isSliderDragging = false;
+                    // Force immediate update when dragging ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                });
+                
+                slider.addEventListener('touchstart', function() {
+                    isSliderDragging = true;
+                });
+                
+                slider.addEventListener('touchend', function() {
+                    isSliderDragging = false;
+                    // Force immediate update when touch ends
+                    if (updateTimeout) {
+                        clearTimeout(updateTimeout);
+                    }
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+                });
             });
             
             // Add cumulative checkbox event listener (works in both global and user modes)
@@ -1393,100 +1838,257 @@
                 
                 // Force update markers to reflect the new cumulative setting
                 if (!showAllEnabled) {
-                    // Normal timeline mode - updateTimelineDisplay will handle marker updates
-                    updateTimelineDisplay();
+                    // Normal timeline mode - updateDualTimelineDisplay will handle marker updates
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                 } else {
-                    // When Show All is enabled, force update with current timeline value
-                    const timelineValue = document.getElementById('timelineSlider').value;
-                    if (timelineData.length > 0) {
-                        const earliestTime = timelineData[0].timestamp;
-                        const latestTime = timelineData[timelineData.length - 1].timestamp;
-                        const currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                        updateMarkers(currentTime);
-                    } else {
-                        updateMarkers(0);
-                    }
+                    // When Show All is enabled, force update with current timeline values
+                    updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
                 }
             });
             
-            // Set initial value to 100% (far right)
-            timelineSlider.value = 100;
-            updateTimelineDisplay();
-            
-            console.log('Timeline initialized');
+            console.log('Dual timeline initialized');
         }
         
-        // Update timeline display
-        function updateTimelineDisplay() {
-            const timelineValue = timelineSlider.value;
-            
-            // Calculate current time based on appropriate data range
-            let earliestTime, latestTime, currentTime;
-            
-            if (currentMode === 'user' && selectedUserId) {
-                // In user mode with degree filters, use complete location data for timeline range
-                if (completeLocationData.length > 0) {
-                    const timestamps = completeLocationData.map(tap => new Date(tap.time).getTime()).sort((a, b) => a - b);
-                    earliestTime = timestamps[0];
-                    latestTime = timestamps[timestamps.length - 1];
-                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                } else {
-                    // Fallback to timeline data
-                    earliestTime = timelineData[0].timestamp;
-                    latestTime = timelineData[timelineData.length - 1].timestamp;
-                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                }
-            } else {
-                // Normal mode, use timeline data
-                if (timelineData.length > 0) {
-                    earliestTime = timelineData[0].timestamp;
-                    latestTime = timelineData[timelineData.length - 1].timestamp;
-                    currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                } else {
-                    // Fallback if no timeline data
-                    document.getElementById('timelineValue').textContent = 'No data';
-                    document.getElementById('currentTime').textContent = 'No events';
-                    return;
-                }
+        // Update range highlighting for dual slider
+        function updateRangeHighlighting(startPercentage, endPercentage) {
+            const container = document.querySelector('.dual-slider-container');
+            if (container) {
+                const rangeWidth = endPercentage - startPercentage;
+                container.style.setProperty('--range-left', startPercentage + '%');
+                container.style.setProperty('--range-width', rangeWidth + '%');
+            }
+        }
+        
+        // Update dual timeline display
+        function updateDualTimelineDisplay(startPercentage, endPercentage) {
+            if (completeLocationData.length === 0) {
+                console.log('⚠️ Timeline: completeLocationData is empty');
+                return;
             }
             
-            // Format current time as date
-            const currentDate = new Date(currentTime);
-            const formattedDate = currentDate.toLocaleDateString('en-US', {
+            // Prevent multiple simultaneous updates
+            if (isUpdating) return;
+            isUpdating = true;
+            
+            // Clear any pending timeline updates to prevent lag
+            if (window.timelineUpdateTimeout) {
+                clearTimeout(window.timelineUpdateTimeout);
+            }
+            
+            // Minimal debounce for maximum responsiveness
+            window.timelineUpdateTimeout = setTimeout(() => {
+                performTimelineUpdate(startPercentage, endPercentage);
+            }, 16); // 16ms = ~60fps for maximum responsiveness
+        }
+        
+        // Separate function for the actual timeline update logic
+        function performTimelineUpdate(startPercentage, endPercentage) {
+            
+            console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
+            
+            // Calculate start and end times based on complete location data
+            const timestamps = completeLocationData.map(tap => new Date(tap.time).getTime()).sort((a, b) => a - b);
+            const earliestTime = timestamps[0];
+            const latestTime = timestamps[timestamps.length - 1];
+            const timeRange = latestTime - earliestTime;
+            
+            const startTime = earliestTime + (startPercentage / 100) * timeRange;
+            const endTime = earliestTime + (endPercentage / 100) * timeRange;
+            
+            // Update date displays
+            const startDate = new Date(startTime);
+            const endDate = new Date(endTime);
+            
+            document.getElementById('startDate').textContent = startDate.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
             });
             
-            // Update display
-            document.getElementById('timelineValue').textContent = formattedDate;
+            document.getElementById('endDate').textContent = endDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
             
-            // Update the current time display based on mode
-            if (globalViewEnabled) {
-                // In global view mode, show all taps info
-                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
-                document.getElementById('currentTime').textContent = 
-                    timelineValue === '100' ? 'All taps shown' : `${allLocationData.length} total taps (${modeText})`;
-            } else if (currentMode === 'user' && selectedUserId) {
-                // In user mode, show degree-filtered event count
-                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
-                document.getElementById('currentTime').textContent = 
-                    timelineValue === '100' ? 'All degree-filtered taps shown' : `${completeLocationData.length} total taps (${modeText})`;
-            } else {
-                // In global mode, show normal timeline info
-                const modeText = cumulativeEnabled ? 'cumulative' : 'current time';
-                document.getElementById('currentTime').textContent = 
-                    timelineValue === '100' ? 'All taps shown' : `${timelineData.length} total taps (${modeText})`;
-            }
+            // Update markers with time range
+            updateMarkersWithTimeRange(startTime, endTime);
+            
+            // Update connection count
+            const filteredEvents = completeLocationData.filter(event => {
+                const eventTime = new Date(event.time).getTime();
+                return eventTime >= startTime && eventTime <= endTime;
+            });
+            
+            const uniqueUsers = new Set();
+            filteredEvents.forEach(event => {
+                if (event.user1_id) uniqueUsers.add(event.user1_id);
+                if (event.user2_id) uniqueUsers.add(event.user2_id);
+            });
+            
+            const userCount = uniqueUsers.size;
+            const daysDiff = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('connectionCount').textContent = `${userCount} users\n${daysDiff} days`;
             
             // Update profile stats if a user is selected
             if (currentMode === 'user' && selectedUserId) {
-                updateProfileStats(selectedUserId, currentTime);
+                updateProfileStatsForTimeline(selectedUserId, startTime, endTime);
             }
             
-            // Update markers based on timeline
-            updateMarkers(currentTime);
+            // Update view options numbers
+            updateViewOptionsNumbers(filteredEvents, startTime, endTime);
+            
+            isUpdating = false;
         }
+        
+        // Update markers with time range instead of single timestamp
+        function updateMarkersWithTimeRange(startTime, endTime) {
+            // Clear existing markers
+            clearMarkers();
+            
+            let filteredEvents;
+            
+            if (globalViewEnabled) {
+                // Global view mode: display all events within time range
+                filteredEvents = completeLocationData.filter(event => {
+                    const eventTime = new Date(event.time).getTime();
+                    return eventTime >= startTime && eventTime <= endTime;
+                }).map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1,
+                    timestamp: new Date(tap.time).getTime()
+                }));
+            } else if (currentMode === 'user' && selectedUserId) {
+                // Calculate timeline percentage for degree integration
+                // Use the slider values directly to determine if timeline is restricted
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                const leftValue = parseInt(leftSlider.value);
+                const rightValue = parseInt(rightSlider.value);
+                const timelinePercentage = rightValue - leftValue; // This represents how much of the timeline is visible
+                
+                // Debug: Log the actual values
+                // Reduced logging for performance
+                // console.log(`🔍 Debug: leftValue=${leftValue}, rightValue=${rightValue}, timelinePercentage=${timelinePercentage}%`);
+                // console.log(`🎯 Timeline percentage: ${timelinePercentage.toFixed(1)}%`);
+                
+                // User-centric mode: First filter by time range, then apply degree filtering
+                filteredEvents = completeLocationData.filter(event => {
+                    const eventTime = new Date(event.time).getTime();
+                    return eventTime >= startTime && eventTime <= endTime;
+                }).map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1,
+                    timestamp: new Date(tap.time).getTime()
+                }));
+                
+                // Apply degree filtering after time filtering (like develop branch)
+                if (currentMode === 'user' && selectedUserId) {
+                    // Use cached degree connections for better performance
+                    if (!window.cachedDegreeConnections || window.cachedDegreeConnections.userId !== selectedUserId) {
+                        window.cachedDegreeConnections = {
+                            userId: selectedUserId,
+                            connections: calculateDegreeConnections(selectedUserId)
+                        };
+                    }
+                    const degreeConnections = window.cachedDegreeConnections.connections;
+                    
+                    // Optimized degree filtering for better performance
+                    filteredEvents = filteredEvents.filter(event => {
+                        const sourceUserId = event.source_id;
+                        const targetUserId = event.target_id;
+                        
+                        // Quick check: if either user is the selected user, it's always 1st degree
+                        if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                            return degreeFilters.degree1;
+                        }
+                        
+                        // For other connections, check degree levels efficiently
+                        const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                        const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                        const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                        const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                        
+                        // 2nd degree: at least one user is 1st degree connection
+                        if (degreeFilters.degree2 && (sourceInDegree1 || targetInDegree1)) {
+                            return true;
+                        }
+                        
+                        // 3rd degree: at least one user is 2nd degree connection
+                        if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                            return true;
+                        }
+                        
+                        return false;
+                    });
+                }
+            } else {
+                // Normal mode: filter by time range only
+                filteredEvents = completeLocationData.filter(event => {
+                    const eventTime = new Date(event.time).getTime();
+                    return eventTime >= startTime && eventTime <= endTime;
+                }).map(tap => ({
+                    source_id: tap.user1_id,
+                    source_name: tap.user1_name,
+                    target_id: tap.user2_id,
+                    target_name: tap.user2_name,
+                    latitude: tap.latitude,
+                    longitude: tap.longitude,
+                    location: tap.location,
+                    formatted_location: tap.formatted_location,
+                    venue_context: tap.venue_context,
+                    time: tap.time,
+                    formatted_time: tap.formatted_time,
+                    tap_count: 1,
+                    timestamp: new Date(tap.time).getTime()
+                }));
+            }
+            
+            // Apply cumulative filtering if enabled
+            if (cumulativeEnabled && !showAllEnabled) {
+                filteredEvents = filteredEvents.filter(event => {
+                    const eventTime = event.timestamp;
+                    return eventTime <= endTime; // Show all events up to end time
+                });
+            }
+            
+            // Create markers for filtered events
+            // console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
+            filteredEvents.forEach(event => {
+                if (event.latitude && event.longitude) {
+                    const location = {
+                        latitude: event.latitude,
+                        longitude: event.longitude,
+                        location: event.location || 'Unknown location'
+                    };
+                    addTapMarker(location, event);
+                } else {
+                    console.log('Event missing latitude/longitude:', event);
+                }
+            });
+        }
+        
         
         // Update markers based on timeline and mode
         function updateMarkers(currentTime) {
@@ -1659,7 +2261,7 @@
             }
             
             // Create markers for filtered events
-            console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
+            // console.log('🎯 Creating markers for', filteredEvents.length, 'filtered events');
             filteredEvents.forEach(event => {
                 // Use location data from the timeline event (which now includes actual tap data)
                 if (event.latitude && event.longitude) {
@@ -1799,11 +2401,15 @@
                 toggleShowAll(); // This will turn off Show All mode
             }
             
-            // Reset timeline slider to 100% (far right)
-            timelineSlider.value = 100;
-            
-            // Update display
-            updateTimelineDisplay();
+            // Reset timeline sliders to full range (0-100%)
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                leftSlider.value = 0;
+                rightSlider.value = 100;
+                updateDualTimelineDisplay(0, 100);
+                updateRangeHighlighting(0, 100);
+            }
             
             // Don't auto-fit map when switching modes - let user control the view
         }
@@ -1842,27 +2448,39 @@
         function toggleShowAll() {
             showAllEnabled = !showAllEnabled;
             const showAllBtn = document.getElementById('showAllBtn');
-            const timelineSlider = document.getElementById('timelineSlider');
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
             
             // Update button appearance
             if (showAllEnabled) {
                 showAllBtn.classList.add('active');
                 showAllBtn.textContent = 'Show Timeline';
-                // Disable timeline slider
-                timelineSlider.disabled = true;
-                timelineSlider.style.opacity = '0.5';
-                // Set timeline to 100%
-                timelineSlider.value = 100;
+                // Disable timeline sliders
+                if (leftSlider && rightSlider) {
+                    leftSlider.disabled = true;
+                    rightSlider.disabled = true;
+                    leftSlider.style.opacity = '0.5';
+                    rightSlider.style.opacity = '0.5';
+                    // Set timeline to full range
+                    leftSlider.value = 0;
+                    rightSlider.value = 100;
+                }
             } else {
                 showAllBtn.classList.remove('active');
                 showAllBtn.textContent = 'Show All';
-                // Enable timeline slider
-                timelineSlider.disabled = false;
-                timelineSlider.style.opacity = '1';
+                // Enable timeline sliders
+                if (leftSlider && rightSlider) {
+                    leftSlider.disabled = false;
+                    rightSlider.disabled = false;
+                    leftSlider.style.opacity = '1';
+                    rightSlider.style.opacity = '1';
+                }
             }
             
             // Update display
-            updateTimelineDisplay();
+            if (leftSlider && rightSlider) {
+                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+            }
         }
         
         // Activate Global View functionality
@@ -1878,23 +2496,287 @@
                 // Hide user-specific elements
                 document.getElementById('profileSection').style.display = 'none';
                 document.getElementById('degreeFiltersGroup').style.display = 'none';
+                // Hide search functionality in global mode
+                document.querySelector('.search-control-floating').style.display = 'none';
                 // Enable showAll mode to skip timeline filtering (like Global version)
                 showAllEnabled = true;
-                // Set timeline to 100% to show all data in global view
-                const timelineSlider = document.getElementById('timelineSlider');
-                timelineSlider.value = 100;
+                // Set timeline to full range to show all data in global view
+                const leftSlider = document.getElementById('timelineSliderLeft');
+                const rightSlider = document.getElementById('timelineSliderRight');
+                if (leftSlider && rightSlider) {
+                    leftSlider.value = 0;
+                    rightSlider.value = 100;
+                    updateDualTimelineDisplay(0, 100);
+                    updateRangeHighlighting(0, 100);
+                }
             } else {
                 globalViewBtn.classList.remove('active');
-                globalViewBtn.textContent = 'See full Arc Network';
+                globalViewBtn.textContent = 'See Full Arc Network';
                 // Show user-specific elements
                 document.getElementById('profileSection').style.display = 'block';
                 document.getElementById('degreeFiltersGroup').style.display = 'block';
+                // Show search functionality in user mode
+                document.querySelector('.search-control-floating').style.display = 'block';
                 // Disable showAll mode when returning to user view
                 showAllEnabled = false;
             }
             
             // Update display to show all taps as white nodes
             updateDisplay();
+        }
+        
+        // Find user by name in completeLocationData
+        function findUserByName(userName) {
+            const seenUsers = new Set();
+            const matches = [];
+            
+            // Safety guard for undefined values
+            const lower = v => (v ?? '').toString().toLowerCase();
+            
+            // Search through all users in tap data
+            completeLocationData.forEach(tap => {
+                // Check user1
+                if (lower(tap.user1_name).includes(userName.toLowerCase()) && !seenUsers.has(tap.user1_id)) {
+                    matches.push({
+                        id: tap.user1_id,
+                        name: tap.user1_name,
+                        location: tap.user1_home || 'Unknown location'
+                    });
+                    seenUsers.add(tap.user1_id);
+                }
+                
+                // Check user2
+                if (lower(tap.user2_name).includes(userName.toLowerCase()) && !seenUsers.has(tap.user2_id)) {
+                    matches.push({
+                        id: tap.user2_id,
+                        name: tap.user2_name,
+                        location: tap.user2_home || 'Unknown location'
+                    });
+                    seenUsers.add(tap.user2_id);
+                }
+            });
+            
+            // Find exact match first
+            const exactMatch = matches.find(user => 
+                user.name.toLowerCase().trim() === userName.toLowerCase().trim()
+            );
+            
+            if (exactMatch) {
+                return exactMatch;
+            }
+            
+            // If no exact match, return the first partial match
+            return matches.length > 0 ? matches[0] : null;
+        }
+        
+        // Toggle search functionality for floating search bar
+        function toggleSearch() {
+            const searchToggleBtn = document.getElementById('searchToggleBtn');
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            
+            // Don't close if there's recent keyboard activity (prevents space key from closing)
+            if (searchToggleBtn.classList.contains('expanded') && !recentKeyboardActivity) {
+                // Close search
+                searchToggleBtn.classList.remove('expanded');
+                searchInput.value = '';
+                searchResults.classList.remove('show');
+                searchResults.innerHTML = '';
+            } else if (!searchToggleBtn.classList.contains('expanded')) {
+                // Open search
+                searchToggleBtn.classList.add('expanded');
+                // Let mobile browser handle focus naturally - no forced focus
+            }
+        }
+        
+        // Track recent keyboard activity to prevent space key from closing search
+        let recentKeyboardActivity = false;
+        
+        // Initialize floating search functionality
+        function initFloatingSearch() {
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            
+            searchInput.addEventListener('input', function() {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                const query = this.value.toLowerCase().trim();
+                
+                if (query.length < 2) {
+                    searchResults.classList.remove('show');
+                    searchResults.innerHTML = '';
+                    return;
+                }
+                
+                // Search through degree connections of original user only
+                const matches = [];
+                const seenUsers = new Set();
+                
+                // Safety guard for undefined values
+                const lower = v => (v ?? '').toString().toLowerCase();
+                
+                // Only search if we have an original user
+                if (originalUserId) {
+                    // Get degree connections for the original user
+                    const degreeConnections = calculateDegreeConnections(originalUserId);
+                    const allDegreeUsers = new Set([
+                        ...degreeConnections.degree1,
+                        ...degreeConnections.degree2,
+                        ...degreeConnections.degree3
+                    ]);
+                    
+                    // Search through degree connections only
+                    completeLocationData.forEach(tap => {
+                        // Check user1
+                        if (lower(tap.user1_name).includes(query) && 
+                            !seenUsers.has(tap.user1_id) && 
+                            allDegreeUsers.has(tap.user1_id)) {
+                            
+                            // Determine degree level
+                            let degreeLevel = '';
+                            if (degreeConnections.degree1.has(tap.user1_id)) degreeLevel = '1st';
+                            else if (degreeConnections.degree2.has(tap.user1_id)) degreeLevel = '2nd';
+                            else if (degreeConnections.degree3.has(tap.user1_id)) degreeLevel = '3rd';
+                            
+                            matches.push({
+                                id: tap.user1_id,
+                                name: tap.user1_name,
+                                location: tap.user1_home || 'Unknown location',
+                                degree: degreeLevel
+                            });
+                            seenUsers.add(tap.user1_id);
+                        }
+                        
+                        // Check user2
+                        if (lower(tap.user2_name).includes(query) && 
+                            !seenUsers.has(tap.user2_id) && 
+                            allDegreeUsers.has(tap.user2_id)) {
+                            
+                            // Determine degree level
+                            let degreeLevel = '';
+                            if (degreeConnections.degree1.has(tap.user2_id)) degreeLevel = '1st';
+                            else if (degreeConnections.degree2.has(tap.user2_id)) degreeLevel = '2nd';
+                            else if (degreeConnections.degree3.has(tap.user2_id)) degreeLevel = '3rd';
+                            
+                            matches.push({
+                                id: tap.user2_id,
+                                name: tap.user2_name,
+                                location: tap.user2_home || 'Unknown location',
+                                degree: degreeLevel
+                            });
+                            seenUsers.add(tap.user2_id);
+                        }
+                    });
+                }
+                
+                // Display results
+                if (matches.length > 0) {
+                    searchResults.innerHTML = matches.slice(0, 10).map(user => `
+                        <div class="search-result-item" onclick="selectSearchedUser('${user.id}', '${user.name}')">
+                            <div class="search-result-name">${user.name}</div>
+                            <div class="search-result-info">${user.location} • ${user.degree} degree</div>
+                        </div>
+                    `).join('');
+                    searchResults.classList.add('show');
+                } else {
+                    searchResults.innerHTML = '<div class="search-result-item" style="color: var(--fg-muted); cursor: default;">No connections found</div>';
+                    searchResults.classList.add('show');
+                }
+            });
+            
+            // Hide results when clicking outside (but not during keyboard activity)
+            document.addEventListener('click', function(e) {
+                const searchToggleBtn = document.getElementById('searchToggleBtn');
+                
+                // Check if click is inside search area
+                const isInsideSearchArea = searchToggleBtn.contains(e.target) || 
+                                        searchInput.contains(e.target) || 
+                                        searchResults.contains(e.target);
+                
+                // Only close if it's a mouse click, not during recent keyboard activity, and not inside search area
+                if (e.type === 'click' && !isInsideSearchArea && !recentKeyboardActivity) {
+                    searchResults.classList.remove('show');
+                    if (searchToggleBtn.classList.contains('expanded')) {
+                        searchToggleBtn.classList.remove('expanded');
+                        searchInput.value = '';
+                        searchResults.innerHTML = '';
+                    }
+                }
+            });
+            
+            // Keyboard handling
+            searchInput.addEventListener('keydown', function(e) {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                
+                if (e.code === 'Space') {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+                
+                if (e.key === 'Escape') {
+                    // Close search on escape
+                    const searchToggleBtn = document.getElementById('searchToggleBtn');
+                    searchToggleBtn.classList.remove('expanded');
+                    this.value = '';
+                    searchResults.classList.remove('show');
+                    searchResults.innerHTML = '';
+                }
+            });
+            
+            searchInput.addEventListener('keyup', function(e) {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                
+                if (e.code === 'Space') {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+            });
+            
+            searchInput.addEventListener('keypress', function(e) {
+                // Mark recent keyboard activity
+                recentKeyboardActivity = true;
+                setTimeout(() => { 
+                    recentKeyboardActivity = false; 
+                }, 100);
+                
+                if (e.code === 'Space') {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+            });
+            
+            // Focus handling
+            searchInput.addEventListener('focus', function() {
+                if (this.value.length >= 2) {
+                    searchResults.classList.add('show');
+                }
+            });
+            
+            // Let mobile browser handle focus naturally - no forced focus
+            // searchInput.addEventListener('touchstart', function() {
+            //     this.focus();
+            // });
+            
+            // Prevent clicks inside search input from bubbling up
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Prevent clicks inside search results from bubbling up
+            searchResults.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
         }
         
         // Initialize user search functionality
@@ -1964,6 +2846,12 @@
         function selectUser(userId, userName) {
             selectedUserId = userId;
             
+            // Set original user variables (for search functionality)
+            originalUserId = userId;
+            originalUserName = userName;
+            currentlyViewingUserId = userId;
+            isViewingSearchedUser = false;
+            
             // Update search input
             document.getElementById('userSearchInput').value = userName;
             document.getElementById('searchResults').innerHTML = '';
@@ -1977,14 +2865,162 @@
             // Regenerate timeline for selected user
             createTimelineData(userId);
             
-            // Reset timeline slider to 100% (far right)
-            timelineSlider.value = 100;
-            
-            // Update display
-            updateTimelineDisplay();
+            // Reset timeline sliders to full range (0-100%)
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                leftSlider.value = 0;
+                rightSlider.value = 100;
+                updateDualTimelineDisplay(0, 100);
+                updateRangeHighlighting(0, 100);
+            }
             
             // Don't auto-fit map when selecting users - let user control the view
             
+        }
+        
+        // Select searched user (shows only their 1st degree connections)
+        function selectSearchedUser(userId, userName) {
+            console.log('🔍 Selecting searched user:', userName, 'ID:', userId);
+            
+            // Set state variables
+            currentlyViewingUserId = userId;
+            isViewingSearchedUser = true;
+            
+            // Collapse search bar
+            const searchToggleBtn = document.getElementById('searchToggleBtn');
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            
+            searchToggleBtn.classList.remove('expanded');
+            searchInput.value = '';
+            searchResults.classList.remove('show');
+            searchResults.innerHTML = '';
+            
+            // Show only the searched user's 1st degree connections
+            const searchedUserConnections = calculateDegreeConnections(userId);
+            const firstDegreeConnections = searchedUserConnections.degree1;
+            
+            // Filter events to show only the searched user's 1st degree connections
+            const filteredEvents = completeLocationData.filter(event => {
+                const sourceUserId = event.user1_id;
+                const targetUserId = event.user2_id;
+                
+                // Show events where the searched user is involved AND the other user is their 1st degree connection
+                return (sourceUserId === userId && firstDegreeConnections.has(targetUserId)) ||
+                       (targetUserId === userId && firstDegreeConnections.has(sourceUserId));
+            }).map(tap => ({
+                source_id: tap.user1_id,
+                target_id: tap.user2_id,
+                source_name: tap.user1_name,
+                target_name: tap.user2_name,
+                latitude: tap.latitude,
+                longitude: tap.longitude,
+                location: tap.location,
+                formatted_location: tap.formatted_location,
+                venue_context: tap.venue_context,
+                time: tap.time,
+                formatted_time: tap.formatted_time,
+                timestamp: new Date(tap.time).getTime()
+            }));
+            
+            // Update markers with searched user's connections
+            updateMarkersWithSearchedUser(filteredEvents);
+            
+            console.log('🔍 Showing searched user connections:', filteredEvents.length, 'events');
+        }
+        
+        // Update markers for searched user (1st degree only)
+        function updateMarkersWithSearchedUser(filteredEvents) {
+            // Clear existing markers
+            clearMarkers();
+            
+            // Create markers for searched user's connections
+            filteredEvents.forEach(event => {
+                const location = {
+                    latitude: event.latitude,
+                    longitude: event.longitude,
+                    location: event.location,
+                    formatted_location: event.formatted_location,
+                    venue_context: event.venue_context
+                };
+                
+                // Create marker for this connection
+                const marker = L.circleMarker([location.latitude, location.longitude], {
+                    radius: 4, // Match normal marker size
+                    fillColor: '#0E76A8', // Deep azure blue for searched user's connections
+                    color: '#0E76A8',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.6
+                });
+                
+                // Add popup
+                const popupContent = `
+                    <div class="custom-popup">
+                        <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
+                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Time: ${event.formatted_time}</div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                marker.addTo(map);
+                markers.push(marker);
+            });
+        }
+        
+        // Revert to original user view
+        function revertToOriginalUser() {
+            console.log('🔄 Reverting to original user:', originalUserName);
+            
+            // Reset state variables
+            currentlyViewingUserId = originalUserId;
+            isViewingSearchedUser = false;
+            
+            // Clear search bar
+            const searchInput = document.getElementById('expandableSearchInput');
+            const searchResults = document.getElementById('expandableSearchResults');
+            searchInput.value = '';
+            searchResults.classList.remove('show');
+            searchResults.innerHTML = '';
+            
+            // Reset to original user's view using existing logic
+            if (originalUserId && originalUserName) {
+                // Use the existing selectUser function to restore original user's view
+                selectUser(originalUserId, originalUserName);
+            }
+            
+            console.log('🔄 Reverted to original user view');
+        }
+        
+        // Setup control panel click listeners for reversion
+        function setupControlPanelReversion() {
+            // Get all control panel elements
+            const controlPanel = document.querySelector('.sidebar');
+            const profileSection = document.getElementById('profileSection');
+            const degreeFiltersGroup = document.getElementById('degreeFiltersGroup');
+            const timelineControlGroup = document.querySelector('.timeline-control-group');
+            
+            // Add click listeners to control panel elements
+            const controlElements = [
+                controlPanel,
+                profileSection,
+                degreeFiltersGroup,
+                timelineControlGroup
+            ];
+            
+            controlElements.forEach(element => {
+                if (element) {
+                    element.addEventListener('click', function(e) {
+                        // Only revert if we're currently viewing a searched user
+                        if (isViewingSearchedUser) {
+                            console.log('🔄 Control panel clicked - reverting to original user');
+                            revertToOriginalUser();
+                        }
+                    });
+                }
+            });
         }
         
         // Update user profile section
@@ -2051,6 +3087,149 @@
             document.getElementById('profileConnections').textContent = connectionCount;
         }
         
+        // Update profile stats for dual timeline system
+        function updateProfileStatsForTimeline(userId, startTime, endTime) {
+            let timelineTaps = 0;
+            let timelineConnections = new Set();
+            
+            // Filter events within the timeline range
+            const filteredEvents = completeLocationData.filter(tap => {
+                const tapTime = new Date(tap.time).getTime();
+                return tapTime >= startTime && tapTime <= endTime && (tap.user1_id === userId || tap.user2_id === userId);
+            });
+            
+            // Count taps and connections
+            filteredEvents.forEach(tap => {
+                timelineTaps++;
+                timelineConnections.add(tap.user1_id);
+                timelineConnections.add(tap.user2_id);
+            });
+            
+            // Remove the user themselves from connections count
+            timelineConnections.delete(userId);
+            const connectionCount = timelineConnections.size;
+            
+            // Update the profile stats display
+            document.getElementById('profileTaps').textContent = timelineTaps;
+            document.getElementById('profileConnections').textContent = connectionCount;
+        }
+        
+        // Update view options numbers based on timeline and degree filtering
+        function updateViewOptionsNumbers(filteredEvents, startTime, endTime) {
+            
+            // For user mode with degree filtering, count only degree-filtered connections
+            if (currentMode === 'user' && selectedUserId && !globalViewEnabled) {
+                // Get degree connections for the selected user
+                if (!window.cachedDegreeConnections || window.cachedDegreeConnections.userId !== selectedUserId) {
+                    window.cachedDegreeConnections = {
+                        userId: selectedUserId,
+                        connections: calculateDegreeConnections(selectedUserId)
+                    };
+                }
+                const degreeConnections = window.cachedDegreeConnections.connections;
+                
+                
+                // Filter events by degree connections that are actually visible
+                const degreeFilteredEvents = filteredEvents.filter(event => {
+                    const sourceUserId = event.user1_id;
+                    const targetUserId = event.user2_id;
+                    
+                    // Quick check: if either user is the selected user, it's always 1st degree
+                    if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                        return degreeFilters.degree1;
+                    }
+                    
+                    // For other connections, check degree levels efficiently
+                    const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                    const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                    const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                    const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                    
+                    // 2nd degree: at least one user is 1st degree connection
+                    if (degreeFilters.degree2 && (sourceInDegree1 || targetInDegree1)) {
+                        return true;
+                    }
+                    
+                    // 3rd degree: at least one user is 2nd degree connection
+                    if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                        return true;
+                    }
+                    
+                    return false;
+                });
+                
+                // Count visible taps (degree-filtered events within timeline range)
+                const visibleTaps = degreeFilteredEvents.length;
+                
+                // Count total taps (all degree-filtered events for this user)
+                const allDegreeFilteredEvents = completeLocationData.filter(event => {
+                    const sourceUserId = event.user1_id;
+                    const targetUserId = event.user2_id;
+                    
+                    // Quick check: if either user is the selected user, it's always 1st degree
+                    if (sourceUserId === selectedUserId || targetUserId === selectedUserId) {
+                        return degreeFilters.degree1;
+                    }
+                    
+                    // For other connections, check degree levels efficiently
+                    const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                    const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                    const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                    const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                    
+                    // 2nd degree: at least one user is 1st degree connection
+                    if (degreeFilters.degree2 && (sourceInDegree1 || targetInDegree1)) {
+                        return true;
+                    }
+                    
+                    // 3rd degree: at least one user is 2nd degree connection
+                    if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                        return true;
+                    }
+                    
+                    return false;
+                });
+                
+                const totalTaps = allDegreeFilteredEvents.length;
+                
+                // Count active users (unique users in degree-filtered events)
+                const activeUsers = new Set();
+                degreeFilteredEvents.forEach(event => {
+                    if (event.user1_id) activeUsers.add(event.user1_id);
+                    if (event.user2_id) activeUsers.add(event.user2_id);
+                });
+                
+                
+                // Update the display
+                document.getElementById('visibleTaps').textContent = visibleTaps;
+                document.getElementById('totalTaps').textContent = totalTaps;
+                document.getElementById('activeUsers').textContent = activeUsers.size;
+                
+            } else {
+                // For global mode or non-user mode, use original logic
+                const visibleTaps = filteredEvents.length;
+                
+                let totalTaps;
+                if (globalViewEnabled) {
+                    totalTaps = allLocationData.length;
+                } else {
+                    totalTaps = completeLocationData.length;
+                }
+                
+                // Count active users (unique users in filtered events)
+                const activeUsers = new Set();
+                filteredEvents.forEach(event => {
+                    if (event.user1_id) activeUsers.add(event.user1_id);
+                    if (event.user2_id) activeUsers.add(event.user2_id);
+                });
+                
+                // Update the display
+                document.getElementById('visibleTaps').textContent = visibleTaps;
+                document.getElementById('totalTaps').textContent = totalTaps;
+                document.getElementById('activeUsers').textContent = activeUsers.size;
+            }
+        }
+        
         // Initialize degree filters
         function initDegreeFilters() {
             const degreeFiltersGroup = document.getElementById('degreeFiltersGroup');
@@ -2088,21 +3267,22 @@
             
             console.log('Degree filters updated:', degreeFilters);
             
-            // Update display - force a proper update regardless of Show All state
-            if (showAllEnabled) {
-                // When Show All is enabled, force update with current timeline value
-                const timelineValue = document.getElementById('timelineSlider').value;
-                if (timelineData.length > 0) {
-                    const earliestTime = timelineData[0].timestamp;
-                    const latestTime = timelineData[timelineData.length - 1].timestamp;
-                    const currentTime = earliestTime + (timelineValue / 100) * (latestTime - earliestTime);
-                    updateMarkers(currentTime);
-                } else {
-                    updateMarkers(0);
+            // Clear degree connection cache since filtering logic changed
+            if (window.cachedDegreeConnections) {
+                window.cachedDegreeConnections = null;
+            }
+            
+            // Immediate update for degree filters (no debouncing)
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                // Clear any pending timeline updates to prevent conflicts
+                if (window.timelineUpdateTimeout) {
+                    clearTimeout(window.timelineUpdateTimeout);
                 }
-            } else {
-                // Normal timeline mode
-                updateTimelineDisplay();
+                
+                // Immediate update for responsive degree filtering
+                performTimelineUpdate(parseInt(leftSlider.value), parseInt(rightSlider.value));
             }
         }
         
@@ -2114,37 +3294,53 @@
                 degree3: new Set()
             };
             
-            // Find 1st degree connections (direct connections to the user)
+            // Optimized: Single pass through data for better performance
+            const userConnections = new Map(); // userId -> Set of connected users
+            
+            // Build connection map in one pass
             completeLocationData.forEach(tap => {
-                if (tap.user1_id === userId) {
-                    connections.degree1.add(tap.user2_id);
-                } else if (tap.user2_id === userId) {
-                    connections.degree1.add(tap.user1_id);
+                const user1 = tap.user1_id;
+                const user2 = tap.user2_id;
+                
+                if (!userConnections.has(user1)) {
+                    userConnections.set(user1, new Set());
                 }
+                if (!userConnections.has(user2)) {
+                    userConnections.set(user2, new Set());
+                }
+                
+                userConnections.get(user1).add(user2);
+                userConnections.get(user2).add(user1);
             });
+            
+            // Find 1st degree connections (direct connections to the user)
+            if (userConnections.has(userId)) {
+                userConnections.get(userId).forEach(connectedUser => {
+                    connections.degree1.add(connectedUser);
+                });
+            }
             
             // Find 2nd degree connections (connections of 1st degree users)
             connections.degree1.forEach(firstDegreeUser => {
-                completeLocationData.forEach(tap => {
-                    if (tap.user1_id === firstDegreeUser && tap.user2_id !== userId) {
-                        connections.degree2.add(tap.user2_id);
-                    } else if (tap.user2_id === firstDegreeUser && tap.user1_id !== userId) {
-                        connections.degree2.add(tap.user1_id);
-                    }
-                });
+                if (userConnections.has(firstDegreeUser)) {
+                    userConnections.get(firstDegreeUser).forEach(connectedUser => {
+                        if (connectedUser !== userId) {
+                            connections.degree2.add(connectedUser);
+                        }
+                    });
+                }
             });
             
             // Find 3rd degree connections (connections of 2nd degree users)
             connections.degree2.forEach(secondDegreeUser => {
-                completeLocationData.forEach(tap => {
-                    if (tap.user1_id === secondDegreeUser && tap.user2_id !== userId && !connections.degree1.has(tap.user2_id)) {
-                        connections.degree3.add(tap.user2_id);
-                    } else if (tap.user2_id === secondDegreeUser && tap.user1_id !== userId && !connections.degree1.has(tap.user1_id)) {
-                        connections.degree3.add(tap.user1_id);
-                    }
-                });
+                if (userConnections.has(secondDegreeUser)) {
+                    userConnections.get(secondDegreeUser).forEach(connectedUser => {
+                        if (connectedUser !== userId && !connections.degree1.has(connectedUser)) {
+                            connections.degree3.add(connectedUser);
+                        }
+                    });
+                }
             });
-            
             
             return connections;
         }
@@ -2183,7 +3379,11 @@
                 `Loaded ${totalUsers} users with location data`;
             
             // Update timeline display to show initial markers
-            updateTimelineDisplay();
+            const leftSlider = document.getElementById('timelineSliderLeft');
+            const rightSlider = document.getElementById('timelineSliderRight');
+            if (leftSlider && rightSlider) {
+                updateDualTimelineDisplay(parseInt(leftSlider.value), parseInt(rightSlider.value));
+            }
         }
         
         // Reset browser zoom and viewport
@@ -2555,6 +3755,19 @@
             }
         }
 
+        // iOS viewport locking to prevent zoom
+        (function () {
+            const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (!isiOS) return;
+            let m = document.querySelector('meta[name="viewport"]');
+            if (!m) {
+                m = document.createElement('meta');
+                m.name = 'viewport';
+                document.head.appendChild(m);
+            }
+            m.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover');
+        })();
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             detectIframeContext();
@@ -2564,41 +3777,24 @@
             // Initialize user search immediately (user-centric mode)
             initUserSearch();
             
+            // Initialize floating search
+            initFloatingSearch();
+            
+            // Setup control panel reversion listeners
+            setupControlPanelReversion();
+            
             // Check for userName parameter and auto-select user
             const urlParams = new URLSearchParams(window.location.search);
             const userName = urlParams.get('userName');
-            console.log('🔍 8th Bedrock - URL params:', window.location.search);
-            console.log('🔍 8th Bedrock - userName param:', userName);
             if (userName) {
-                console.log('🎯 Auto-selecting user from URL:', userName);
-                // Simulate typing in search and selecting the user
+                // Direct user selection without going through search UI
                 setTimeout(() => {
-                    const searchInput = document.getElementById('userSearchInput');
-                    if (searchInput) {
-                        searchInput.value = userName;
-                        // Trigger search
-                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        // After a longer delay, select the first result (should be the user)
-                        setTimeout(() => {
-                            const searchResults = document.getElementById('searchResults');
-                            const firstResult = searchResults.querySelector('.search-result');
-                            if (firstResult) {
-                                console.log('🎯 Clicking search result for:', userName);
-                                firstResult.click();
-                            } else {
-                                console.log('❌ No search result found for:', userName);
-                                // Try again after another delay
-                                setTimeout(() => {
-                                    const retryResult = searchResults.querySelector('.search-result');
-                                    if (retryResult) {
-                                        console.log('🎯 Retry: Clicking search result for:', userName);
-                                        retryResult.click();
-                                    }
-                                }, 1000);
-                            }
-                        }, 1500); // Increased delay
+                    // Find user in completeLocationData
+                    const user = findUserByName(userName);
+                    if (user) {
+                        selectUser(user.id, user.name);
                     }
-                }, 1500); // Increased initial delay
+                }, 1000);
             }
             
             // Sidebar is now working properly with browser zoom fixed
@@ -2632,6 +3828,12 @@
             } else {
                 sidebar.classList.add('show');
                 hamburger.classList.add('active');
+                
+                // Reset search to original user when opening control panel (mobile equivalent of desktop behavior)
+                if (isViewingSearchedUser) {
+                    revertToOriginalUser();
+                }
+                
                 // Notify parent that control panel is open
                 if (window.parent) {
                     window.parent.postMessage({

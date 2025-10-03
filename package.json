@@ -4,7 +4,7 @@
   "description": "ARC Social Network Visualization with SMS Authentication",
   "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "python3 -m http.server 3000",
     "build": "echo 'No build step required'",
     "start": "echo 'No start script required'"
   },

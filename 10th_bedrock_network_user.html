@@ -70,8 +70,8 @@ DO NOT use file:// URLs with this version
                 --bg-2: #141414;
                 --bg-3: #1c1c1c;
                 --bg-4: #2a2a2a;
-                --stroke: rgba(255, 255, 255, 0.3);
-                --stroke-muted: rgba(255, 255, 255, 0.4);
+                --stroke: rgba(255, 255, 255, 0.1);
+                --stroke-muted: rgba(255, 255, 255, 0.2);
                 
                 /* Standard border radius (matching 8th bedrock) */
                 --radius-1: 6px;
@@ -146,7 +146,17 @@ DO NOT use file:// URLs with this version
             /* Search Control - Separate Container */
             .search-control-floating {
                 position: absolute;
-                top: 114px; /* Move down further to create proper visual spacing */
+                top: 108px; /* Move up 6px from 114px for better positioning */
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            /* Settings Control - Below Search */
+            .settings-control-floating {
+                position: absolute;
+                top: 156px; /* Below search button with 8px gap (108px + 40px button height + 8px gap) */
                 right: 20px;
                 z-index: 1000;
                 display: flex;
@@ -197,19 +207,43 @@ DO NOT use file:// URLs with this version
                 border-color: rgba(255, 255, 255, 0.4);
             }
             
+            /* Settings button in its own container */
+            .settings-control-floating .settings-toggle-btn {
+                background: rgba(20, 20, 20, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: var(--fg);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                backdrop-filter: blur(10px);
+            }
+            
+            .settings-control-floating .settings-toggle-btn:hover {
+                background: rgba(40, 40, 40, 0.9);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            
             .search-toggle-btn svg {
                 width: 16px;
                 height: 16px;
                 transition: opacity 0.2s ease;
             }
             
-            /* Search button expanded state */
+            /* Search button expanded state - use width/opacity instead of transform */
             .search-toggle-btn.expanded {
                 width: 300px;
                 min-width: 300px !important;
+                max-width: 300px !important;
                 padding: 8px 12px !important;
                 justify-content: flex-start;
                 z-index: 1001;
+                /* Ensure no transforms on expanded state */
+                transform: none !important;
+            }
+            
+            /* While the input is visible/focused, guarantee no transforms up the chain */
+            .search-toggle-btn.expanded,
+            .search-toggle-btn.expanded * {
+                transform: none !important;
             }
             
             .search-toggle-btn.expanded svg {
@@ -217,26 +251,190 @@ DO NOT use file:// URLs with this version
             }
             
             /* Hidden input field that appears when expanded */
-            .search-toggle-btn .search-input {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                padding: 8px 12px;
-                border: none;
-                background: transparent;
-                color: var(--fg);
-                font-size: var(--text-md);
-                outline: none;
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.2s ease;
-            }
+        .search-toggle-btn .search-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--fg);
+            font-size: 16px; /* Prevent iOS focus zoom - must be ≥16px */
+            outline: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
             
             .search-toggle-btn.expanded .search-input {
                 opacity: 1;
                 pointer-events: auto;
+            }
+            
+            /* Settings Toggle Button */
+            .settings-toggle-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px !important;
+                min-width: auto !important;
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            
+            .settings-toggle-btn svg {
+                width: 16px;
+                height: 16px;
+                transition: opacity 0.2s ease;
+            }
+            
+            /* Settings button expanded state - use width/opacity instead of transform */
+            .settings-toggle-btn.expanded {
+                width: 210px; /* 30% less than search (300px * 0.7 = 210px) */
+                min-width: 210px !important;
+                max-width: 210px !important;
+                padding: 8px 12px !important;
+                justify-content: flex-start;
+                z-index: 1001;
+                /* Ensure no transforms on expanded state */
+                transform: none !important;
+            }
+            
+            /* While the container is visible/focused, guarantee no transforms up the chain */
+            .settings-toggle-btn.expanded,
+            .settings-toggle-btn.expanded * {
+                transform: none !important;
+            }
+            
+            .settings-toggle-btn.expanded svg {
+                opacity: 0;
+            }
+            
+            /* Settings container that appears when expanded */
+            .settings-container {
+                position: absolute;
+                top: 100%; /* Position below the button */
+                left: 0;
+                width: 100%;
+                height: 400px; /* 10x the height of search input (40px * 10 = 400px) */
+                background: rgba(20, 20, 20, 0.98); /* Same as sidebar background */
+                border: 1px solid rgba(64, 64, 64, 0.8);
+                border-radius: var(--radius-1);
+                backdrop-filter: blur(20px);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
+                z-index: 1002;
+                overflow: hidden;
+            }
+            
+            .settings-toggle-btn.expanded .settings-container {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            /* Settings Content Styling */
+            .settings-content {
+                padding: 16px;
+                height: 100%;
+                overflow-y: auto;
+            }
+            
+            .settings-section {
+                margin-bottom: 20px;
+            }
+            
+            .settings-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .settings-item-content {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                margin-right: 12px;
+            }
+            
+            .settings-description {
+                color: var(--fg-muted);
+                font-size: 11px;
+                margin-top: 2px;
+                line-height: 1.3;
+            }
+            
+            .settings-label {
+                color: var(--fg-primary);
+                font-size: 12px;
+                font-weight: 500;
+                margin: 0;
+            }
+            
+            /* Toggle Switch Styling */
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 44px;
+                height: 24px;
+            }
+            
+            .toggle-input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            
+            .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(255, 255, 255, 0.2);
+                transition: 0.3s;
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
+            
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 2px;
+                bottom: 2px;
+                background-color: white;
+                transition: 0.3s;
+                border-radius: 50%;
+            }
+            
+            .toggle-input:checked + .toggle-slider {
+                background-color: var(--accent);
+                border-color: var(--accent);
+            }
+            
+            .toggle-input:checked + .toggle-slider:before {
+                transform: translateX(20px);
+            }
+            
+            .toggle-switch:hover .toggle-slider {
+                border-color: rgba(255, 255, 255, 0.5);
+            }
+            
+            /* Ensure the toggle slider is clickable */
+            .toggle-slider {
+                cursor: pointer;
+            }
+            
+            /* Make sure the toggle switch container is clickable */
+            .toggle-switch {
+                cursor: pointer;
             }
             
             .search-toggle-btn .search-input::placeholder {
@@ -265,23 +463,25 @@ DO NOT use file:// URLs with this version
             }
             
             .search-result-item {
-                padding: var(--space-1) var(--space-2); /* Match connection details */
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: var(--space-1) var(--space-2);
+                background: rgba(20, 20, 20, 0.95);
+                margin-bottom: var(--space-1);
+                border-radius: var(--radius-1);
+                cursor: pointer;
+                font-size: 0.63rem; /* 30% smaller than var(--text-md) */
+                color: var(--fg);
+                transition: background 0.2s ease;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                transition: background-color 0.2s ease;
-                color: #ffffff;
-                font-size: 0.72rem; /* Match connection details font size */
-                cursor: pointer;
             }
             
             .search-result-item:hover {
-                background-color: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.4);
             }
             
             .search-result-item:last-child {
-                border-bottom: none;
+                margin-bottom: 0;
             }
             
             .search-result-name {
@@ -329,20 +529,17 @@ DO NOT use file:// URLs with this version
                 margin-bottom: var(--space-4);
             }
             
-            /* Mode Button Styling - Match Activity Level Text */
+            /* Mode Button Styling - Match 8th bedrock */
             .mode-btn {
-                padding: calc(var(--space-1) * 1.4) calc(var(--space-2) * 1.2);
+                flex: 1;
+                padding: var(--space-1) var(--space-2);
                 border: none;
                 background: transparent;
                 color: var(--fg-muted);
                 border-radius: var(--radius-1);
                 cursor: pointer;
-                font-size: 0.8rem !important; /* Match Activity Level font size */
-                font-weight: 500 !important; /* Match Activity Level font weight */
-                letter-spacing: 0.05em;
+                font-size: var(--text-md);
                 transition: all 0.2s ease;
-                width: 100%;
-                text-align: center;
             }
             
             .mode-btn.active {
@@ -422,7 +619,7 @@ DO NOT use file:// URLs with this version
                 scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 6px;
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(20, 20, 20, 0.95);
             }
             
             /* Only show height when there are results */
@@ -443,28 +640,6 @@ DO NOT use file:// URLs with this version
                 border-radius: 3px;
             }
             
-            .search-result-item {
-                padding: var(--space-1) var(--space-2);
-                background: rgba(20, 20, 20, 0.95);
-                margin-bottom: var(--space-1);
-                border-radius: var(--radius-1);
-                cursor: pointer;
-                font-size: var(--text-md);
-                color: var(--fg);
-                transition: background 0.2s ease;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .search-result-item:hover {
-                background: rgba(255, 255, 255, 0.4);
-            }
-            
-            .search-result-item.selected {
-                background: rgba(255, 255, 255, 0.3);
-                color: white;
-            }
             
             /* Removed conflicting large font size rules - using CSS variables instead */
             
@@ -1465,11 +1640,55 @@ DO NOT use file:// URLs with this version
                     top: 10px !important;
                     z-index: 10000 !important;
                 }
+                
+                body.iframe-context .search-control-floating {
+                    top: 98px !important; /* Move up 10px to follow control buttons (108px - 10px) */
+                    z-index: 10000 !important;
+                }
+                
+                body.iframe-context .settings-control-floating {
+                    top: 146px !important; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+                    z-index: 10000 !important;
+                }
             }
 
-            /* ========================================
-               MOBILE RESPONSIVE DESIGN
-               ======================================== */
+        /* ========================================
+           iOS FOCUS ZOOM PREVENTION
+           ======================================== */
+        
+        /* Prevent iOS Safari focus zoom by ensuring all form controls are ≥16px */
+        input, textarea, select, button {
+            font-size: 16px !important;  /* Win every cascade - prevent iOS focus zoom */
+            line-height: 1.25;           /* avoid vertical clipping when bumped to 16px */
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* Restore original font sizes for control buttons (not form inputs) */
+        .network-controls-floating .control-btn,
+        .control-btn {
+            font-size: var(--text-sm) !important; /* 0.8rem - original size */
+        }
+        
+        /* Specifically target search inputs with maximum specificity */
+        .search-input { 
+            font-size: 16px !important; 
+            line-height: 1.25; 
+        }
+        
+        /* iOS can consider placeholder styling - ensure it's also 16px */
+        .search-input::placeholder { 
+            font-size: 16px !important; 
+            opacity: 0.6; 
+        }
+        
+        /* Ensure root won't shrink below 16px effective size on mobile */
+        html { 
+            -webkit-text-size-adjust: 100%; 
+        }
+        
+        /* ========================================
+           MOBILE RESPONSIVE DESIGN
+           ======================================== */
             
             /* Hamburger Button */
             .mobile-hamburger {
@@ -1605,6 +1824,16 @@ DO NOT use file:// URLs with this version
                 .network-controls-floating {
                     top: 27px;
                 }
+                
+                /* Search control positioning on mobile - follow control buttons */
+                .search-control-floating {
+                    top: 98px; /* Move up 10px to follow control buttons (108px - 10px) */
+                }
+                
+                /* Settings control positioning on mobile - below search button */
+                .settings-control-floating {
+                    top: 146px; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+                }
             }
 
             @media (min-width: 901px) {
@@ -1675,7 +1904,7 @@ DO NOT use file:// URLs with this version
                     <!-- Search Section (hidden in user-centric view) -->
                     <div class="search-section" style="display: none;">
                         <label for="searchInput">Search Users</label>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
                         <div id="searchResults" class="search-results" style="display: none;"></div>
                     </div>
                     
@@ -1725,7 +1954,7 @@ DO NOT use file:// URLs with this version
                 <div class="global-view-section">
                     <label>View Options</label>
                     <div class="mode-toggle">
-                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See full Arc Network</button>
+                        <button class="mode-btn" id="globalViewBtn" onclick="activateGlobalView()">See Full Arc Network</button>
                     </div>
                 </div>
                 
@@ -1784,8 +2013,34 @@ DO NOT use file:// URLs with this version
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
-                        <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="text">
+                        <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
                         <div id="expandableSearchResults" class="search-results"></div>
+                    </button>
+                </div>
+                
+                <!-- Settings Button - Below Search -->
+                <div class="settings-control-floating">
+                    <button class="control-btn settings-toggle-btn" id="settingsToggleBtn" onclick="toggleSettings()" title="Physics Settings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <div id="settingsContainer" class="settings-container">
+                            <div class="settings-content">
+                                <div class="settings-section">
+                                    <div class="settings-item">
+                                        <div class="settings-item-content">
+                                            <label class="settings-label">Dynamic Layout</label>
+                                            <div class="settings-description">Adaptive physics that recalculates layout when timeline or filters change</div>
+                                        </div>
+                                        <div class="toggle-switch">
+                                            <input type="checkbox" id="syncTimelinePhysics" class="toggle-input">
+                                            <span class="toggle-slider"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -2033,7 +2288,7 @@ DO NOT use file:// URLs with this version
                     return {
                         id: user.user_id,
                         label: name,
-                        title: `${name} - ${taps} taps, ${connections} connections`,
+                        // title: `${name} - ${taps} taps, ${connections} connections`, // Removed old popup
                         size: size,
                         color: getActivityColor(taps),
                         mass: 1.0,
@@ -3603,10 +3858,10 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 });
                 
-                // Mobile-specific touch handler to ensure keyboard appears
-                searchInput.addEventListener('touchstart', function() {
-                    this.focus();
-                });
+                // Let mobile browser handle focus naturally - no forced focus
+                // searchInput.addEventListener('touchstart', function() {
+                //     this.focus();
+                // });
                 
                 // Hide results when clicking outside
                 document.addEventListener('click', function(e) {
@@ -3622,16 +3877,13 @@ Remember: You're helping someone explore and understand their social network dat
                 const expandableSearchResults = document.getElementById('expandableSearchResults');
                 
                 expandableSearchInput.addEventListener('input', function() {
-                    console.log('🔍 INPUT EVENT - recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
                     setTimeout(() => { 
-                        console.log('🔍 INPUT TIMEOUT - resetting recentKeyboardActivity to false');
                         recentKeyboardActivity = false; 
                     }, 100);
                     
                     const query = this.value.toLowerCase();
-                    console.log('🔍 INPUT - query:', query, 'length:', query.length);
                     if (query.length < 2) {
                         expandableSearchResults.classList.remove('show');
                         return;
@@ -3647,48 +3899,39 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Prevent space key from collapsing search and track keyboard activity
                 expandableSearchInput.addEventListener('keydown', function(e) {
-                    console.log('🔍 KEYDOWN EVENT - code:', e.code, 'key:', e.key, 'recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
                     setTimeout(() => { 
-                        console.log('🔍 KEYDOWN TIMEOUT - resetting recentKeyboardActivity to false');
                         recentKeyboardActivity = false; 
                     }, 100);
                     
                     if (e.code === 'Space') {
-                        console.log('🔍 KEYDOWN SPACE - stopping propagation');
                         e.stopPropagation();
                         e.stopImmediatePropagation();
                     }
                 });
                 
                 expandableSearchInput.addEventListener('keyup', function(e) {
-                    console.log('🔍 KEYUP EVENT - code:', e.code, 'key:', e.key, 'recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
                     setTimeout(() => { 
-                        console.log('🔍 KEYUP TIMEOUT - resetting recentKeyboardActivity to false');
                         recentKeyboardActivity = false; 
                     }, 100);
                     
                     if (e.code === 'Space') {
-                        console.log('🔍 KEYUP SPACE - stopping propagation');
                         e.stopPropagation();
                         e.stopImmediatePropagation();
                     }
                 });
                 
                 expandableSearchInput.addEventListener('keypress', function(e) {
-                    console.log('🔍 KEYPRESS EVENT - code:', e.code, 'key:', e.key, 'recentKeyboardActivity:', recentKeyboardActivity);
                     // Mark recent keyboard activity
                     recentKeyboardActivity = true;
                     setTimeout(() => { 
-                        console.log('🔍 KEYPRESS TIMEOUT - resetting recentKeyboardActivity to false');
                         recentKeyboardActivity = false; 
                     }, 100);
                     
                     if (e.code === 'Space') {
-                        console.log('🔍 KEYPRESS SPACE - stopping propagation');
                         e.stopPropagation();
                         e.stopImmediatePropagation();
                     }
@@ -3705,10 +3948,10 @@ Remember: You're helping someone explore and understand their social network dat
                     }
                 });
                 
-                // Mobile-specific touch handler to ensure keyboard appears
-                expandableSearchInput.addEventListener('touchstart', function() {
-                    this.focus();
-                });
+                // Let mobile browser handle focus naturally - no forced focus
+                // expandableSearchInput.addEventListener('touchstart', function() {
+                //     this.focus();
+                // });
                 
                 // Prevent clicks inside search input from bubbling up
                 expandableSearchInput.addEventListener('click', function(e) {
@@ -3720,30 +3963,43 @@ Remember: You're helping someone explore and understand their social network dat
                     e.stopPropagation();
                 });
                 
+                // Prevent clicks inside settings container from bubbling up
+                settingsContainer.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
                 // Hide results when clicking outside (but not during keyboard activity)
                 document.addEventListener('click', function(e) {
                     const searchToggleBtn = document.getElementById('searchToggleBtn');
                     const expandableSearchInput = document.getElementById('expandableSearchInput');
                     const expandableSearchResults = document.getElementById('expandableSearchResults');
-                    
-                    console.log('🔍 DOCUMENT CLICK - type:', e.type, 'target:', e.target, 'contains:', searchToggleBtn.contains(e.target), 'recentKeyboardActivity:', recentKeyboardActivity, 'detail:', e.detail);
+                    const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+                    const settingsContainer = document.getElementById('settingsContainer');
                     
                     // Check if click is inside search area (button, input, or results)
                     const isInsideSearchArea = searchToggleBtn.contains(e.target) || 
                                             expandableSearchInput.contains(e.target) || 
                                             expandableSearchResults.contains(e.target);
                     
+                    // Check if click is inside settings area (button or container)
+                    const isInsideSettingsArea = settingsToggleBtn.contains(e.target) || 
+                                              settingsContainer.contains(e.target);
+                    
                     // Only close if it's a mouse click, not during recent keyboard activity, and not inside search area
                     if (e.type === 'click' && !isInsideSearchArea && !recentKeyboardActivity) {
-                        console.log('🔍 DOCUMENT CLICK - CLOSING SEARCH');
                         expandableSearchResults.classList.remove('show');
                         if (searchToggleBtn.classList.contains('expanded')) {
                             searchToggleBtn.classList.remove('expanded');
                             expandableSearchInput.value = '';
                             expandableSearchResults.innerHTML = '';
                         }
-                    } else {
-                        console.log('🔍 DOCUMENT CLICK - NOT CLOSING SEARCH - recentKeyboardActivity:', recentKeyboardActivity, 'isInsideSearchArea:', isInsideSearchArea);
+                    }
+                    
+                    // Close settings if clicking outside settings area
+                    if (e.type === 'click' && !isInsideSettingsArea) {
+                        if (settingsToggleBtn.classList.contains('expanded')) {
+                            settingsToggleBtn.classList.remove('expanded');
+                        }
                     }
                 });
             }
@@ -3768,12 +4024,479 @@ Remember: You're helping someone explore and understand their social network dat
                     // Open search
                     console.log('🔍 TOGGLE SEARCH - OPENING');
                     searchToggleBtn.classList.add('expanded');
-                    setTimeout(() => {
-                        searchInput.focus();
-                    }, 300);
+                    // Let mobile browser handle focus naturally - no forced focus
                 } else {
                     console.log('🔍 TOGGLE SEARCH - BLOCKED by recentKeyboardActivity');
                 }
+            }
+            
+            // Toggle settings interface
+            function toggleSettings() {
+                const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+                const settingsContainer = document.getElementById('settingsContainer');
+                
+                console.log('⚙️ TOGGLE SETTINGS - expanded:', settingsToggleBtn.classList.contains('expanded'));
+                
+                if (settingsToggleBtn.classList.contains('expanded')) {
+                    // Close settings
+                    console.log('⚙️ TOGGLE SETTINGS - CLOSING');
+                    settingsToggleBtn.classList.remove('expanded');
+                } else {
+                    // Open settings
+                    console.log('⚙️ TOGGLE SETTINGS - OPENING');
+                    settingsToggleBtn.classList.add('expanded');
+                }
+            }
+            
+            // Dynamic Layout System - Global Variables
+            let dynamicLayoutEnabled = false;
+            let physicsDebounceTimer = null;
+            let lastVisibleNodeCount = 0;
+            let isPhysicsBurstActive = false;
+            let physicsBurstTimeout = null;
+            let isTimelineDragging = false;
+            let continuousPhysicsActive = false;
+            
+            // Initialize settings toggle functionality
+            function initSettingsToggle() {
+                const syncToggle = document.getElementById('syncTimelinePhysics');
+                
+                if (syncToggle) {
+                    console.log('⚙️ Initializing settings toggle...');
+                    
+                    syncToggle.addEventListener('change', function() {
+                        const isEnabled = this.checked;
+                        console.log('⚙️ DYNAMIC LAYOUT:', isEnabled ? 'ENABLED' : 'DISABLED');
+                        
+                        // Store state globally
+                        dynamicLayoutEnabled = isEnabled;
+                        
+                        if (isEnabled) {
+                            // Initialize dynamic layout system
+                            initDynamicLayoutSystem();
+                        } else {
+                            // Clean up any active physics bursts
+                            cleanupDynamicLayout();
+                        }
+                    });
+                    
+                    // Also add click event to the slider for better UX
+                    const toggleSlider = syncToggle.nextElementSibling;
+                    if (toggleSlider) {
+                        toggleSlider.addEventListener('click', function() {
+                            syncToggle.checked = !syncToggle.checked;
+                            syncToggle.dispatchEvent(new Event('change'));
+                        });
+                    }
+                } else {
+                    console.error('⚙️ Settings toggle element not found!');
+                }
+            }
+            
+            // Initialize Dynamic Layout System
+            function initDynamicLayoutSystem() {
+                console.log('🎯 Initializing Dynamic Layout System');
+                
+                // Reset state
+                lastVisibleNodeCount = 0;
+                isPhysicsBurstActive = false;
+                
+                // Clear any existing timers
+                if (physicsDebounceTimer) {
+                    clearTimeout(physicsDebounceTimer);
+                    physicsDebounceTimer = null;
+                }
+                
+                if (physicsBurstTimeout) {
+                    clearTimeout(physicsBurstTimeout);
+                    physicsBurstTimeout = null;
+                }
+            }
+            
+            // Cleanup Dynamic Layout System
+            function cleanupDynamicLayout() {
+                console.log('🧹 Cleaning up Dynamic Layout System');
+                
+                // Clear timers
+                if (physicsDebounceTimer) {
+                    clearTimeout(physicsDebounceTimer);
+                    physicsDebounceTimer = null;
+                }
+                
+                if (physicsBurstTimeout) {
+                    clearTimeout(physicsBurstTimeout);
+                    physicsBurstTimeout = null;
+                }
+                
+                // Clear timeline drag interval
+                if (timelineDragInterval) {
+                    clearInterval(timelineDragInterval);
+                    timelineDragInterval = null;
+                }
+                
+                // Stop continuous physics
+                if (continuousPhysicsActive) {
+                    stopContinuousPhysics();
+                }
+                
+                // Stop any active physics burst
+                if (isPhysicsBurstActive) {
+                    stopPhysicsBurst();
+                }
+                
+                isPhysicsBurstActive = false;
+                continuousPhysicsActive = false;
+                isTimelineDragging = false;
+            }
+            
+            // Trigger Dynamic Physics (Continuous)
+            function triggerDynamicPhysics() {
+                if (!dynamicLayoutEnabled) return;
+                
+                // Start continuous physics if not already active
+                if (!continuousPhysicsActive) {
+                    startContinuousPhysics();
+                }
+                
+                // Update physics parameters immediately for smooth response
+                updateContinuousPhysics();
+            }
+            
+            // Start Continuous Physics
+            function startContinuousPhysics() {
+                if (continuousPhysicsActive) return;
+                
+                console.log('🌊 Starting Continuous Physics');
+                continuousPhysicsActive = true;
+                
+                // Enable physics with continuous settings
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: {
+                            gravitationalConstant: -100,
+                            centralGravity: 0.005,
+                            springLength: 250,
+                            springConstant: 0.1,
+                            damping: 0.9,
+                            avoidOverlap: 1.2
+                        },
+                        maxVelocity: 8,
+                        minVelocity: 0.05,
+                        timestep: 0.3,
+                        stabilization: {
+                            enabled: false, // Keep physics running continuously
+                            iterations: 0,
+                            updateInterval: 25,
+                            onlyDynamicEdges: false,
+                            fit: false
+                        }
+                    }
+                });
+            }
+            
+            // Update Continuous Physics Parameters
+            function updateContinuousPhysics() {
+                if (!continuousPhysicsActive) return;
+                
+                const visibleNodes = getVisibleNodes();
+                const visibleNodeCount = visibleNodes.length;
+                
+                // Check performance thresholds
+                if (visibleNodeCount > 800) {
+                    console.log('⚠️ Too many nodes for dynamic layout, falling back to static');
+                    stopContinuousPhysics();
+                    return;
+                }
+                
+                // Calculate adaptive physics parameters
+                const physicsParams = calculateAdaptivePhysics(visibleNodeCount);
+                
+                // Keep original physics parameters - only adjust timeline sync sensitivity
+                // No changes to physics speed/springiness, just timeline responsiveness
+                
+                // Update physics parameters smoothly
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: physicsParams.forceAtlas2Based,
+                        maxVelocity: physicsParams.maxVelocity,
+                        minVelocity: physicsParams.minVelocity,
+                        timestep: physicsParams.timestep,
+                        stabilization: {
+                            enabled: false, // Keep continuous
+                            iterations: 0,
+                            updateInterval: 25,
+                            onlyDynamicEdges: false,
+                            fit: false
+                        }
+                    }
+                });
+                
+                console.log(`🌊 Updated continuous physics for ${visibleNodeCount} nodes (dragging: ${isTimelineDragging})`);
+            }
+            
+            // Stop Continuous Physics
+            function stopContinuousPhysics() {
+                if (!continuousPhysicsActive) return;
+                
+                console.log('🛑 Stopping Continuous Physics');
+                continuousPhysicsActive = false;
+                
+                // Disable physics
+                network.setOptions({
+                    physics: { enabled: false }
+                });
+            }
+            
+            // Timeline Drag Physics - High frequency updates during dragging
+            let timelineDragInterval = null;
+            
+            function startTimelineDragPhysics() {
+                if (!dynamicLayoutEnabled || !continuousPhysicsActive) return;
+                
+                console.log('🎚️ Starting high-frequency timeline drag physics');
+                
+                // Clear any existing interval
+                if (timelineDragInterval) {
+                    clearInterval(timelineDragInterval);
+                }
+                
+                // Update physics every 16ms during dragging for maximum responsiveness (60fps)
+                timelineDragInterval = setInterval(() => {
+                    if (isTimelineDragging && continuousPhysicsActive) {
+                        updateContinuousPhysics();
+                    }
+                }, 16); // 60fps updates during dragging for maximum timeline sync sensitivity
+            }
+            
+            function stopTimelineDragPhysics() {
+                console.log('🎚️ Stopping high-frequency timeline drag physics');
+                
+                if (timelineDragInterval) {
+                    clearInterval(timelineDragInterval);
+                    timelineDragInterval = null;
+                }
+                
+                // Final physics update when dragging ends
+                if (continuousPhysicsActive) {
+                    updateContinuousPhysics();
+                }
+            }
+            
+            // Get visible nodes count
+            function getVisibleNodes() {
+                // Get all node IDs from the nodes dataset
+                const allNodeIds = nodes.getIds();
+                return allNodeIds.filter(nodeId => {
+                    const node = nodes.get(nodeId);
+                    return node && !node.hidden;
+                });
+            }
+            
+            // Start Physics Burst
+            function startPhysicsBurst(nodeCount) {
+                console.log(`🎯 Starting Physics Burst for ${nodeCount} nodes`);
+                
+                isPhysicsBurstActive = true;
+                
+                // Apply warm-start positioning for newly visible nodes
+                applyWarmStartPositioning();
+                
+                // Calculate adaptive physics parameters
+                const physicsParams = calculateAdaptivePhysics(nodeCount);
+                
+                // Enable physics with adaptive parameters
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: physicsParams.forceAtlas2Based,
+                        maxVelocity: physicsParams.maxVelocity,
+                        minVelocity: physicsParams.minVelocity,
+                        timestep: physicsParams.timestep,
+                        stabilization: {
+                            enabled: true,
+                            iterations: physicsParams.iterations,
+                            updateInterval: 25,
+                            onlyDynamicEdges: false,
+                            fit: false // Prevent camera jumps
+                        }
+                    }
+                });
+                
+                // Set timeout to stop physics burst
+                physicsBurstTimeout = setTimeout(() => {
+                    stopPhysicsBurst();
+                }, 1000); // 1 second max burst (shorter)
+                
+                // Listen for stabilization event
+                network.on('stabilizationIterationsDone', function() {
+                    console.log('✅ Physics stabilized, stopping burst');
+                    stopPhysicsBurst();
+                });
+            }
+            
+            // Stop Physics Burst
+            function stopPhysicsBurst() {
+                if (!isPhysicsBurstActive) return;
+                
+                console.log('🛑 Stopping Physics Burst');
+                
+                // Disable physics
+                network.setOptions({
+                    physics: { enabled: false }
+                });
+                
+                // Clear timeout
+                if (physicsBurstTimeout) {
+                    clearTimeout(physicsBurstTimeout);
+                    physicsBurstTimeout = null;
+                }
+                
+                // Remove event listener
+                network.off('stabilizationIterationsDone');
+                
+                isPhysicsBurstActive = false;
+            }
+            
+            // Apply Warm-Start Positioning
+            function applyWarmStartPositioning() {
+                console.log('🔥 Applying warm-start positioning');
+                
+                const visibleNodes = getVisibleNodes();
+                const allNodes = nodes.getIds();
+                
+                // Find newly visible nodes (nodes that were hidden but are now visible)
+                const newlyVisibleNodes = visibleNodes.filter(nodeId => {
+                    const node = nodes.get(nodeId);
+                    return node && !node.hidden && !node.fixed;
+                });
+                
+                if (newlyVisibleNodes.length === 0) {
+                    console.log('📊 No newly visible nodes to position');
+                    return;
+                }
+                
+                // Skip warm-start positioning if too many nodes (performance)
+                if (newlyVisibleNodes.length > 50) {
+                    console.log(`📊 Too many nodes (${newlyVisibleNodes.length}), skipping warm-start positioning`);
+                    return;
+                }
+                
+                console.log(`🎯 Positioning ${newlyVisibleNodes.length} newly visible nodes`);
+                
+                // Calculate centroid of visible nodes
+                const visiblePositions = visibleNodes
+                    .filter(nodeId => {
+                        const node = nodes.get(nodeId);
+                        return node && node.x !== undefined && node.y !== undefined;
+                    })
+                    .map(nodeId => {
+                        const node = nodes.get(nodeId);
+                        return { x: node.x, y: node.y };
+                    });
+                
+                let centroidX = 0;
+                let centroidY = 0;
+                
+                if (visiblePositions.length > 0) {
+                    centroidX = visiblePositions.reduce((sum, pos) => sum + pos.x, 0) / visiblePositions.length;
+                    centroidY = visiblePositions.reduce((sum, pos) => sum + pos.y, 0) / visiblePositions.length;
+                } else if (currentFilterUser) {
+                    // If no visible positions, use selected user as anchor
+                    const userNode = nodes.get(currentFilterUser);
+                    if (userNode && userNode.x !== undefined && userNode.y !== undefined) {
+                        centroidX = userNode.x;
+                        centroidY = userNode.y;
+                    }
+                }
+                
+                // Position newly visible nodes near centroid
+                const nodeUpdates = newlyVisibleNodes.map(nodeId => {
+                    // Add some random offset to prevent overlap
+                    const offsetX = (Math.random() - 0.5) * 200;
+                    const offsetY = (Math.random() - 0.5) * 200;
+                    
+                    return {
+                        id: nodeId,
+                        x: centroidX + offsetX,
+                        y: centroidY + offsetY,
+                        fixed: false // Allow physics to move them
+                    };
+                });
+                
+                // Apply positioning updates
+                network.setData({ nodes: nodeUpdates });
+                
+                console.log(`✅ Positioned ${nodeUpdates.length} nodes near centroid (${centroidX.toFixed(1)}, ${centroidY.toFixed(1)})`);
+            }
+            
+            // Calculate Adaptive Physics Parameters
+            function calculateAdaptivePhysics(nodeCount) {
+                console.log(`📊 Calculating adaptive physics for ${nodeCount} nodes`);
+                
+                // Base parameters
+                let springLength = 250;
+                let gravitationalConstant = -100;
+                let centralGravity = 0.005;
+                let maxVelocity = 8;
+                let iterations = 200;
+                
+                // Adaptive scaling based on node count
+                if (nodeCount < 50) {
+                    // Small graphs: tighter, faster
+                    springLength = Math.max(100, springLength * 0.6);
+                    gravitationalConstant = -50;
+                    centralGravity = 0.01;
+                    maxVelocity = 12;
+                    iterations = 150;
+                } else if (nodeCount < 200) {
+                    // Medium graphs: balanced
+                    springLength = springLength * 0.8;
+                    gravitationalConstant = -75;
+                    centralGravity = 0.007;
+                    maxVelocity = 10;
+                    iterations = 180;
+                } else if (nodeCount < 500) {
+                    // Large graphs: more spacing, slower
+                    springLength = springLength * 1.2;
+                    gravitationalConstant = -125;
+                    centralGravity = 0.003;
+                    maxVelocity = 6;
+                    iterations = 250;
+                } else {
+                    // Very large graphs: maximum spacing
+                    springLength = springLength * 1.5;
+                    gravitationalConstant = -150;
+                    centralGravity = 0.002;
+                    maxVelocity = 4;
+                    iterations = 300;
+                }
+                
+                // User-centric adjustments
+                if (currentFilterUser) {
+                    // Increase central gravity to anchor selected user
+                    centralGravity *= 1.5;
+                    console.log('👤 User-centric mode: increased central gravity');
+                }
+                
+                return {
+                    forceAtlas2Based: {
+                        gravitationalConstant: gravitationalConstant,
+                        centralGravity: centralGravity,
+                        springLength: springLength,
+                        springConstant: 0.1,
+                        damping: 0.9,
+                        avoidOverlap: 1.2
+                    },
+                    maxVelocity: maxVelocity,
+                    minVelocity: 0.05,
+                    timestep: 0.3,
+                    iterations: iterations
+                };
             }
             
             // Display expandable search results
@@ -4198,7 +4921,7 @@ Remember: You're helping someone explore and understand their social network dat
                     document.querySelector('.search-control-floating').style.display = 'none';
                 } else {
                     globalViewBtn.classList.remove('active');
-                    globalViewBtn.textContent = 'See full Arc Network';
+                    globalViewBtn.textContent = 'See Full Arc Network';
                     // Show user-specific elements
                     document.getElementById('profileSection').style.display = 'block';
                     // Show search functionality in user mode
@@ -4327,6 +5050,9 @@ Remember: You're helping someone explore and understand their social network dat
             function filterNetworkByUser(userId) {
                 
                 currentFilterUser = userId;
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 const user = allNodes[userId];
                 if (!user || !user.profile_data) {
                     return;
@@ -4357,6 +5083,9 @@ Remember: You're helping someone explore and understand their social network dat
                 if (!currentFilterUser) {
                     return;
                 }
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 
                 const user = allNodes[currentFilterUser];
                 if (!user || !user.profile_data) {
@@ -4514,8 +5243,37 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 // Add event listeners for both sliders
                 [leftSlider, rightSlider].forEach(slider => {
+                    // Track timeline dragging state
+                    slider.addEventListener('mousedown', function() {
+                        isTimelineDragging = true;
+                        console.log('🎚️ Timeline drag started');
+                        startTimelineDragPhysics();
+                    });
+                    
+                    slider.addEventListener('mouseup', function() {
+                        isTimelineDragging = false;
+                        console.log('🎚️ Timeline drag ended');
+                        stopTimelineDragPhysics();
+                    });
+                    
+                    slider.addEventListener('touchstart', function() {
+                        isTimelineDragging = true;
+                        console.log('🎚️ Timeline touch started');
+                        startTimelineDragPhysics();
+                    });
+                    
+                    slider.addEventListener('touchend', function() {
+                        isTimelineDragging = false;
+                        console.log('🎚️ Timeline touch ended');
+                        stopTimelineDragPhysics();
+                    });
                     slider.addEventListener('input', function() {
                         console.log(`🎚️ Slider moved: ${this.id} = ${this.value}%`);
+                        
+                        // Immediate physics update on every timeline change for maximum sensitivity
+                        if (dynamicLayoutEnabled && continuousPhysicsActive) {
+                            updateContinuousPhysics();
+                        }
                         
                     // Clear any pending update
                     if (updateTimeout) {
@@ -4657,6 +5415,9 @@ Remember: You're helping someone explore and understand their social network dat
                 // Prevent multiple simultaneous updates
                 if (isUpdating) return;
                 isUpdating = true;
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 
                 console.log(`🕒 Timeline: Updating display ${startPercentage}% - ${endPercentage}%`);
                 
@@ -4826,7 +5587,7 @@ Remember: You're helping someone explore and understand their social network dat
                             id: nodeId,
                             size: nodeProps.size,
                             color: nodeProps.color,
-                            title: `${allNodes[nodeId].label} - ${nodeProps.taps} taps, ${nodeProps.connections} connections`
+                            // title: `${allNodes[nodeId].label} - ${nodeProps.taps} taps, ${nodeProps.connections} connections` // Removed old popup
                         });
                     }
                 });
@@ -5128,6 +5889,9 @@ Remember: You're helping someone explore and understand their social network dat
                 // Prevent multiple simultaneous updates
                 if (isUpdating) return;
                 isUpdating = true;
+                
+                // Trigger dynamic physics if enabled
+                triggerDynamicPhysics();
                 
                 
                 // Calculate how many events to show based on percentage
@@ -5497,7 +6261,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 size: timelineProps.size,
                                 color: timelineProps.color,
                                 font: { size: 12, face: 'Arial', color: '#ffffff' },
-                                title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                // title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections` // Removed old popup
                             });
                         } else {
                             finalNodeUpdates.push({
@@ -5589,7 +6353,7 @@ Remember: You're helping someone explore and understand their social network dat
                                     id: node.id, 
                                     size: timelineProps.size,
                                     color: timelineProps.color,
-                                    title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                    // title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections` // Removed old popup
                                 });
                             }
                         });
@@ -5650,7 +6414,7 @@ Remember: You're helping someone explore and understand their social network dat
                                 size: timelineProps.size,
                                 color: timelineProps.color,
                                 font: { size: 12, face: 'Arial', color: '#ffffff' },
-                                title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections`
+                                // title: `${node.label} - ${timelineProps.taps} taps, ${timelineProps.connections} connections` // Removed old popup
                             });
                         });
                         nodes.update(globalModeNodeUpdates);
@@ -5788,6 +6552,19 @@ Remember: You're helping someone explore and understand their social network dat
             
 
             
+            // iOS viewport locking to prevent zoom
+            (function () {
+                const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                if (!isiOS) return;
+                let m = document.querySelector('meta[name="viewport"]');
+                if (!m) {
+                    m = document.createElement('meta');
+                    m.name = 'viewport';
+                    document.head.appendChild(m);
+                }
+                m.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover');
+            })();
+
             // Detect iframe context and add class for mobile adjustments
             function detectIframeContext() {
                 if (window !== window.top) {
@@ -5805,6 +6582,7 @@ Remember: You're helping someone explore and understand their social network dat
                 initSearch();
                 initExpandableSearch();
                 initTimelineSlider();
+                initSettingsToggle();
                 
                 // Check for userName parameter and auto-select user
                 const urlParams = new URLSearchParams(window.location.search);
