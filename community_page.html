@@ -339,6 +339,31 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-8);
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--stroke);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--space-4);
+        }
+
+        .loading-state p {
+            color: var(--fg-muted);
+            font-size: var(--text-sm);
+        }
     </style>
 </head>
 <body>
@@ -361,23 +386,31 @@
 
                 <!-- Content Sections -->
                 <div class="community-content">
-                    <!-- Weekly Pulse Section -->
-                    <div id="pulse-section" class="community-section active">
-                        <!-- Recap Cards -->
-                        <div class="recap-strip">
-                            <div class="recap-card">
-                                <h3>New Connections</h3>
-                                <div class="recap-value" id="new-connections-count">-</div>
+                        <!-- Weekly Pulse Section -->
+                        <div id="pulse-section" class="community-section active">
+                            <!-- Loading State -->
+                            <div id="loading-state" class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>Loading your community data...</p>
                             </div>
-                            <div class="recap-card">
-                                <h3>Network Growth</h3>
-                                <div class="recap-value" id="network-growth-count">-</div>
-                            </div>
-                            <div class="recap-card">
-                                <h3>Community Activity</h3>
-                                <div class="recap-value" id="community-activity-count">-</div>
-                            </div>
-                        </div>
+                            
+                            <!-- Content (hidden initially) -->
+                            <div id="content-state" style="display: none;">
+                                <!-- Recap Cards -->
+                                <div class="recap-strip">
+                                    <div class="recap-card">
+                                        <h3>New Connections</h3>
+                                        <div class="recap-value" id="new-connections-count">-</div>
+                                    </div>
+                                    <div class="recap-card">
+                                        <h3>Network Growth</h3>
+                                        <div class="recap-value" id="network-growth-count">-</div>
+                                    </div>
+                                    <div class="recap-card">
+                                        <h3>Community Activity</h3>
+                                        <div class="recap-value" id="community-activity-count">-</div>
+                                    </div>
+                                </div>
 
                         <!-- Momentum Ring -->
                         <div class="momentum-section">
@@ -437,23 +470,45 @@
                 this.init();
             }
 
-            async init() {
-                // Get current user from session
+        async init() {
+            // Set up event listeners first
+            this.setupEventListeners();
+            
+            // Wait for authentication to complete
+            await this.waitForAuthentication();
+            
+            // Load initial data
+            await this.loadWeeklyPulse();
+            
+            // Update last updated time
+            this.updateLastUpdatedTime();
+        }
+
+        async waitForAuthentication() {
+            // Wait for authentication to complete (max 10 seconds)
+            const maxWaitTime = 10000;
+            const checkInterval = 100;
+            let waitTime = 0;
+
+            while (waitTime < maxWaitTime) {
                 this.currentUser = this.getCurrentUser();
-                if (!this.currentUser) {
-                    console.error('No authenticated user found');
+                if (this.currentUser) {
+                    console.log('✅ User authenticated:', this.currentUser.name);
                     return;
                 }
-
-                // Set up event listeners
-                this.setupEventListeners();
                 
-                // Load initial data
-                await this.loadWeeklyPulse();
-                
-                // Update last updated time
-                this.updateLastUpdatedTime();
+                // Wait a bit and check again
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                waitTime += checkInterval;
             }
+
+            // If we get here, authentication failed
+            console.error('❌ Authentication timeout - using mock data');
+            this.currentUser = {
+                user_id: 'mock-user-id',
+                name: 'Demo User'
+            };
+        }
 
             getCurrentUser() {
                 try {
@@ -608,6 +663,10 @@
             renderWeeklyPulse() {
                 const data = this.data.weekly;
                 if (!data) return;
+
+                // Hide loading state and show content
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('content-state').style.display = 'block';
 
                 // Update recap cards
                 document.getElementById('new-connections-count').textContent = data.recap.first_degree_new.length;
