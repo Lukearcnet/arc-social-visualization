@@ -1,0 +1,16 @@
+{
+  "name": "arc-gamification-setup",
+  "version": "1.0.0",
+  "description": "One-time setup job for ARC gamification database",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
