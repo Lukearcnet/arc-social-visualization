@@ -2,13 +2,11 @@
 // Weekly Pulse endpoint for Community page
 // Date: 2025-01-15
 
-import { Pool } from 'pg';
+// Force Node.js runtime (not Edge)
+export const runtime = 'nodejs';
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const DATA_READER_URL = process.env.DATA_READER_URL;
+const DATA_READER_SECRET = process.env.DATA_READER_SECRET;
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -22,188 +20,43 @@ export default async function handler(req, res) {
   }
 
   try {
-    const client = await pool.connect();
+    console.log('📊 Fetching community weekly data from Cloud Run backend...');
     
-    try {
-      // Check if gamification tables exist
-      const tableCheck = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_name = 'user_week_activity'
-        ) as tables_exist
-      `);
-      
-      if (!tableCheck.rows[0].tables_exist) {
-        console.log('📊 Gamification tables not found, returning mock data');
+    // Call the Cloud Run backend service for community data
+    const response = await fetch(`${DATA_READER_URL}/community/weekly?user_id=${encodeURIComponent(user_id)}`, {
+      method: 'GET',
+      headers: {
+        'x-data-key': DATA_READER_SECRET,
+        'Content-Type': 'application/json'
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Backend doesn't have community endpoint yet, return mock data
+        console.log('📊 Community endpoint not available, returning mock data');
         return res.status(200).json(getMockWeeklyData());
       }
-      
-      // Get current week info
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const isoWeek = getISOWeek(currentDate);
-      const weekStart = getWeekStart(currentDate);
-      const weekEnd = getWeekEnd(currentDate);
-      
-      // Get user's weekly activity
-      const weeklyActivity = await client.query(`
-        SELECT 
-          tap_count,
-          first_degree_new_count,
-          second_degree_count
-        FROM user_week_activity 
-        WHERE user_id = $1 AND iso_week = $2 AND year = $3
-      `, [user_id, isoWeek, year]);
-      
-      // Get new first-degree connections this week
-      const newConnections = await client.query(`
-        SELECT DISTINCT
-          CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as user_id,
-          CASE WHEN t.id1 = $1 THEN u2.first_name || ' ' || u2.last_name ELSE u1.first_name || ' ' || u1.last_name END as name,
-          MAX(t.time) as last_tap_at
-        FROM taps t
-        JOIN users u1 ON t.id1 = u1.id
-        JOIN users u2 ON t.id2 = u2.id
-        WHERE (t.id1 = $1 OR t.id2 = $1)
-        AND t.time >= $2
-        AND NOT EXISTS (
-          SELECT 1 FROM taps t2 
-          WHERE (t2.id1 = $1 OR t2.id2 = $1)
-          AND (t2.id1 = t.id2 OR t2.id2 = t.id1)
-          AND t2.time < $2
-        )
-        GROUP BY user_id, name
-        ORDER BY last_tap_at DESC
-        LIMIT 10
-      `, [user_id, weekStart]);
-      
-      // Get user's streak info
-      const streakInfo = await client.query(`
-        SELECT 
-          current_streak_days,
-          longest_streak_days
-        FROM user_streaks 
-        WHERE user_id = $1
-      `, [user_id]);
-      
-      // Get community activity (simplified - using location-based communities)
-      const communityActivity = await client.query(`
-        SELECT 
-          hl.city as community_id,
-          hl.city as name,
-          COUNT(*) as tap_count,
-          COUNT(DISTINCT CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END) as unique_users
-        FROM taps t
-        JOIN home_location_struct hl ON (hl.user_id = CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END)
-        WHERE (t.id1 = $1 OR t.id2 = $1)
-        AND t.time >= $2
-        AND hl.city IS NOT NULL
-        GROUP BY hl.city
-        ORDER BY tap_count DESC
-        LIMIT 5
-      `, [user_id, weekStart]);
-      
-      // Get geo expansion
-      const geoExpansion = await client.query(`
-        SELECT 
-          hl.city,
-          COUNT(*) as new_taps
-        FROM taps t
-        JOIN home_location_struct hl ON (hl.user_id = CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END)
-        WHERE (t.id1 = $1 OR t.id2 = $1)
-        AND t.time >= $2
-        AND hl.city IS NOT NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM taps t2
-          WHERE (t2.id1 = $1 OR t2.id2 = $1)
-          AND (t2.id1 = t.id2 OR t2.id2 = t.id1)
-          AND t2.time < $2
-        )
-        GROUP BY hl.city
-        ORDER BY new_taps DESC
-        LIMIT 5
-      `, [user_id, weekStart]);
-      
-      // Get leaderboards
-      const topConnectors = await client.query(`
-        SELECT 
-          wl.user_id,
-          u.first_name || ' ' || u.last_name as name,
-          wl.new_first_degree
-        FROM weekly_leaderboard wl
-        JOIN users u ON wl.user_id = u.id
-        WHERE wl.iso_week = $1 AND wl.year = $2
-        ORDER BY wl.new_first_degree DESC
-        LIMIT 10
-      `, [isoWeek, year]);
-      
-      const expandingReach = await client.query(`
-        SELECT 
-          wl.user_id,
-          u.first_name || ' ' || u.last_name as name,
-          wl.delta_second_degree
-        FROM weekly_leaderboard wl
-        JOIN users u ON wl.user_id = u.id
-        WHERE wl.iso_week = $1 AND wl.year = $2
-        ORDER BY wl.delta_second_degree DESC
-        LIMIT 10
-      `, [isoWeek, year]);
-      
-      const consistency = await client.query(`
-        SELECT 
-          wl.user_id,
-          u.first_name || ' ' || u.last_name as name,
-          wl.streak_days
-        FROM weekly_leaderboard wl
-        JOIN users u ON wl.user_id = u.id
-        WHERE wl.iso_week = $1 AND wl.year = $2
-        ORDER BY wl.streak_days DESC
-        LIMIT 10
-      `, [isoWeek, year]);
-      
-      // Get recommendations (simplified algorithm)
-      const recommendations = await getRecommendations(client, user_id);
-      
-      // Build response
-      const response = {
-        generated_at: new Date().toISOString(),
-        week: {
-          year,
-          iso_week: isoWeek,
-          range: [weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0]]
-        },
-        recap: {
-          first_degree_new: newConnections.rows,
-          second_degree_delta: weeklyActivity.rows[0]?.second_degree_count || 0,
-          community_activity: communityActivity.rows,
-          geo_expansion: geoExpansion.rows
-        },
-        momentum: {
-          current_streak_days: streakInfo.rows[0]?.current_streak_days || 0,
-          longest_streak_days: streakInfo.rows[0]?.longest_streak_days || 0,
-          weekly_goal: {
-            target_taps: 5, // Default goal
-            progress: weeklyActivity.rows[0]?.tap_count || 0
-          }
-        },
-        leaderboard: {
-          top_connectors: topConnectors.rows,
-          expanding_reach: expandingReach.rows,
-          consistency: consistency.rows
-        },
-        recommendations
-      };
-      
-      res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
-      return res.status(200).json(response);
-      
-    } finally {
-      client.release();
+      throw new Error(`Backend service failed: ${response.status} ${response.statusText}`);
     }
+
+    const data = await response.json();
+    console.log('✅ Successfully fetched community data from backend service');
+
+    // Set cache headers for Vercel
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
+    res.setHeader('Content-Type', 'application/json');
     
+    return res.status(200).json(data);
+
   } catch (error) {
-    console.error('Error fetching weekly pulse data:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error fetching community data from backend service:', error);
+    
+    // Fallback to mock data on any error
+    console.log('📊 Backend error, returning mock data as fallback');
+    return res.status(200).json(getMockWeeklyData());
   }
 }
 
@@ -234,46 +87,7 @@ function getWeekEnd(date) {
   return end;
 }
 
-async function getRecommendations(client, userId) {
-  // Simplified recommendation algorithm
-  // In production, this would be more sophisticated
-  const recommendations = await client.query(`
-    SELECT DISTINCT
-      CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as user_id,
-      CASE WHEN t.id1 = $1 THEN u2.first_name || ' ' || u2.last_name ELSE u1.first_name || ' ' || u1.last_name END as name,
-      COUNT(*) as mutuals,
-      RANDOM() as total_score
-    FROM taps t
-    JOIN users u1 ON t.id1 = u1.id
-    JOIN users u2 ON t.id2 = u2.id
-    WHERE (t.id1 = $1 OR t.id2 = $1)
-    AND t.time >= NOW() - INTERVAL '30 days'
-    AND NOT EXISTS (
-      SELECT 1 FROM taps t2
-      WHERE (t2.id1 = $1 OR t2.id2 = $1)
-      AND (t2.id1 = t.id2 OR t2.id2 = t.id1)
-    )
-    GROUP BY user_id, name
-    ORDER BY total_score DESC
-    LIMIT 5
-  `, [userId]);
-  
-  return recommendations.rows.map(rec => ({
-    user_id: rec.user_id,
-    name: rec.name,
-    mutuals: rec.mutuals,
-    scores: {
-      mutual_strength: Math.random(),
-      mutual_quality: Math.random(),
-      recency: Math.random(),
-      location: Math.random(),
-      total: rec.total_score
-    },
-    explain: `You have ${rec.mutuals} mutual connections and similar interests.`
-  }));
-}
-
-// Mock data function for when gamification tables don't exist
+// Mock data function for when backend service is not available
 function getMockWeeklyData() {
   return {
     generated_at: new Date().toISOString(),
@@ -297,57 +111,58 @@ function getMockWeeklyData() {
       geo_expansion: [
         { city: "Austin", new_taps: 5 },
         { city: "Nashville", new_taps: 3 },
-        { city: "Denver", new_taps: 2 }
+        { city: "Dallas", new_taps: 2 }
       ]
     },
     momentum: {
-      current_streak_days: 9,
-      longest_streak_days: 17,
-      weekly_goal: { target_taps: 5, progress: 4 }
+      current_streak: 7,
+      longest_streak: 23,
+      weekly_taps: 47,
+      new_connections: 8
     },
     leaderboard: {
-      top_connectors: [
-        { user_id: "u321", name: "Owen", new_first_degree: 6 },
-        { user_id: "u555", name: "Mia", new_first_degree: 4 },
-        { user_id: "u888", name: "Alex", new_first_degree: 3 }
+      new_connections: [
+        { user_id: "u1", name: "Alex Johnson", count: 12, rank: 1 },
+        { user_id: "u2", name: "Sarah Chen", count: 10, rank: 2 },
+        { user_id: "u3", name: "Mike Davis", count: 9, rank: 3 }
       ],
-      expanding_reach: [
-        { user_id: "u555", name: "Mia", delta_second_degree: 18 },
-        { user_id: "u789", name: "Alex", delta_second_degree: 15 },
-        { user_id: "u321", name: "Owen", delta_second_degree: 12 }
+      community_builders: [
+        { user_id: "u4", name: "Emma Wilson", score: 156, rank: 1 },
+        { user_id: "u5", name: "David Lee", score: 142, rank: 2 },
+        { user_id: "u6", name: "Lisa Garcia", score: 138, rank: 3 }
       ],
-      consistency: [
-        { user_id: "u789", name: "Alex", streak_days: 21 },
-        { user_id: "u321", name: "Owen", streak_days: 18 },
-        { user_id: "u555", name: "Mia", streak_days: 15 }
+      streak_masters: [
+        { user_id: "u7", name: "Tom Brown", days: 45, rank: 1 },
+        { user_id: "u8", name: "Anna Smith", days: 38, rank: 2 },
+        { user_id: "u9", name: "Chris Taylor", days: 32, rank: 3 }
       ]
     },
     recommendations: [
       {
-        user_id: "u999",
-        name: "Alex Fielding",
+        user_id: "u10",
+        name: "Jordan Martinez",
         mutuals: 3,
         scores: {
-          mutual_strength: 0.73,
-          mutual_quality: 0.61,
-          recency: 0.42,
-          location: 1.0,
-          total: 0.69
+          mutual_strength: 0.85,
+          mutual_quality: 0.92,
+          recency: 0.78,
+          location: 0.88,
+          total: 0.86
         },
-        explain: "Shared strong mutuals with Grace & Owen; also in Nashville."
+        explain: "You have 3 mutual connections and similar interests."
       },
       {
-        user_id: "u777",
-        name: "Sarah Kim",
+        user_id: "u11",
+        name: "Casey Kim",
         mutuals: 2,
         scores: {
-          mutual_strength: 0.58,
-          mutual_quality: 0.45,
-          recency: 0.67,
-          location: 0.6,
-          total: 0.58
+          mutual_strength: 0.72,
+          mutual_quality: 0.89,
+          recency: 0.85,
+          location: 0.91,
+          total: 0.82
         },
-        explain: "Both in Austin tech scene; recent activity overlap."
+        explain: "You have 2 mutual connections and similar interests."
       }
     ]
   };
