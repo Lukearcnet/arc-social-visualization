@@ -1,8 +1,14 @@
-// Cloud Run Job for Gamification Data Rollups
-// Nightly ETL job to compute gamification metrics
+// Cloud Run Job for Gamification Data Rollups - IMPROVED VERSION
+// Nightly ETL job to compute gamification metrics with enhanced calculations
 // Date: 2025-01-15
 
 import { Pool } from 'pg';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Get environment variables from Secret Manager (injected by Cloud Run)
 const DB_USER = process.env.DB_USER;
@@ -28,173 +34,67 @@ async function processGamificationData() {
 
   const client = await pool.connect();
   try {
-    console.log('🎮 Starting gamification data rollup...');
+    console.log('🎮 Starting improved gamification data rollup...');
 
     await client.query('BEGIN');
 
-    // 1. Update edge strengths for pairs with recent activity
-    console.log('📊 Updating edge strengths...');
-    const edgeResult = await client.query(`
-      UPDATE edge_strength SET
-        taps_90d = sub.taps_90d,
-        last_tap_at = sub.last_tap_at,
-        strength_f32 = 0.6*ln(1+sub.taps_90d) + 0.4*exp(-extract(day from now()-sub.last_tap_at)/21.0),
-        updated_at = NOW()
-      FROM (
-        SELECT 
-          id1 as u1, 
-          id2 as u2,
-          COUNT(*) FILTER (WHERE time >= now()-interval '90 days') AS taps_90d,
-          MAX(time) AS last_tap_at
-        FROM taps 
-        WHERE time >= now()-interval '90 days'
-        GROUP BY id1, id2
-      ) sub
-      WHERE edge_strength.u1 = sub.u1 AND edge_strength.u2 = sub.u2
-    `);
+    // Read and execute the improved rollup SQL
+    console.log('📊 Executing improved rollup SQL...');
+    const rollupSQL = readFileSync(join(__dirname, 'rollup.sql'), 'utf8');
+    
+    // Split SQL into individual statements and execute with logging
+    const statements = rollupSQL
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
 
-    // Insert new edge strengths for new pairs
-    await client.query(`
-      INSERT INTO edge_strength (u1, u2, taps_90d, last_tap_at, strength_f32, updated_at)
-      SELECT 
-        id1 as u1,
-        id2 as u2,
-        COUNT(*) as taps_90d,
-        MAX(time) as last_tap_at,
-        0.6*ln(1+COUNT(*)) + 0.4*exp(-extract(day from now()-MAX(time))/21.0) as strength_f32,
-        NOW() as updated_at
-      FROM taps 
-      WHERE time >= now()-interval '90 days'
-      GROUP BY id1, id2
-      ON CONFLICT (u1, u2) DO NOTHING
-    `);
-
-    // 2. Update daily activity for yesterday
-    console.log('📅 Updating daily activity...');
-    await client.query(`
-      INSERT INTO user_day_activity (user_id, day, tap_count, first_degree_new_count)
-      SELECT 
-        u.id as user_id,
-        CURRENT_DATE - INTERVAL '1 day' as day,
-        COUNT(*) as tap_count,
-        COUNT(CASE WHEN t.time >= u.created_at THEN 1 END) as first_degree_new_count
-      FROM users u
-      LEFT JOIN taps t ON (t.id1 = u.id OR t.id2 = u.id)
-      WHERE DATE(t.time) = CURRENT_DATE - INTERVAL '1 day'
-      GROUP BY u.id
-      ON CONFLICT (user_id, day) DO UPDATE SET
-        tap_count = EXCLUDED.tap_count,
-        first_degree_new_count = EXCLUDED.first_degree_new_count,
-        updated_at = NOW()
-    `);
-
-    // 3. Roll up daily activity to weekly
-    console.log('📊 Rolling up weekly activity...');
-    await client.query(`
-      INSERT INTO user_week_activity (user_id, iso_week, year, tap_count, first_degree_new_count, second_degree_count)
-      SELECT 
-        user_id,
-        EXTRACT(week FROM day) as iso_week,
-        EXTRACT(year FROM day) as year,
-        SUM(tap_count) as tap_count,
-        SUM(first_degree_new_count) as first_degree_new_count,
-        calculate_second_degree_count(user_id, day) as second_degree_count
-      FROM user_day_activity 
-      WHERE day >= date_trunc('week', now()-interval '1 week')
-      GROUP BY user_id, EXTRACT(week FROM day), EXTRACT(year FROM day)
-      ON CONFLICT (user_id, iso_week, year) DO UPDATE SET
-        tap_count = EXCLUDED.tap_count,
-        first_degree_new_count = EXCLUDED.first_degree_new_count,
-        second_degree_count = EXCLUDED.second_degree_count,
-        last_updated_at = NOW()
-    `);
-
-    // 4. Update weekly leaderboard
-    console.log('🏆 Updating weekly leaderboard...');
-    await client.query(`
-      INSERT INTO weekly_leaderboard (user_id, iso_week, year, new_first_degree, delta_second_degree, streak_days)
-      SELECT 
-        user_id,
-        iso_week,
-        year,
-        first_degree_new_count as new_first_degree,
-        second_degree_count - LAG(second_degree_count) OVER (PARTITION BY user_id ORDER BY iso_week) as delta_second_degree,
-        current_streak_days as streak_days
-      FROM user_week_activity uwa
-      JOIN user_streaks us ON uwa.user_id = us.user_id
-      WHERE iso_week = EXTRACT(week FROM NOW())
-      ON CONFLICT (user_id, iso_week, year) DO UPDATE SET
-        new_first_degree = EXCLUDED.new_first_degree,
-        delta_second_degree = EXCLUDED.delta_second_degree,
-        streak_days = EXCLUDED.streak_days
-    `);
-
-    // 5. Update user streaks
-    console.log('🔥 Updating user streaks...');
-    await client.query(`
-      UPDATE user_streaks SET
-        current_streak_days = calculate_current_streak(user_id),
-        longest_streak_days = GREATEST(longest_streak_days, calculate_current_streak(user_id)),
-        last_tap_at = (
-          SELECT MAX(time) 
-          FROM taps 
-          WHERE id1 = user_streaks.user_id OR id2 = user_streaks.user_id
-        ),
-        updated_at = NOW()
-    `);
-
-    // 6. Detect surge windows
-    console.log('🌊 Detecting surge windows...');
-    await client.query(`
-      INSERT INTO surge_windows (window_id, area_name, start_time, end_time, surge_multiplier, tap_count, unique_users)
-      SELECT 
-        gen_random_uuid() as window_id,
-        hl.city as area_name,
-        date_trunc('hour', t.time) as start_time,
-        date_trunc('hour', t.time) + interval '1 hour' as end_time,
-        COUNT(*)::float / (
-          SELECT AVG(hourly_count) 
-          FROM (
-            SELECT COUNT(*) as hourly_count
-            FROM taps t2
-            JOIN home_location_struct hl2 ON (hl2.user_id = CASE WHEN t2.id1 = u.id THEN t2.id2 ELSE t2.id1 END)
-            WHERE hl2.city = hl.city
-            AND t2.time >= now() - interval '7 days'
-            GROUP BY date_trunc('hour', t2.time)
-          ) hourly_avg
-        ) as surge_multiplier,
-        COUNT(*) as tap_count,
-        COUNT(DISTINCT CASE WHEN t.id1 = u.id THEN t.id2 ELSE t.id1 END) as unique_users
-      FROM taps t
-      JOIN users u ON (t.id1 = u.id OR t.id2 = u.id)
-      JOIN home_location_struct hl ON (hl.user_id = CASE WHEN t.id1 = u.id THEN t.id2 ELSE t.id1 END)
-      WHERE t.time >= now() - interval '2 hours'
-      AND hl.city IS NOT NULL
-      GROUP BY hl.city, date_trunc('hour', t.time)
-      HAVING COUNT(*) > 5 -- Minimum activity threshold
-      ON CONFLICT DO NOTHING
-    `);
+    for (let i = 0; i < statements.length; i++) {
+      const statement = statements[i];
+      if (statement.includes('SET LOCAL statement_timeout')) {
+        console.log(`⏱️ Setting statement timeout: ${statement}`);
+        await client.query(statement);
+      } else if (statement.includes('UPDATE') || statement.includes('INSERT')) {
+        console.log(`🔄 Executing: ${statement.substring(0, 50)}...`);
+        const result = await client.query(statement);
+        if (result.rowCount) {
+          console.log(`✅ Updated ${result.rowCount} rows`);
+          rowsProcessed += result.rowCount;
+        }
+      } else if (statement.includes('SELECT') && statement.includes('ROLLUP_METRICS')) {
+        console.log(`📊 Executing metrics query...`);
+        const result = await client.query(statement);
+        if (result.rows.length > 0) {
+          const metrics = result.rows[0];
+          console.log('📈 ROLLUP METRICS:');
+          console.log(`   👥 Users touched: ${metrics.users_touched}`);
+          console.log(`   📅 Days processed: ${metrics.days_processed}`);
+          console.log(`   📊 Weeks processed: ${metrics.weeks_processed}`);
+          console.log(`   🔗 Edges processed: ${metrics.edges_processed}`);
+          console.log(`   ⏰ Completed at: ${metrics.completed_at}`);
+        }
+      }
+    }
 
     await client.query('COMMIT');
     
-    const endedAt = new Date();
-    const duration = endedAt - startedAt;
-    
-    console.log(`✅ Gamification rollup completed successfully in ${duration}ms`);
-    
-    // Log the run
-    await logGamificationRun(startedAt, endedAt, status, rowsProcessed);
-    
+    // Log final metrics
+    const duration = Date.now() - startedAt.getTime();
+    console.log('✅ Improved gamification rollup completed!');
+    console.log(`   📊 Total rows processed: ${rowsProcessed}`);
+    console.log(`   ⏱️ Duration: ${duration}ms`);
+    console.log(`   🎯 Status: ${status}`);
+
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('❌ Error in gamification rollup:', error);
-    
-    const endedAt = new Date();
-    await logGamificationRun(startedAt, endedAt, 'error', 0);
-    
+    try {
+      await client.query('ROLLBACK');
+    } catch {}
+    console.error('❌ Improved gamification rollup failed:', error);
+    status = 'failed';
     throw error;
   } finally {
     client.release();
+    const endedAt = new Date();
+    await logGamificationRun(startedAt, endedAt, status, rowsProcessed);
   }
 }
 
@@ -203,57 +103,29 @@ async function logGamificationRun(startedAt, endedAt, status, rowsProcessed) {
   try {
     const client = await pool.connect();
     await client.query(`
-      INSERT INTO gamification_runs (started_at, ended_at, status, rows_processed)
+      INSERT INTO gamification_rollup_runs (started_at, ended_at, status, rows_processed)
       VALUES ($1, $2, $3, $4)
+      ON CONFLICT DO NOTHING
     `, [startedAt, endedAt, status, rowsProcessed]);
     client.release();
+    console.log('✅ Logged gamification rollup run:', status, rowsProcessed, 'rows processed');
   } catch (error) {
-    console.error('Error logging gamification run:', error);
+    console.error('❌ Error logging gamification rollup run:', error);
   }
 }
 
-// Helper function for second degree count calculation
-async function createHelperFunctions(client) {
-  await client.query(`
-    CREATE OR REPLACE FUNCTION calculate_second_degree_count(user_uuid UUID, activity_date DATE)
-    RETURNS INTEGER AS $$
-    DECLARE
-      second_degree_count INTEGER := 0;
-    BEGIN
-      -- Count unique second-degree connections made on this day
-      SELECT COUNT(DISTINCT t2.id2)
-      INTO second_degree_count
-      FROM taps t1
-      JOIN taps t2 ON (t1.id2 = t2.id1 OR t1.id1 = t2.id1)
-      WHERE (t1.id1 = user_uuid OR t1.id2 = user_uuid)
-      AND DATE(t1.time) = activity_date
-      AND t2.id2 != user_uuid
-      AND t2.id2 NOT IN (
-        SELECT DISTINCT CASE 
-          WHEN t1.id1 = user_uuid THEN t1.id2 
-          ELSE t1.id1 
-        END
-        FROM taps t1 
-        WHERE (t1.id1 = user_uuid OR t1.id2 = user_uuid)
-      );
-      
-      RETURN COALESCE(second_degree_count, 0);
-    END;
-    $$ LANGUAGE plpgsql;
-  `);
+// Main execution
+async function main() {
+  try {
+    console.log('🚀 Starting Improved Gamification Rollup Job...');
+    await processGamificationData();
+    console.log('✅ Improved Gamification Rollup Job completed successfully');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Improved Gamification Rollup Job failed:', error);
+    process.exit(1);
+  }
 }
 
 // Run the job
-if (import.meta.url === `file://${process.argv[1]}`) {
-  processGamificationData()
-    .then(() => {
-      console.log('🎮 Gamification rollup job completed successfully');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Gamification rollup job failed:', error);
-      process.exit(1);
-    });
-}
-
-export { processGamificationData };
+main();
