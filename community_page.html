@@ -728,6 +728,12 @@
                 const ring = document.getElementById('weekly-goal-progress');
                 ring.style.background = `conic-gradient(var(--accent) ${pct * 3.6}deg, var(--stroke) 0deg)`;
 
+                // Add null-safety defaults for leaderboard before calling renderLeaderboard
+                data.leaderboard ??= {};
+                data.leaderboard.new_connections ??= [];
+                data.leaderboard.community_builders ??= [];
+                data.leaderboard.streak_masters ??= [];
+
                 // Render leaderboard
                 this.renderLeaderboard('connectors');
 
@@ -739,8 +745,29 @@
                 const data = this.data.weekly;
                 if (!data) return;
 
-                const leaderboardData = data.leaderboard[type === 'connectors' ? 'top_connectors' : 
-                                                      type === 'reach' ? 'expanding_reach' : 'consistency'];
+                // Safe array access with null-safety
+                const lb = data?.leaderboard ?? {};
+                const newConnections = Array.isArray(lb.new_connections) ? lb.new_connections : [];
+                const communityBuilders = Array.isArray(lb.community_builders) ? lb.community_builders : [];
+                const streakMasters = Array.isArray(lb.streak_masters) ? lb.streak_masters : [];
+
+                // Debug logging
+                console.log("Leaderboard keys:", Object.keys(lb));
+                console.log("Array lengths:", {
+                    newConnections: newConnections.length,
+                    communityBuilders: communityBuilders.length,
+                    streakMasters: streakMasters.length
+                });
+
+                // Map type to appropriate array
+                let leaderboardData = [];
+                if (type === 'connectors') {
+                    leaderboardData = newConnections;
+                } else if (type === 'reach') {
+                    leaderboardData = communityBuilders;
+                } else {
+                    leaderboardData = streakMasters;
+                }
                 
                 const container = document.getElementById('leaderboard-list');
                 container.innerHTML = '';
