@@ -609,12 +609,12 @@
                     this.renderWeeklyPulse();
                 } catch (error) {
                     console.error('Error loading weekly pulse:', error);
-                    // Only fallback to mock if explicitly enabled
+                    // Only fallback to mock if explicitly enabled via URL parameter
                     const urlParams = new URLSearchParams(window.location.search);
-                    const useMock = urlParams.get('mock') === '1' || process.env.COMMUNITY_USE_MOCK === 'true';
+                    const useMock = urlParams.get('mock') === '1';
                     
                     if (useMock) {
-                        console.log('Using mock data (explicitly enabled)');
+                        console.log('Using mock data (explicitly enabled via ?mock=1)');
                         this.loadMockData();
                     } else {
                         // Show UI error instead of mock data

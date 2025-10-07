@@ -8,6 +8,7 @@ import { Pool } from 'pg';
 export const runtime = 'nodejs';
 
 // Use exact same DB client pattern as data-export.js (Vercel-friendly)
+// Create a connection pool for reuse across function invocations
 // Strip SSL parameters from connection string to avoid file path issues
 const connectionString = process.env.DATABASE_URL.split('?')[0];
 const pool = new Pool({
@@ -32,8 +33,21 @@ export default async function handler(req, res) {
   try {
     console.log('📊 Fetching community weekly data from database...');
     
-        // Get database client
-        const client = await pool.connect();
+    // Get database client with error handling
+    let client;
+    try {
+      client = await pool.connect();
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      return res.status(500).json({
+        error: 'database_connection_failed',
+        message: 'Unable to connect to database',
+        source: 'db-error',
+        duration_ms: Date.now() - startTime,
+        user_id: user_id,
+        watermark: new Date().toISOString()
+      });
+    }
     
     try {
       // Get current week data
@@ -141,14 +155,14 @@ export default async function handler(req, res) {
         }
       };
 
-      // Add comprehensive null-safety guards
+      // Ensure all arrays are always present (even if empty)
       weeklyData.leaderboard = weeklyData.leaderboard ?? {};
       weeklyData.leaderboard.new_connections = Array.isArray(weeklyData.leaderboard.new_connections) ? weeklyData.leaderboard.new_connections : [];
       weeklyData.leaderboard.community_builders = Array.isArray(weeklyData.leaderboard.community_builders) ? weeklyData.leaderboard.community_builders : [];
       weeklyData.leaderboard.streak_masters = Array.isArray(weeklyData.leaderboard.streak_masters) ? weeklyData.leaderboard.streak_masters : [];
       
       weeklyData.momentum = weeklyData.momentum ?? {};
-      weeklyData.momentum.weekly_goal = weeklyData.momentum.weekly_goal ?? { progress: 0, target_taps: 10 };
+      weeklyData.momentum.weekly_goal = weeklyData.momentum.weekly_goal ?? { progress: 0, target_taps: 25 };
       
       weeklyData.recap = weeklyData.recap ?? {};
       weeklyData.recap.first_degree_new = Array.isArray(weeklyData.recap.first_degree_new) ? weeklyData.recap.first_degree_new : [];
@@ -174,38 +188,18 @@ export default async function handler(req, res) {
         console.error('❌ Error details:', error.message);
         console.error('❌ Error stack:', error.stack);
         
-        // Support ?strict=db to disable mock fallback
-        if (strict === 'db') {
-          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(502).json({ 
-            error: 'database_unavailable',
-            message: 'Database connection failed and strict mode enabled',
-            meta: {
-              source: 'db-error',
-              duration_ms: Date.now() - startTime,
-              user_id: user_id,
-              watermark: new Date().toISOString(),
-              error: error.message
-            }
-          });
-        }
-        
-        // For non-strict mode, return 502 with error details
+        // Return proper JSON error response instead of 502
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Content-Type', 'application/json');
-        return res.status(502).json({
-          error: 'database_unavailable',
-          message: 'Database connection failed',
-          meta: {
-            source: 'db-error',
-            duration_ms: Date.now() - startTime,
-            user_id: user_id,
-            watermark: new Date().toISOString(),
-            error: error.message
-          }
+        return res.status(500).json({
+          error: 'database_query_failed',
+          message: 'Database query failed',
+          source: 'db-error',
+          duration_ms: Date.now() - startTime,
+          user_id: user_id,
+          watermark: new Date().toISOString(),
+          error_details: error.message
         });
       }
 }
