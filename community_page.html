@@ -702,6 +702,20 @@
                 console.log('🔍 Weekly data received:', data);
                 console.log('🔍 Data.recap:', data.recap);
                 console.log('🔍 Data.recap.first_degree_new:', data.recap?.first_degree_new);
+                console.log('🔍 Data.meta:', data.meta);
+                
+                // Display meta information for debugging
+                if (data.meta) {
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'data-status';
+                    statusDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 8px; border-radius: 4px; font-size: 12px; z-index: 1000;';
+                    statusDiv.innerHTML = `
+                        <div>Source: ${data.meta.source}</div>
+                        <div>Duration: ${data.meta.duration_ms}ms</div>
+                        <div>Watermark: ${new Date(data.meta.watermark).toLocaleTimeString()}</div>
+                    `;
+                    document.body.appendChild(statusDiv);
+                }
 
                 // Defensive guard: ensure we have the correct data structure
                 if (!data.recap) {

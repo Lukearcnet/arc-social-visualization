@@ -7,45 +7,47 @@ import { Pool } from 'pg';
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs';
 
-// Create a connection pool for reuse across function invocations
-// Strip SSL parameters from connection string to avoid file path issues
-const connectionString = process.env.DATABASE_URL.split('?')[0];
-const pool = new Pool({
-  connectionString: connectionString,
-  ssl: { rejectUnauthorized: false }
-});
+// Use same DB client pattern as data-export.js (Vercel-friendly)
+let pool;
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+      max: 1,
+    });
+  }
+  return pool;
+}
 
 export default async function handler(req, res) {
-  console.log('🚀 Community API handler started');
+  const startTime = Date.now();
   
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { user_id } = req.query;
-  console.log('🔍 User ID received:', user_id);
+  const { user_id, strict } = req.query;
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
   }
 
-  console.log('🔍 About to enter try block');
   try {
     console.log('📊 Fetching community weekly data from database...');
-    console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('🔍 Pool created successfully');
     
-    // Query gamification tables directly
-    console.log('🔍 Attempting to connect to database...');
-    const client = await pool.connect();
-    console.log('✅ Database connection successful');
+    // Get database pool
+    const dbPool = getPool();
+    const client = await dbPool.connect();
     
     try {
       // Get current week data
       const currentWeek = getISOWeek(new Date());
       const currentYear = new Date().getFullYear();
       
-      // Query user week activity
+      // Query user week activity (schema-qualified)
       const weekActivityQuery = `
         SELECT 
           first_degree_new_count,
@@ -54,11 +56,9 @@ export default async function handler(req, res) {
         FROM gamification.user_week_activity 
         WHERE user_id = $1 AND iso_week = $2 AND year = $3
       `;
-      console.log('🔍 Querying user week activity for:', { user_id, currentWeek, currentYear });
       const weekActivityResult = await client.query(weekActivityQuery, [user_id, currentWeek, currentYear]);
-      console.log('📊 Week activity result:', weekActivityResult.rows);
       
-      // Query user streaks
+      // Query user streaks (schema-qualified)
       const streakQuery = `
         SELECT 
           current_streak_days,
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       `;
       const streakResult = await client.query(streakQuery, [user_id]);
       
-      // Query weekly goal progress
+      // Query weekly goal progress (schema-qualified)
       const goal = Number(process.env.WEEKLY_GOAL_TAPS || 25);
       const weeklyGoalQuery = `
         SELECT COALESCE(SUM(tap_count), 0) AS progress
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
         target_taps: goal 
       };
       
-      // Query recent first-degree connections (last 7 days)
+      // Query recent first-degree connections (schema-qualified)
       const connectionsQuery = `
         SELECT DISTINCT 
           CASE 
@@ -105,11 +105,9 @@ export default async function handler(req, res) {
         ORDER BY last_tap_at DESC
         LIMIT 10
       `;
-      console.log('🔍 Querying recent connections for user:', user_id);
       const connectionsResult = await client.query(connectionsQuery, [user_id]);
-      console.log('📊 Connections result:', connectionsResult.rows);
       
-      // Build the weekly data structure
+      // Build the weekly data structure with null-safety
       const weeklyData = {
         generated_at: new Date().toISOString(),
         week: {
@@ -139,17 +137,23 @@ export default async function handler(req, res) {
           community_builders: [],
           streak_masters: []
         },
-        recommendations: [] // TODO: Implement recommendation algorithm
+        recommendations: [], // TODO: Implement recommendation algorithm
+        meta: {
+          source: 'db',
+          duration_ms: Date.now() - startTime,
+          user_id: user_id,
+          watermark: new Date().toISOString()
+        }
       };
 
-      // Defensive guard: ensure we never leak reader payload
-      if (!weeklyData.recap && weeklyData.taps) {
-        console.warn('⚠️ Detected reader payload leak, using mock data');
-        return res.status(200).json(getMockWeeklyData());
-      }
+      // Add null-safety guards
+      weeklyData.leaderboard = weeklyData.leaderboard ?? { new_connections: [], community_builders: [], streak_masters: [] };
+      weeklyData.momentum = weeklyData.momentum ?? { weekly_goal: { progress: 0, target_taps: 10 } };
+      weeklyData.recap = weeklyData.recap ?? { first_degree_new: [], second_degree_delta: 0, community_activity: [], geo_expansion: [] };
 
-      // Set cache headers for Vercel
-      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
+      // Set no-cache headers
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
       res.setHeader('Content-Type', 'application/json');
       
       console.log('✅ Successfully fetched community data from database');
@@ -164,12 +168,32 @@ export default async function handler(req, res) {
     console.error('❌ Error details:', error.message);
     console.error('❌ Error stack:', error.stack);
     
-    // Fallback to mock data on any error
+    // Support ?strict=db to disable mock fallback
+    if (strict === 'db') {
+      return res.status(502).json({ 
+        error: 'database_unavailable',
+        message: 'Database connection failed and strict mode enabled'
+      });
+    }
+    
+    // Fallback to mock data with meta information
     console.log('📊 Database error, returning mock data as fallback');
-    return res.status(200).json(getMockWeeklyData());
+    const mockData = getMockWeeklyData();
+    mockData.meta = {
+      source: 'mock',
+      duration_ms: Date.now() - startTime,
+      user_id: user_id,
+      watermark: new Date().toISOString(),
+      error: error.message
+    };
+    
+    // Set no-cache headers for mock data too
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Content-Type', 'application/json');
+    
+    return res.status(200).json(mockData);
   }
-  
-  console.log('🔍 Handler function completed');
 }
 
 // Helper functions
@@ -199,7 +223,7 @@ function getWeekEnd(date) {
   return end;
 }
 
-// Mock data function for when backend service is not available
+// Mock data function for when database is not available
 function getMockWeeklyData() {
   return {
     generated_at: new Date().toISOString(),
