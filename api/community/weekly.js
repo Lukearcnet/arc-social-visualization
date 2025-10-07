@@ -4,9 +4,11 @@
 
 // Use shared database pool
 const { getPool } = require('../../lib/db');
+const { proxyOr } = require('../../lib/http');
 const pool = getPool();
 
-const handler = async (req, res) => {
+// Local function for direct DB access
+const localHandler = async (req, res) => {
   console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
   const startTime = Date.now();
   
@@ -384,6 +386,27 @@ const handler = async (req, res) => {
       : { ok: false };
     return res.status(500).json(body);
   }
+};
+
+// Main handler that uses smart proxy
+const handler = async (req, res) => {
+  const startTime = Date.now();
+  
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { user_id } = req.query;
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
+  }
+
+  // Use smart proxy: DATA_READER_URL if available, otherwise direct DB
+  await proxyOr(localHandler, '/community/weekly', req, res);
+  
+  const duration = Date.now() - startTime;
+  const mode = process.env.DATA_READER_URL ? 'reader' : 'direct';
+  console.log(`📊 [community/weekly] mode=${mode} duration=${duration}ms`);
 };
 
 handler.config = { runtime: 'nodejs' };

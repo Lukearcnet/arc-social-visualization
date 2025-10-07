@@ -1,60 +1,61 @@
+// GET /api/data-export
+// Data export endpoint with smart proxy
+// Date: 2025-01-15
+
 // Use shared database pool
 const { getPool } = require('../lib/db');
+const { proxyOr } = require('../lib/http');
 const pool = getPool();
 
-const handler = async (req, res) => {
+// Local function for direct DB access (fallback)
+const localHandler = async (req, res) => {
   const { debug, limit } = req.query;
   const isDebug = debug === '1';
   
   try {
-    console.log('📊 Fetching data from Cloud Run reader...');
+    console.log('📊 [data-export] Using direct DB access (fallback)');
     
-    // Fetch data from Cloud Run reader service
-    const response = await fetch(process.env.DATA_READER_URL, {
-      method: 'GET',
-      headers: {
-        'x-data-key': process.env.DATA_READER_SECRET,
-      },
-      // Add timeout
-      signal: AbortSignal.timeout(10000) // 10 second timeout
+    // This is a fallback - in practice, we expect DATA_READER_URL to be set
+    // For now, return a simple response indicating the service is unavailable
+    return res.status(503).json({ 
+      error: 'data_reader_unavailable',
+      message: 'DATA_READER_URL not configured - direct DB access not implemented for data-export'
     });
 
-    if (!response.ok) {
-      throw new Error(`Reader service failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Successfully fetched data from reader service');
-
-    // Apply limit if specified
-    if (limit && data.taps) {
-      data.taps = data.taps.slice(0, parseInt(limit));
-    }
-
-    // Set cache headers for Vercel
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
-    res.setHeader('Content-Type', 'application/json');
-    
-    return res.status(200).json(data);
-
   } catch (error) {
-    console.error('❌ Error fetching data from reader service:', error);
+    console.error('❌ [data-export] Direct DB fallback failed:', error);
     
     if (isDebug) {
       return res.status(500).json({
         ok: false,
-        at: 'data-export',
-        code: error.code || 'FETCH_ERROR',
+        at: 'data-export-direct',
+        code: error.code || 'FALLBACK_ERROR',
         message: error.message,
         detail: error.detail || null,
-        hint: 'check schema/privs'
+        hint: 'DATA_READER_URL required for data-export'
       });
     } else {
       return res.status(503).json({ 
-        error: 'upstream_unavailable'
+        error: 'service_unavailable'
       });
     }
   }
+};
+
+// Main handler that uses smart proxy
+const handler = async (req, res) => {
+  const startTime = Date.now();
+  
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Use smart proxy: DATA_READER_URL if available, otherwise direct DB
+  await proxyOr(localHandler, '/data-export', req, res);
+  
+  const duration = Date.now() - startTime;
+  const mode = process.env.DATA_READER_URL ? 'reader' : 'direct';
+  console.log(`📊 [data-export] mode=${mode} duration=${duration}ms`);
 };
 
 handler.config = { runtime: 'nodejs' };
