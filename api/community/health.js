@@ -3,12 +3,13 @@
 // Date: 2025-01-15
 
 // Force Node.js runtime (not Edge) - Edge cannot use pg
-export const config = { runtime: 'nodejs' };
+module.exports.config = { runtime: 'nodejs' };
 
 // Use shared database pool
-import pool from '../../lib/db.js';
+const { getPool } = require('../../lib/db');
+const pool = getPool();
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   console.log('🏥 COMMUNITY HEALTH CHECK');
   console.log('🔍 DATABASE_URL present:', !!process.env.DATABASE_URL);
   console.log('🔍 DATABASE_URL starts with postgres:', process.env.DATABASE_URL?.startsWith('postgres'));
@@ -114,4 +115,4 @@ export default async function handler(req, res) {
       severity: err.severity
     });
   }
-}
+};

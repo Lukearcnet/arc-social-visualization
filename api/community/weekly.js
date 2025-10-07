@@ -3,12 +3,13 @@
 // Date: 2025-01-15
 
 // Force Node.js runtime (not Edge) - Edge cannot use pg
-export const config = { runtime: 'nodejs' };
+module.exports.config = { runtime: 'nodejs' };
 
 // Use shared database pool
-import pool from '../../lib/db.js';
+const { getPool } = require('../../lib/db');
+const pool = getPool();
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
   const startTime = Date.now();
   
@@ -342,34 +343,27 @@ export default async function handler(req, res) {
       client.release();
     }
 
-      } catch (error) {
-        console.error('❌ Error fetching community data from database:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error stack:', error.stack);
-        
-        // Return proper JSON error response with debug info
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Content-Type', 'application/json');
-        const body = isDebug
-          ? { 
-              ok: false, 
-              source: 'db', 
-              code: error.code, 
-              error: String(error.message),
-              hint: 'DATABASE_URL/SSL/permissions'
-            }
-          : { ok: false };
-        return res.status(500).json(body);
-      }
-  } catch (err) {
-    console.error('[community/weekly]', err.stack || err.message, { code: err.code });
+  } catch (error) {
+    console.error('❌ Error fetching community data from database:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    
+    // Return proper JSON error response with debug info
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Content-Type', 'application/json');
     const body = isDebug
-      ? { ok: false, source: 'db', code: err.code, error: String(err.message) }
+      ? { 
+          ok: false, 
+          source: 'db', 
+          code: error.code, 
+          error: String(error.message),
+          hint: 'DATABASE_URL/SSL/permissions'
+        }
       : { ok: false };
     return res.status(500).json(body);
   }
-}
+};
 
 // Helper functions
 function getISOWeek(date) {
