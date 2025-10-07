@@ -12,6 +12,28 @@ export default async function handler(req, res) {
   console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
   const startTime = Date.now();
   
+  // Verify DATABASE_URL format
+  console.log('🔍 [weekly] DATABASE_URL present:', !!process.env.DATABASE_URL);
+  console.log('🔍 [weekly] DATABASE_URL length:', process.env.DATABASE_URL?.length);
+  console.log('🔍 [weekly] DATABASE_URL starts with postgres:', process.env.DATABASE_URL?.startsWith('postgres'));
+  
+  // Parse DATABASE_URL to verify components
+  if (process.env.DATABASE_URL) {
+    try {
+      const url = new URL(process.env.DATABASE_URL);
+      console.log('🔍 [weekly] DATABASE_URL components:', {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port,
+        username: url.username,
+        database: url.pathname.slice(1),
+        sslmode: url.searchParams.get('sslmode')
+      });
+    } catch (urlError) {
+      console.error('❌ [weekly] DATABASE_URL parsing failed:', urlError);
+    }
+  }
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -28,9 +50,19 @@ export default async function handler(req, res) {
     
     // Add minimal warm-up ping before complex SQL
     try {
+      console.log('🔍 [weekly] Running ping query...');
+      const pingStartTime = Date.now();
       await pool.query('SELECT 1');
+      const pingTime = Date.now() - pingStartTime;
+      console.log(`✅ [weekly] Ping query completed in ${pingTime}ms`);
     } catch (pingError) {
-      console.error('❌ Database ping failed:', pingError);
+      console.error('❌ [weekly] Database ping failed:', pingError);
+      console.error('❌ [weekly] Ping error details:', {
+        name: pingError.name,
+        message: pingError.message,
+        code: pingError.code,
+        stack: pingError.stack
+      });
       const body = isDebug
         ? { ok: false, source: 'db', code: pingError.code, error: String(pingError.message) }
         : { ok: false };
@@ -40,9 +72,21 @@ export default async function handler(req, res) {
     // Get database client with error handling
     let client;
     try {
+      console.log('🔌 [weekly] Attempting to get client from pool...');
+      const clientStartTime = Date.now();
       client = await pool.connect();
+      const clientTime = Date.now() - clientStartTime;
+      console.log(`✅ [weekly] Client obtained in ${clientTime}ms`);
+      console.log('🔍 [weekly] Client process ID:', client?.processID);
+      console.log('🔍 [weekly] Client secret key:', client?.secretKey);
     } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError);
+      console.error('❌ [weekly] Database connection failed:', dbError);
+      console.error('❌ [weekly] Connection error details:', {
+        name: dbError.name,
+        message: dbError.message,
+        code: dbError.code,
+        stack: dbError.stack
+      });
       const body = isDebug
         ? { ok: false, source: 'db', code: dbError.code, error: String(dbError.message) }
         : { ok: false };
