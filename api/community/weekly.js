@@ -2,8 +2,8 @@
 // Weekly Pulse endpoint for Community page
 // Date: 2025-01-15
 
-// Force Node.js runtime (not Edge)
-export const runtime = 'nodejs';
+// Force Node.js runtime (not Edge) - Edge cannot use pg
+export const config = { runtime: 'nodejs' };
 
 // Use shared database pool
 import pool from '../../lib/db.js';
@@ -17,6 +17,7 @@ export default async function handler(req, res) {
   }
 
   const { user_id, strict, debug } = req.query;
+  const isDebug = debug === '1';
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
@@ -25,23 +26,57 @@ export default async function handler(req, res) {
   try {
     console.log('📊 Fetching community weekly data from database...');
     
+    // Add minimal warm-up ping before complex SQL
+    try {
+      await pool.query('SELECT 1');
+    } catch (pingError) {
+      console.error('❌ Database ping failed:', pingError);
+      const body = isDebug
+        ? { ok: false, source: 'db', code: pingError.code, error: String(pingError.message) }
+        : { ok: false };
+      return res.status(500).json(body);
+    }
+    
     // Get database client with error handling
     let client;
     try {
       client = await pool.connect();
     } catch (dbError) {
       console.error('❌ Database connection failed:', dbError);
-      return res.status(500).json({
-        error: 'database_connection_failed',
-        message: 'Unable to connect to database',
-        source: 'db-error',
-        duration_ms: Date.now() - startTime,
-        user_id: user_id,
-        watermark: new Date().toISOString()
-      });
+      const body = isDebug
+        ? { ok: false, source: 'db', code: dbError.code, error: String(dbError.message) }
+        : { ok: false };
+      return res.status(500).json(body);
     }
     
     try {
+      // Explicit checks before main query
+      const who = await client.query('SELECT current_user, current_database()');
+      const schemas = await client.query(`
+        SELECT nspname FROM pg_namespace WHERE nspname IN ('public','gamification')
+      `);
+      
+      // Test permissions on gamification schema
+      try {
+        await client.query('SELECT COUNT(*) FROM gamification.user_day_activity');
+      } catch (permError) {
+        if (permError.code === '42501') {
+          console.error('❌ Permission denied on gamification schema:', permError);
+          const body = isDebug
+            ? { 
+                ok: false, 
+                source: 'db', 
+                code: permError.code, 
+                error: 'Permission denied on gamification schema',
+                hint: 'DATABASE_URL/SSL/permissions',
+                sql: `GRANT USAGE ON SCHEMA gamification TO "${who.rows[0].current_user}"; GRANT SELECT ON ALL TABLES IN SCHEMA gamification TO "${who.rows[0].current_user}"; ALTER DEFAULT PRIVILEGES IN SCHEMA gamification GRANT SELECT ON TABLES TO "${who.rows[0].current_user}";`
+              }
+            : { ok: false };
+          return res.status(500).json(body);
+        }
+        throw permError;
+      }
+      
       // Get current week data
       const currentWeek = getISOWeek(new Date());
       const currentYear = new Date().getFullYear();
@@ -106,10 +141,18 @@ export default async function handler(req, res) {
       `;
       const connectionsResult = await client.query(connectionsQuery, [user_id]);
       
+      // Add debug information
+      const hasDbUrl = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'));
+      
       // Build the weekly data structure with guaranteed arrays
       const weeklyData = {
         source: "db",
         generated_at: new Date().toISOString(),
+        debug: isDebug ? {
+          dbUrlPresent: hasDbUrl,
+          whoami: who.rows[0],
+          schemas: schemas.rows.map(r => r.nspname)
+        } : undefined,
         week: {
           year: currentYear,
           iso_week: currentWeek,
@@ -180,28 +223,27 @@ export default async function handler(req, res) {
         console.error('❌ Error details:', error.message);
         console.error('❌ Error stack:', error.stack);
         
-        // Return proper JSON error response instead of 502
+        // Return proper JSON error response with debug info
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Content-Type', 'application/json');
-        return res.status(500).json({
-          error: 'database_query_failed',
-          message: 'Database query failed',
-          source: 'db-error',
-          duration_ms: Date.now() - startTime,
-          user_id: user_id,
-          watermark: new Date().toISOString(),
-          error_details: error.message
-        });
+        const body = isDebug
+          ? { 
+              ok: false, 
+              source: 'db', 
+              code: error.code, 
+              error: String(error.message),
+              hint: 'DATABASE_URL/SSL/permissions'
+            }
+          : { ok: false };
+        return res.status(500).json(body);
       }
   } catch (err) {
     console.error('[community/weekly]', err.stack || err.message, { code: err.code });
-    return res.status(500).json({
-      ok: false,
-      source: 'db',
-      code: err.code,
-      error: String(err.message)
-    });
+    const body = isDebug
+      ? { ok: false, source: 'db', code: err.code, error: String(err.message) }
+      : { ok: false };
+    return res.status(500).json(body);
   }
 }
 
