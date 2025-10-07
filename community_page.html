@@ -364,6 +364,62 @@
             color: var(--fg-muted);
             font-size: var(--text-sm);
         }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--fg-muted);
+            font-style: italic;
+        }
+
+        .empty-state div:first-child {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.6;
+        }
+
+        /* Error States */
+        .error-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--fg-muted);
+        }
+
+        .error-state h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .retry-btn {
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: var(--radius-2);
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .retry-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -468,6 +524,11 @@
                 this.currentSection = 'pulse';
                 this.data = {};
                 this.init();
+            }
+
+            // Helper function for safe array access
+            safeArr(v) { 
+                return Array.isArray(v) ? v : []; 
             }
 
         async init() {
@@ -599,13 +660,41 @@
                     console.log('📊 API response data:', responseData);
                     console.log('Community payload source:', responseData?.source || 'unknown');
                     
-                    // Add null-safety defaults to prevent crashes
-                    const weekly = responseData || {};
-                    weekly.recap ??= { first_degree_new: [], second_degree_delta: 0, community_activity: [], geo_expansion: [] };
-                    weekly.momentum ??= {};
-                    weekly.momentum.weekly_goal ??= { progress: 0, target_taps: 25 }; // fallback target
+                    // Normalize data with safe access patterns
+                    const data = responseData || {};
+                    const recap = data?.recap ?? {};
+                    const momentum = data?.momentum ?? {};
+                    const leaderboard = data?.leaderboard ?? {};
+                    const recommendations = this.safeArr(data?.recommendations);
+                    const warnings = this.safeArr(data?.meta?.warnings);
                     
-                    this.data.weekly = weekly;
+                    // Normalize arrays used in loops
+                    const firstDegree = this.safeArr(recap.first_degree_new);
+                    const communityActivity = this.safeArr(recap.community_activity);
+                    const geoExpansion = this.safeArr(recap.geo_expansion);
+                    const newConnections = this.safeArr(leaderboard.new_connections);
+                    const communityBuilders = this.safeArr(leaderboard.community_builders);
+                    const streakMasters = this.safeArr(leaderboard.streak_masters);
+                    
+                    // Store normalized data
+                    this.data.weekly = {
+                        ...data,
+                        recap: {
+                            ...recap,
+                            first_degree_new: firstDegree,
+                            community_activity: communityActivity,
+                            geo_expansion: geoExpansion
+                        },
+                        momentum,
+                        leaderboard: {
+                            new_connections: newConnections,
+                            community_builders: communityBuilders,
+                            streak_masters: streakMasters
+                        },
+                        recommendations,
+                        warnings
+                    };
+                    
                     this.renderWeeklyPulse();
                 } catch (error) {
                     console.error('Error loading weekly pulse:', error);
@@ -726,14 +815,19 @@
                 const data = this.data.weekly;
                 if (!data) return;
 
-                // Debug: Log the actual data structure
-                console.log('🔍 Weekly data received:', data);
-                console.log('🔍 Data.recap:', data.recap);
-                console.log('🔍 Data.recap.first_degree_new:', data.recap?.first_degree_new);
-                console.log('🔍 Data.meta:', data.meta);
+                // Debug logging (only if debug=1)
+                const urlParams = new URLSearchParams(window.location.search);
+                const isDebug = urlParams.get('debug') === '1';
+                
+                if (isDebug) {
+                    console.log('🔍 Weekly data received:', data);
+                    console.log('🔍 Data.recap:', data.recap);
+                    console.log('🔍 Data.recap.first_degree_new:', data.recap?.first_degree_new);
+                    console.log('🔍 Data.meta:', data.meta);
+                }
                 
                 // Display meta information for debugging
-                if (data.meta) {
+                if (data.meta && isDebug) {
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'data-status';
                     statusDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 8px; border-radius: 4px; font-size: 12px; z-index: 1000;';
@@ -745,86 +839,87 @@
                     document.body.appendChild(statusDiv);
                 }
 
-                // Defensive guard: ensure we have the correct data structure
-                if (!data.recap) {
-                    console.error('❌ Invalid data structure: missing recap property');
-                    this.renderEmptyWeeklyState();
-                    return;
-                }
-
                 // Hide loading state and show content
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-state').style.display = 'block';
 
-                // Update recap cards with null checks
-                document.getElementById('new-connections-count').textContent = data.recap?.first_degree_new?.length || 0;
+                // Update recap cards with safe array access
+                document.getElementById('new-connections-count').textContent = this.safeArr(data.recap?.first_degree_new).length;
                 document.getElementById('network-growth-count').textContent = data.recap?.second_degree_delta || 0;
-                document.getElementById('community-activity-count').textContent = data.recap?.community_activity?.length || 0;
+                document.getElementById('community-activity-count').textContent = this.safeArr(data.recap?.community_activity).length;
 
                 // Update momentum ring
                 document.getElementById('current-streak').textContent = data.momentum?.current_streak_days || 0;
                 
                 // Update weekly goal progress with null-safety
-                const goal = data.momentum?.weekly_goal ?? { progress: 0, target_taps: 25 };
-                const pct = goal.target_taps ? Math.min(100, (goal.progress / goal.target_taps) * 100) : 0;
+                const wg = data.momentum?.weekly_goal ?? {};
+                const wgProgress = Number.isFinite(wg.progress) ? wg.progress : 0;
+                const wgTarget = Number.isFinite(wg.target_taps) && wg.target_taps > 0 ? wg.target_taps : 25;
+                const wgPct = Math.max(0, Math.min(100, (wgTarget ? (wgProgress / wgTarget) * 100 : 0)));
+                
                 const ring = document.getElementById('weekly-goal-progress');
-                ring.style.background = `conic-gradient(var(--accent) ${pct * 3.6}deg, var(--stroke) 0deg)`;
-
-                // Add null-safety defaults for leaderboard before calling renderLeaderboard
-                data.leaderboard ??= {};
-                data.leaderboard.new_connections ??= [];
-                data.leaderboard.community_builders ??= [];
-                data.leaderboard.streak_masters ??= [];
+                ring.style.background = `conic-gradient(var(--accent) ${wgPct * 3.6}deg, var(--stroke) 0deg)`;
 
                 // Render leaderboard
                 this.renderLeaderboard('connectors');
 
                 // Render recommendations
                 this.renderRecommendations();
+                
+                // Render warnings if present
+                this.renderWarnings();
             }
 
             renderLeaderboard(type) {
                 const data = this.data.weekly;
                 if (!data) return;
 
-                // Comprehensive null-safety for leaderboard
-                const lb = data.leaderboard || {};
-                const newConnections = Array.isArray(lb.new_connections) ? lb.new_connections : [];
-                const communityBuilders = Array.isArray(lb.community_builders) ? lb.community_builders : [];
-                const streakMasters = Array.isArray(lb.streak_masters) ? lb.streak_masters : [];
-
-                // Debug logging
-                console.log("Leaderboard keys:", Object.keys(lb));
-                console.log("Array lengths:", {
-                    newConnections: newConnections.length,
-                    communityBuilders: communityBuilders.length,
-                    streakMasters: streakMasters.length
-                });
+                // Use safe array access
+                const newConnections = this.safeArr(data.leaderboard?.new_connections);
+                const communityBuilders = this.safeArr(data.leaderboard?.community_builders);
+                const streakMasters = this.safeArr(data.leaderboard?.streak_masters);
 
                 // Map type to appropriate array
                 let leaderboardData = [];
+                let emptyMessage = '';
+                
                 if (type === 'connectors') {
                     leaderboardData = newConnections;
+                    emptyMessage = 'No new connections ranked yet this week.';
                 } else if (type === 'reach') {
                     leaderboardData = communityBuilders;
+                    emptyMessage = 'No high-activity builders yet this week.';
                 } else {
                     leaderboardData = streakMasters;
+                    emptyMessage = 'No active streaks to show yet.';
                 }
                 
                 const container = document.getElementById('leaderboard-list');
                 container.innerHTML = '';
+
+                if (leaderboardData.length === 0) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-state';
+                    emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
+                    emptyDiv.innerHTML = `
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+                        <div>${emptyMessage}</div>
+                    `;
+                    container.appendChild(emptyDiv);
+                    return;
+                }
 
                 leaderboardData.forEach((item, index) => {
                     const div = document.createElement('div');
                     div.className = 'leaderboard-item';
                     div.innerHTML = `
                         <div>
-                            <strong>${index + 1}. ${item.name}</strong>
+                            <strong>${index + 1}. ${item.name || 'Unknown'}</strong>
                         </div>
                         <div>
-                            ${type === 'connectors' ? item.new_first_degree + ' new' :
-                              type === 'reach' ? '+' + item.delta_second_degree + ' reach' :
-                              item.streak_days + ' days'}
+                            ${type === 'connectors' ? (item.new_first_degree || 0) + ' new' :
+                              type === 'reach' ? '+' + (item.delta_second_degree || 0) + ' reach' :
+                              (item.streak_days || 0) + ' days'}
                         </div>
                     `;
                     container.appendChild(div);
@@ -835,22 +930,47 @@
                 const data = this.data.weekly;
                 if (!data) return;
 
-                // Null-safety for recommendations
-                const recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+                // Use safe array access
+                const recs = this.safeArr(data.recommendations);
                 
                 const container = document.getElementById('recommendations-list');
                 container.innerHTML = '';
 
+                if (recs.length === 0) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-state';
+                    emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
+                    emptyDiv.innerHTML = `
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤝</div>
+                        <div>No recommendations yet. Check back soon as your network grows.</div>
+                    `;
+                    container.appendChild(emptyDiv);
+                    return;
+                }
+
                 recs.forEach(rec => {
                     const div = document.createElement('div');
                     div.className = 'recommendation-card';
+                    
+                    // Safe access to recommendation properties
+                    const name = rec.name || 'Unknown User';
+                    const scores = rec.scores || {};
+                    const total = Number.isFinite(scores.total) ? scores.total : 0;
+                    const mutuals = this.safeArr(rec.mutuals);
+                    const explain = rec.explain || 'No explanation available.';
+                    
+                    // Format mutuals display
+                    const mutualsDisplay = mutuals.length > 0 
+                        ? mutuals.slice(0, 3).join(', ') + (mutuals.length > 3 ? ` +${mutuals.length - 3} more` : '')
+                        : 'No mutuals';
+                    
                     div.innerHTML = `
-                        <h4>${rec.name}</h4>
+                        <h4>${name}</h4>
                         <div class="recommendation-scores">
-                            <span class="score-badge">${Math.round(rec.scores.total * 100)}% match</span>
-                            <span class="score-badge">${rec.mutuals} mutuals</span>
+                            <span class="score-badge">${Math.round(total * 100)}% match</span>
+                            <span class="score-badge">${mutualsDisplay}</span>
                         </div>
-                        <p>${rec.explain}</p>
+                        <p>${explain}</p>
                         <div class="recommendation-actions">
                             <button class="action-btn primary">Connect</button>
                             <button class="action-btn">View Profile</button>
@@ -858,6 +978,57 @@
                     `;
                     container.appendChild(div);
                 });
+            }
+
+            renderWarnings() {
+                const data = this.data.weekly;
+                if (!data || !data.warnings || data.warnings.length === 0) return;
+
+                // Check if there's a geohash warning for geo expansion
+                const hasGeohashWarning = data.warnings.some(warning => 
+                    warning && warning.toLowerCase().includes('geohash')
+                );
+
+                // Add info note to geo expansion card if needed
+                if (hasGeohashWarning) {
+                    const geoCard = document.querySelector('.recap-card:nth-child(3)');
+                    if (geoCard) {
+                        const infoNote = document.createElement('div');
+                        infoNote.style.cssText = 'font-size: 0.75rem; color: var(--fg-muted); margin-top: 0.5rem; font-style: italic;';
+                        infoNote.textContent = 'Geo expansion unavailable (missing geohash on taps).';
+                        geoCard.appendChild(infoNote);
+                    }
+                }
+
+                // Show dismissible warning banner at bottom
+                const warningBanner = document.createElement('div');
+                warningBanner.className = 'warning-banner';
+                warningBanner.style.cssText = `
+                    position: fixed;
+                    bottom: 1rem;
+                    left: 1rem;
+                    right: 1rem;
+                    background: rgba(255, 193, 7, 0.1);
+                    border: 1px solid rgba(255, 193, 7, 0.3);
+                    border-radius: var(--radius-2);
+                    padding: 0.75rem;
+                    font-size: 0.875rem;
+                    color: var(--fg-secondary);
+                    z-index: 1000;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                `;
+                
+                warningBanner.innerHTML = `
+                    <div>⚠️ ${data.warnings.join(' • ')}</div>
+                    <button onclick="this.parentElement.remove()" style="
+                        background: none; border: none; color: var(--fg-muted); 
+                        cursor: pointer; font-size: 1.2rem; padding: 0.25rem;
+                    ">×</button>
+                `;
+                
+                document.body.appendChild(warningBanner);
             }
 
             updateLastUpdatedTime() {
