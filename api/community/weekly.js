@@ -2,19 +2,11 @@
 // Weekly Pulse endpoint for Community page
 // Date: 2025-01-15
 
-import { Pool } from 'pg';
-
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs';
 
-// Use exact same DB client pattern as data-export.js (Vercel-friendly)
-// Create a connection pool for reuse across function invocations
-// Strip SSL parameters from connection string to avoid file path issues
-const connectionString = process.env.DATABASE_URL.split('?')[0];
-const pool = new Pool({
-  connectionString: connectionString,
-  ssl: { rejectUnauthorized: false }
-});
+// Use shared database pool
+import pool from '../../lib/db.js';
 
 export default async function handler(req, res) {
   console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
@@ -24,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { user_id, strict } = req.query;
+  const { user_id, strict, debug } = req.query;
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
@@ -202,6 +194,15 @@ export default async function handler(req, res) {
           error_details: error.message
         });
       }
+  } catch (err) {
+    console.error('[community/weekly]', err.stack || err.message, { code: err.code });
+    return res.status(500).json({
+      ok: false,
+      source: 'db',
+      code: err.code,
+      error: String(err.message)
+    });
+  }
 }
 
 // Helper functions

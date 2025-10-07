@@ -1,17 +1,10 @@
-import { Pool } from 'pg';
-
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// Create a connection pool for reuse across function invocations
-// Strip SSL parameters from connection string to avoid file path issues
-const connectionString = process.env.DATABASE_URL.split('?')[0];
-const pool = new Pool({
-  connectionString: connectionString,
-  ssl: { rejectUnauthorized: false }
-});
+// Use shared database pool
+import pool from '../lib/db.js';
 
 async function getGeocodedLocation(latitude, longitude) {
   try {
