@@ -234,7 +234,7 @@ const handler = async (req, res) => {
               WHEN t.id1 = $1 THEN t.id2 
               ELSE t.id1 
             END as connected_user_id,
-            u.name as connected_user_name,
+            COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as connected_user_name,
             MAX(t."time") as last_tap_at
           FROM public.taps t
           JOIN public.users u ON (
@@ -245,7 +245,7 @@ const handler = async (req, res) => {
           )
           WHERE (t.id1 = $1 OR t.id2 = $1)
             AND t."time" >= NOW() - INTERVAL '7 days'
-          GROUP BY connected_user_id, connected_user_name
+          GROUP BY connected_user_id, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username)
           ORDER BY last_tap_at DESC
           LIMIT 10
         `;
@@ -480,7 +480,7 @@ async function getNewConnectionsLeaderboard(client, user_id, currentWeek, curren
     const query = `
       SELECT 
         u.id as user_id,
-        u.name,
+        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
         wl.new_first_degree
       FROM gamification.weekly_leaderboard wl
       JOIN public.users u ON wl.user_id = u.id
@@ -503,7 +503,7 @@ async function getCommunityBuildersLeaderboard(client, user_id, currentWeek, cur
     const query = `
       SELECT 
         u.id as user_id,
-        u.name,
+        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
         wl.delta_second_degree
       FROM gamification.weekly_leaderboard wl
       JOIN public.users u ON wl.user_id = u.id
@@ -526,7 +526,7 @@ async function getStreakMastersLeaderboard(client, user_id) {
     const query = `
       SELECT 
         u.id as user_id,
-        u.name,
+        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
         wl.streak_days
       FROM gamification.weekly_leaderboard wl
       JOIN public.users u ON wl.user_id = u.id
