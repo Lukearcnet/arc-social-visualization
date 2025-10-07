@@ -46,7 +46,9 @@ export default async function handler(req, res) {
         FROM gamification.user_week_activity 
         WHERE user_id = $1 AND iso_week = $2 AND year = $3
       `;
+      console.log('🔍 Querying user week activity for:', { user_id, currentWeek, currentYear });
       const weekActivityResult = await client.query(weekActivityQuery, [user_id, currentWeek, currentYear]);
+      console.log('📊 Week activity result:', weekActivityResult.rows);
       
       // Query user streaks
       const streakQuery = `
@@ -95,7 +97,9 @@ export default async function handler(req, res) {
         ORDER BY last_tap_at DESC
         LIMIT 10
       `;
+      console.log('🔍 Querying recent connections for user:', user_id);
       const connectionsResult = await client.query(connectionsQuery, [user_id]);
+      console.log('📊 Connections result:', connectionsResult.rows);
       
       // Build the weekly data structure
       const weeklyData = {
