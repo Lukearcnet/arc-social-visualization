@@ -2,14 +2,11 @@
 // Weekly Pulse endpoint for Community page
 // Date: 2025-01-15
 
-// Force Node.js runtime (not Edge) - Edge cannot use pg
-module.exports.config = { runtime: 'nodejs' };
-
 // Use shared database pool
 const { getPool } = require('../../lib/db');
 const pool = getPool();
 
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
   const startTime = Date.now();
   
@@ -364,6 +361,9 @@ module.exports = async (req, res) => {
     return res.status(500).json(body);
   }
 };
+
+handler.config = { runtime: 'nodejs' };
+module.exports = handler;
 
 // Helper functions
 function getISOWeek(date) {

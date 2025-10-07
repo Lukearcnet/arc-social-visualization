@@ -2,14 +2,11 @@
 // Health check endpoint for Community API database connectivity
 // Date: 2025-01-15
 
-// Force Node.js runtime (not Edge) - Edge cannot use pg
-module.exports.config = { runtime: 'nodejs' };
-
 // Use shared database pool
 const { getPool } = require('../../lib/db');
 const pool = getPool();
 
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   console.log('🏥 COMMUNITY HEALTH CHECK');
   console.log('🔍 DATABASE_URL present:', !!process.env.DATABASE_URL);
   console.log('🔍 DATABASE_URL starts with postgres:', process.env.DATABASE_URL?.startsWith('postgres'));
@@ -116,3 +113,6 @@ module.exports = async (req, res) => {
     });
   }
 };
+
+handler.config = { runtime: 'nodejs' };
+module.exports = handler;

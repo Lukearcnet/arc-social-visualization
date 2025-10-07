@@ -1,6 +1,3 @@
-// Force Node.js runtime (not Edge)
-module.exports.config = { runtime: 'nodejs' };
-
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 // Use shared database pool
@@ -93,8 +90,7 @@ async function handleDataExport() {
   }
 }
 
-// Export the handler function
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   const { debug } = req.query;
   const isDebug = debug === '1';
   
@@ -143,3 +139,6 @@ module.exports = async (req, res) => {
     }
   }
 };
+
+handler.config = { runtime: 'nodejs' };
+module.exports = handler;
