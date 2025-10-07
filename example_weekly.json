@@ -1,0 +1,212 @@
+{
+  "source": "reader",
+  "generated_at": "2025-01-15T18:30:45.123Z",
+  "week": {
+    "year": 2025,
+    "iso_week": 3,
+    "range": ["2025-01-13", "2025-01-19"]
+  },
+  "recap": {
+    "first_degree_new": [
+      {
+        "user_id": "2a227da2-b09a-402f-81e8-1976633cf682",
+        "name": "Sarah Chen",
+        "last_tap_at": "2025-01-15T16:45:30Z"
+      },
+      {
+        "user_id": "3b338eb3-c1ab-513g-92f9-3087744dg793",
+        "name": "Marcus Johnson",
+        "last_tap_at": "2025-01-14T14:22:15Z"
+      },
+      {
+        "user_id": "4c449fc4-d2bc-624h-03ga-4198855eh804",
+        "name": "Elena Rodriguez",
+        "last_tap_at": "2025-01-13T09:18:42Z"
+      },
+      {
+        "user_id": "5d55afd5-e3cd-735i-14hb-5209966fi915",
+        "name": "David Kim",
+        "last_tap_at": "2025-01-12T20:33:27Z"
+      }
+    ],
+    "second_degree_delta": 12,
+    "community_activity": [
+      {
+        "day": "2025-01-19",
+        "taps": 8
+      },
+      {
+        "day": "2025-01-18",
+        "taps": 12
+      },
+      {
+        "day": "2025-01-17",
+        "taps": 6
+      },
+      {
+        "day": "2025-01-16",
+        "taps": 15
+      },
+      {
+        "day": "2025-01-15",
+        "taps": 9
+      },
+      {
+        "day": "2025-01-14",
+        "taps": 11
+      },
+      {
+        "day": "2025-01-13",
+        "taps": 7
+      }
+    ],
+    "geo_expansion": [
+      {
+        "city": "Austin",
+        "new_taps": 3
+      },
+      {
+        "city": "Denver",
+        "new_taps": 2
+      },
+      {
+        "city": "Seattle",
+        "new_taps": 1
+      }
+    ]
+  },
+  "momentum": {
+    "current_streak_days": 5,
+    "longest_streak_days": 12,
+    "weekly_taps": 68,
+    "new_connections": 4,
+    "weekly_goal": {
+      "progress": 68,
+      "target_taps": 25
+    }
+  },
+  "leaderboard": {
+    "new_connections": [
+      {
+        "user_id": "6e66bgf6-f4de-846j-25ic-6310077gj026",
+        "name": "Alex Thompson",
+        "new_first_degree": 8,
+        "last_tap_at": "2025-01-15T17:22:10Z"
+      },
+      {
+        "user_id": "7f77cgh7-g5ef-957k-36jd-7421188hk137",
+        "name": "Maya Patel",
+        "new_first_degree": 6,
+        "last_tap_at": "2025-01-14T15:45:33Z"
+      },
+      {
+        "user_id": "8g88dhi8-h6fg-068l-47ke-8532299il248",
+        "name": "James Wilson",
+        "new_first_degree": 5,
+        "last_tap_at": "2025-01-13T11:18:55Z"
+      },
+      {
+        "user_id": "9h99eij9-i7gh-179m-58lf-9643300jm359",
+        "name": "Lisa Anderson",
+        "new_first_degree": 4,
+        "last_tap_at": "2025-01-12T19:27:41Z"
+      },
+      {
+        "user_id": "0i00fjk0-j8hi-280n-69mg-0754411kn460",
+        "name": "Ryan Davis",
+        "new_first_degree": 3,
+        "last_tap_at": "2025-01-11T14:52:18Z"
+      }
+    ],
+    "community_builders": [
+      {
+        "user_id": "1j11gkl1-k9ij-391o-70nh-1865522lo571",
+        "name": "Sophie Martinez",
+        "delta_second_degree": 24
+      },
+      {
+        "user_id": "2k22hlm2-l0jk-402p-81oi-2976633mp682",
+        "name": "Carlos Rodriguez",
+        "delta_second_degree": 18
+      },
+      {
+        "user_id": "3l33imn3-m1kl-513q-92pj-4087744nq793",
+        "name": "Emma Thompson",
+        "delta_second_degree": 15
+      },
+      {
+        "user_id": "4m44jno4-n2lm-624r-03qk-5198855or804",
+        "name": "Daniel Kim",
+        "delta_second_degree": 12
+      },
+      {
+        "user_id": "5n55kop5-o3mn-735s-14rl-6309966ps915",
+        "name": "Rachel Green",
+        "delta_second_degree": 9
+      }
+    ],
+    "streak_masters": [
+      {
+        "user_id": "6o66lpq6-p4no-846t-25sm-7410077qt026",
+        "name": "Michael Brown",
+        "streak_days": 21
+      },
+      {
+        "user_id": "7p77mqr7-q5op-957u-36tn-8521188ru137",
+        "name": "Jessica Lee",
+        "streak_days": 18
+      },
+      {
+        "user_id": "8q88nrs8-r6pq-068v-47uo-9632299sv248",
+        "name": "Christopher Taylor",
+        "streak_days": 15
+      },
+      {
+        "user_id": "9r99ost9-s7qr-179w-58vp-0743300tw359",
+        "name": "Amanda White",
+        "streak_days": 12
+      },
+      {
+        "user_id": "0s00ptu0-t8rs-280x-69wq-1854411ux460",
+        "name": "Kevin Johnson",
+        "streak_days": 9
+      }
+    ]
+  },
+  "recommendations": [
+    {
+      "user_id": "1t11quv1-u9st-391y-70xr-2965522vy571",
+      "name": "Jennifer Adams",
+      "scores": {
+        "total": 0.85
+      },
+      "mutuals": ["Sarah Chen", "Marcus Johnson", "Elena Rodriguez"],
+      "explain": "Connected through 3 mutual friends; also active in your network"
+    },
+    {
+      "user_id": "2u22rvw2-v0tu-402z-81ys-4076633wz682",
+      "name": "Robert Garcia",
+      "scores": {
+        "total": 0.72
+      },
+      "mutuals": ["David Kim", "Alex Thompson"],
+      "explain": "High activity overlap with your connections"
+    },
+    {
+      "user_id": "3v33swx3-w1uv-513a-92zt-5187744xa793",
+      "name": "Michelle Davis",
+      "scores": {
+        "total": 0.68
+      },
+      "mutuals": ["Maya Patel", "James Wilson"],
+      "explain": "Similar engagement patterns and shared interests"
+    }
+  ],
+  "meta": {
+    "source": "reader",
+    "duration_ms": 245,
+    "user_id": "2a227da2-b09a-402f-81e8-1976633cf682",
+    "watermark": "2025-01-15T18:30:45.123Z",
+    "warnings": []
+  }
+}

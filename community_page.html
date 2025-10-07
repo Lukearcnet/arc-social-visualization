@@ -531,6 +531,79 @@
                 return Array.isArray(v) ? v : []; 
             }
 
+            // Validation helper for weekly payload
+            validateWeeklyPayload(data) {
+                const warnings = [];
+                const errors = [];
+
+                // Check required top-level fields
+                if (!data) {
+                    errors.push('Payload is null/undefined');
+                    return { valid: false, errors, warnings };
+                }
+
+                if (!data.source) warnings.push('Missing source field');
+                if (!data.week) errors.push('Missing week object');
+                if (!data.recap) errors.push('Missing recap object');
+                if (!data.momentum) errors.push('Missing momentum object');
+                if (!data.leaderboard) errors.push('Missing leaderboard object');
+                if (!data.meta) errors.push('Missing meta object');
+
+                // Check recap structure
+                if (data.recap) {
+                    if (!Array.isArray(data.recap.first_degree_new)) warnings.push('recap.first_degree_new should be array');
+                    if (typeof data.recap.second_degree_delta !== 'number') warnings.push('recap.second_degree_delta should be number');
+                    if (!Array.isArray(data.recap.community_activity)) warnings.push('recap.community_activity should be array');
+                    if (!Array.isArray(data.recap.geo_expansion)) warnings.push('recap.geo_expansion should be array');
+                }
+
+                // Check momentum structure
+                if (data.momentum) {
+                    if (typeof data.momentum.current_streak_days !== 'number') warnings.push('momentum.current_streak_days should be number');
+                    if (typeof data.momentum.longest_streak_days !== 'number') warnings.push('momentum.longest_streak_days should be number');
+                    if (typeof data.momentum.weekly_taps !== 'number') warnings.push('momentum.weekly_taps should be number');
+                    if (typeof data.momentum.new_connections !== 'number') warnings.push('momentum.new_connections should be number');
+                    if (!data.momentum.weekly_goal) warnings.push('Missing momentum.weekly_goal');
+                    if (data.momentum.weekly_goal) {
+                        if (typeof data.momentum.weekly_goal.progress !== 'number') warnings.push('momentum.weekly_goal.progress should be number');
+                        if (typeof data.momentum.weekly_goal.target_taps !== 'number') warnings.push('momentum.weekly_goal.target_taps should be number');
+                    }
+                }
+
+                // Check leaderboard structure
+                if (data.leaderboard) {
+                    if (!Array.isArray(data.leaderboard.new_connections)) warnings.push('leaderboard.new_connections should be array');
+                    if (!Array.isArray(data.leaderboard.community_builders)) warnings.push('leaderboard.community_builders should be array');
+                    if (!Array.isArray(data.leaderboard.streak_masters)) warnings.push('leaderboard.streak_masters should be array');
+                }
+
+                // Check recommendations
+                if (!Array.isArray(data.recommendations)) warnings.push('recommendations should be array');
+
+                // Check meta structure
+                if (data.meta) {
+                    if (!data.meta.source) warnings.push('Missing meta.source');
+                    if (typeof data.meta.duration_ms !== 'number') warnings.push('meta.duration_ms should be number');
+                    if (!data.meta.user_id) warnings.push('Missing meta.user_id');
+                    if (!data.meta.watermark) warnings.push('Missing meta.watermark');
+                    if (!Array.isArray(data.meta.warnings)) warnings.push('meta.warnings should be array');
+                }
+
+                const valid = errors.length === 0;
+                
+                if (!valid || warnings.length > 0) {
+                    console.warn('COMMUNITY: Weekly payload validation issues:', {
+                        valid,
+                        errors,
+                        warnings,
+                        payloadKeys: Object.keys(data || {}),
+                        source: data?.source || 'unknown'
+                    });
+                }
+
+                return { valid, errors, warnings };
+            }
+
         async init() {
             // Set up event listeners first
             this.setupEventListeners();
@@ -659,6 +732,9 @@
                     const responseData = await response.json();
                     console.log('📊 API response data:', responseData);
                     console.log('Community payload source:', responseData?.source || 'unknown');
+                    
+                    // Validate payload structure
+                    this.validateWeeklyPayload(responseData);
                     
                     // Normalize data with safe access patterns
                     const data = responseData || {};
@@ -844,9 +920,15 @@
                 document.getElementById('content-state').style.display = 'block';
 
                 // Update recap cards with safe array access
-                document.getElementById('new-connections-count').textContent = this.safeArr(data.recap?.first_degree_new).length;
-                document.getElementById('network-growth-count').textContent = data.recap?.second_degree_delta || 0;
-                document.getElementById('community-activity-count').textContent = this.safeArr(data.recap?.community_activity).length;
+                const newConnectionsCount = this.safeArr(data.recap?.first_degree_new).length;
+                const networkGrowthCount = data.recap?.second_degree_delta || 0;
+                const communityActivityCount = this.safeArr(data.recap?.community_activity).length;
+                
+                console.log(`COMMUNITY: Recap cards - new_connections:${newConnectionsCount}, network_growth:${networkGrowthCount}, community_activity:${communityActivityCount}`);
+                
+                document.getElementById('new-connections-count').textContent = newConnectionsCount;
+                document.getElementById('network-growth-count').textContent = networkGrowthCount;
+                document.getElementById('community-activity-count').textContent = communityActivityCount;
 
                 // Update momentum ring
                 document.getElementById('current-streak').textContent = data.momentum?.current_streak_days || 0;
@@ -898,6 +980,7 @@
                 container.innerHTML = '';
 
                 if (leaderboardData.length === 0) {
+                    console.log(`COMMUNITY: Leaderboard:${type} empty because length=${leaderboardData.length}`);
                     const emptyDiv = document.createElement('div');
                     emptyDiv.className = 'empty-state';
                     emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
@@ -937,6 +1020,7 @@
                 container.innerHTML = '';
 
                 if (recs.length === 0) {
+                    console.log(`COMMUNITY: Recommendations empty because length=${recs.length}`);
                     const emptyDiv = document.createElement('div');
                     emptyDiv.className = 'empty-state';
                     emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
