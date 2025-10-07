@@ -7,13 +7,13 @@ import { Pool } from 'pg';
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs';
 
-// Use same DB client pattern as data-export.js (Vercel-friendly)
+// Use exact same DB client pattern as data-export.js (Vercel-friendly)
 let pool;
 function getPool() {
   if (!pool) {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 30000,
       max: 1,
@@ -123,8 +123,8 @@ export default async function handler(req, res) {
             last_tap_at: row.last_tap_at
           })),
           second_degree_delta: weekActivityResult.rows[0]?.second_degree_count || 0,
-          community_activity: [], // TODO: Implement community detection
-          geo_expansion: [] // TODO: Implement geo expansion
+          community_activity: await getCommunityActivity(client, currentWeek, currentYear),
+          geo_expansion: [] // Placeholder until geohash exists
         },
         momentum: {
           current_streak_days: streakResult.rows[0]?.current_streak_days || 0,
@@ -134,23 +134,35 @@ export default async function handler(req, res) {
           weekly_goal: weekly_goal
         },
         leaderboard: {
-          new_connections: [], // TODO: Implement leaderboard queries
-          community_builders: [],
-          streak_masters: []
+          new_connections: await getNewConnectionsLeaderboard(client, user_id, currentWeek, currentYear),
+          community_builders: await getCommunityBuildersLeaderboard(client, user_id, currentWeek, currentYear),
+          streak_masters: await getStreakMastersLeaderboard(client, user_id)
         },
-        recommendations: [], // TODO: Implement recommendation algorithm
+        recommendations: await getRecommendations(client, user_id),
         meta: {
           source: 'db',
           duration_ms: Date.now() - startTime,
           user_id: user_id,
-          watermark: new Date().toISOString()
+          watermark: new Date().toISOString(),
+          warnings: ['geo_expansion not computed: no geohash in taps']
         }
       };
 
-      // Add null-safety guards
-      weeklyData.leaderboard = weeklyData.leaderboard ?? { new_connections: [], community_builders: [], streak_masters: [] };
-      weeklyData.momentum = weeklyData.momentum ?? { weekly_goal: { progress: 0, target_taps: 10 } };
-      weeklyData.recap = weeklyData.recap ?? { first_degree_new: [], second_degree_delta: 0, community_activity: [], geo_expansion: [] };
+      // Add comprehensive null-safety guards
+      weeklyData.leaderboard = weeklyData.leaderboard ?? {};
+      weeklyData.leaderboard.new_connections = Array.isArray(weeklyData.leaderboard.new_connections) ? weeklyData.leaderboard.new_connections : [];
+      weeklyData.leaderboard.community_builders = Array.isArray(weeklyData.leaderboard.community_builders) ? weeklyData.leaderboard.community_builders : [];
+      weeklyData.leaderboard.streak_masters = Array.isArray(weeklyData.leaderboard.streak_masters) ? weeklyData.leaderboard.streak_masters : [];
+      
+      weeklyData.momentum = weeklyData.momentum ?? {};
+      weeklyData.momentum.weekly_goal = weeklyData.momentum.weekly_goal ?? { progress: 0, target_taps: 10 };
+      
+      weeklyData.recap = weeklyData.recap ?? {};
+      weeklyData.recap.first_degree_new = Array.isArray(weeklyData.recap.first_degree_new) ? weeklyData.recap.first_degree_new : [];
+      weeklyData.recap.community_activity = Array.isArray(weeklyData.recap.community_activity) ? weeklyData.recap.community_activity : [];
+      weeklyData.recap.geo_expansion = Array.isArray(weeklyData.recap.geo_expansion) ? weeklyData.recap.geo_expansion : [];
+      
+      weeklyData.recommendations = Array.isArray(weeklyData.recommendations) ? weeklyData.recommendations : [];
 
       // Set no-cache headers
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -164,37 +176,45 @@ export default async function handler(req, res) {
       client.release();
     }
 
-  } catch (error) {
-    console.error('❌ Error fetching community data from database:', error);
-    console.error('❌ Error details:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    
-    // Support ?strict=db to disable mock fallback
-    if (strict === 'db') {
-      return res.status(502).json({ 
-        error: 'database_unavailable',
-        message: 'Database connection failed and strict mode enabled'
-      });
-    }
-    
-    // Fallback to mock data with meta information
-    console.log('📊 Database error, returning mock data as fallback');
-    const mockData = getMockWeeklyData();
-    mockData.meta = {
-      source: 'mock',
-      duration_ms: Date.now() - startTime,
-      user_id: user_id,
-      watermark: new Date().toISOString(),
-      error: error.message
-    };
-    
-    // Set no-cache headers for mock data too
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Content-Type', 'application/json');
-    
-    return res.status(200).json(mockData);
-  }
+      } catch (error) {
+        console.error('❌ Error fetching community data from database:', error);
+        console.error('❌ Error details:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        
+        // Support ?strict=db to disable mock fallback
+        if (strict === 'db') {
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(502).json({ 
+            error: 'database_unavailable',
+            message: 'Database connection failed and strict mode enabled',
+            meta: {
+              source: 'db-error',
+              duration_ms: Date.now() - startTime,
+              user_id: user_id,
+              watermark: new Date().toISOString(),
+              error: error.message
+            }
+          });
+        }
+        
+        // For non-strict mode, return 502 with error details
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(502).json({
+          error: 'database_unavailable',
+          message: 'Database connection failed',
+          meta: {
+            source: 'db-error',
+            duration_ms: Date.now() - startTime,
+            user_id: user_id,
+            watermark: new Date().toISOString(),
+            error: error.message
+          }
+        });
+      }
 }
 
 // Helper functions
@@ -224,83 +244,153 @@ function getWeekEnd(date) {
   return end;
 }
 
-// Mock data function for when database is not available
-function getMockWeeklyData() {
-  return {
-    generated_at: new Date().toISOString(),
-    week: {
-      year: new Date().getFullYear(),
-      iso_week: getISOWeek(new Date()),
-      range: [getWeekStart(new Date()).toISOString().split('T')[0], getWeekEnd(new Date()).toISOString().split('T')[0]]
-    },
-    recap: {
-      first_degree_new: [
-        { user_id: "u123", name: "Grace Brown", last_tap_at: "2025-01-15T18:12:00Z" },
-        { user_id: "u456", name: "Owen Chen", last_tap_at: "2025-01-14T14:30:00Z" },
-        { user_id: "u789", name: "Mia Rodriguez", last_tap_at: "2025-01-13T09:45:00Z" }
-      ],
-      second_degree_delta: 22,
-      community_activity: [
-        { community_id: "c7", name: "Nashville Founders", tap_count: 31, unique_users: 14 },
-        { community_id: "c12", name: "Austin Tech", tap_count: 28, unique_users: 11 },
-        { community_id: "c3", name: "Dallas Entrepreneurs", tap_count: 24, unique_users: 9 }
-      ],
-      geo_expansion: [
-        { city: "Austin", new_taps: 5 },
-        { city: "Nashville", new_taps: 3 },
-        { city: "Dallas", new_taps: 2 }
-      ]
-    },
-    momentum: {
-      current_streak: 7,
-      longest_streak: 23,
-      weekly_taps: 47,
-      new_connections: 8
-    },
-    leaderboard: {
-      new_connections: [
-        { user_id: "u1", name: "Alex Johnson", count: 12, rank: 1 },
-        { user_id: "u2", name: "Sarah Chen", count: 10, rank: 2 },
-        { user_id: "u3", name: "Mike Davis", count: 9, rank: 3 }
-      ],
-      community_builders: [
-        { user_id: "u4", name: "Emma Wilson", score: 156, rank: 1 },
-        { user_id: "u5", name: "David Lee", score: 142, rank: 2 },
-        { user_id: "u6", name: "Lisa Garcia", score: 138, rank: 3 }
-      ],
-      streak_masters: [
-        { user_id: "u7", name: "Tom Brown", days: 45, rank: 1 },
-        { user_id: "u8", name: "Anna Smith", days: 38, rank: 2 },
-        { user_id: "u9", name: "Chris Taylor", days: 32, rank: 3 }
-      ]
-    },
-    recommendations: [
-      {
-        user_id: "u10",
-        name: "Jordan Martinez",
-        mutuals: 3,
-        scores: {
-          mutual_strength: 0.85,
-          mutual_quality: 0.92,
-          recency: 0.78,
-          location: 0.88,
-          total: 0.86
-        },
-        explain: "You have 3 mutual connections and similar interests."
-      },
-      {
-        user_id: "u11",
-        name: "Casey Kim",
-        mutuals: 2,
-        scores: {
-          mutual_strength: 0.72,
-          mutual_quality: 0.89,
-          recency: 0.85,
-          location: 0.91,
-          total: 0.82
-        },
-        explain: "You have 2 mutual connections and similar interests."
-      }
-    ]
-  };
+
+// Recommendations query function - 2-hop edge strength
+async function getRecommendations(client, user_id) {
+  try {
+    const query = `
+      WITH direct AS (
+        SELECT CASE WHEN u1 = $1 THEN u2 ELSE u1 END AS nbr
+        FROM gamification.edge_strength
+        WHERE u1 = $1 OR u2 = $1
+      ),
+      two_hop AS (
+        SELECT
+          CASE WHEN es2.u1 = d.nbr THEN es2.u2 ELSE es2.u1 END AS candidate,
+          MAX(es1.strength_f32 * es2.strength_f32) AS score
+        FROM gamification.edge_strength es1
+        JOIN direct d
+          ON (es1.u1 = $1 AND es1.u2 = d.nbr) OR (es1.u2 = $1 AND es1.u1 = d.nbr)
+        JOIN gamification.edge_strength es2
+          ON es2.u1 = d.nbr OR es2.u2 = d.nbr
+        WHERE NOT (
+          (es2.u1 = $1) OR (es2.u2 = $1)
+        )
+        GROUP BY candidate
+      ),
+      filtered AS (
+        SELECT t.candidate, t.score
+        FROM two_hop t
+        WHERE NOT EXISTS (
+          SELECT 1 FROM direct d2 WHERE d2.nbr = t.candidate
+        )
+      )
+      SELECT
+        f.candidate AS user_id,
+        f.score,
+        u.first_name, u.last_name, u.username, u.pfp_url
+      FROM filtered f
+      JOIN public.users u ON u.id = f.user_id
+      ORDER BY f.score DESC
+      LIMIT 5
+    `;
+    const result = await client.query(query, [user_id]);
+    return result.rows.map(row => ({
+      user_id: row.user_id,
+      name: [row.first_name, row.last_name].filter(Boolean).join(' ') || row.username || 'User',
+      scores: { total: Number(row.score || 0) },
+      mutuals: [], // optional: fill later
+      explain: 'High-strength second-degree connection'
+    }));
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    return [];
+  }
+}
+
+// Community activity query function
+async function getCommunityActivity(client, currentWeek, currentYear) {
+  try {
+    // Get week start and end dates
+    const weekStart = getWeekStart(new Date());
+    const weekEnd = getWeekEnd(new Date());
+    
+    const query = `
+      SELECT 
+        day,
+        SUM(tap_count)::int AS taps
+      FROM gamification.user_day_activity
+      WHERE day >= $1::date AND day <= $2::date
+      GROUP BY day
+      ORDER BY day DESC
+      LIMIT 7
+    `;
+    const result = await client.query(query, [weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0]]);
+    return result.rows.map(row => ({
+      day: row.day,
+      taps: row.taps
+    }));
+  } catch (error) {
+    console.error('Error fetching community activity:', error);
+    return [];
+  }
+}
+
+// Leaderboard query functions - using pre-calculated weekly_leaderboard data
+async function getNewConnectionsLeaderboard(client, user_id, currentWeek, currentYear) {
+  try {
+    const query = `
+      SELECT 
+        u.id as user_id,
+        u.name,
+        wl.new_first_degree
+      FROM gamification.weekly_leaderboard wl
+      JOIN public.users u ON wl.user_id = u.id
+      WHERE wl.iso_week = $2 AND wl.year = $3
+        AND wl.user_id != $1
+        AND wl.new_first_degree > 0
+      ORDER BY wl.new_first_degree DESC
+      LIMIT 10
+    `;
+    const result = await client.query(query, [user_id, currentWeek, currentYear]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching new connections leaderboard:', error);
+    return [];
+  }
+}
+
+async function getCommunityBuildersLeaderboard(client, user_id, currentWeek, currentYear) {
+  try {
+    const query = `
+      SELECT 
+        u.id as user_id,
+        u.name,
+        wl.delta_second_degree
+      FROM gamification.weekly_leaderboard wl
+      JOIN public.users u ON wl.user_id = u.id
+      WHERE wl.iso_week = $2 AND wl.year = $3
+        AND wl.user_id != $1
+        AND wl.delta_second_degree > 0
+      ORDER BY wl.delta_second_degree DESC
+      LIMIT 10
+    `;
+    const result = await client.query(query, [user_id, currentWeek, currentYear]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching community builders leaderboard:', error);
+    return [];
+  }
+}
+
+async function getStreakMastersLeaderboard(client, user_id) {
+  try {
+    const query = `
+      SELECT 
+        u.id as user_id,
+        u.name,
+        wl.streak_days
+      FROM gamification.weekly_leaderboard wl
+      JOIN public.users u ON wl.user_id = u.id
+      WHERE wl.user_id != $1
+        AND wl.streak_days > 0
+      ORDER BY wl.streak_days DESC
+      LIMIT 10
+    `;
+    const result = await client.query(query, [user_id]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching streak masters leaderboard:', error);
+    return [];
+  }
 }
