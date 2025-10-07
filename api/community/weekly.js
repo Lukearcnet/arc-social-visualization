@@ -263,6 +263,23 @@ const handler = async (req, res) => {
         throw stepError;
       }
       
+      // Check for geo expansion warning
+      const warnings = [];
+      try {
+        const geoCheck = await client.query(`
+          SELECT COUNT(*) as has_geohash 
+          FROM public.taps 
+          WHERE latitude IS NOT NULL AND longitude IS NOT NULL 
+          LIMIT 1
+        `);
+        if (geoCheck.rows[0]?.has_geohash === '0') {
+          warnings.push('geo_expansion not computed: no geohash in taps');
+        }
+      } catch (geoError) {
+        console.warn('Could not check for geohash data:', geoError.message);
+        warnings.push('geo_expansion not computed: no geohash in taps');
+      }
+
       // Add debug information
       const hasDbUrl = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'));
       
@@ -273,7 +290,14 @@ const handler = async (req, res) => {
         debug: isDebug ? {
           dbUrlPresent: hasDbUrl,
           whoami: who.rows[0],
-          schemas: schemas.rows.map(r => r.nspname)
+          schemas: schemas.rows.map(r => r.nspname),
+          sql: {
+            community_activity: `SELECT day, COALESCE(SUM(tap_count), 0)::int AS taps FROM gamification.user_day_activity WHERE day >= $1::date AND day <= $2::date GROUP BY day ORDER BY day DESC LIMIT 7`,
+            new_connections: `WITH new_connections AS (SELECT CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as connected_user_id, MAX(t."time") as last_tap_at, COUNT(*) as new_first_degree FROM public.taps t WHERE (t.id1 = $1 OR t.id2 = $1) AND t."time" >= DATE_TRUNC('week', CURRENT_DATE)::date AND t."time" < DATE_TRUNC('week', CURRENT_DATE)::date + INTERVAL '1 week' GROUP BY connected_user_id HAVING COUNT(*) > 0) SELECT nc.connected_user_id as user_id, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name, nc.new_first_degree, nc.last_tap_at FROM new_connections nc JOIN public.users u ON nc.connected_user_id = u.id WHERE nc.connected_user_id != $1 ORDER BY nc.new_first_degree DESC, nc.last_tap_at DESC LIMIT 5`,
+            community_builders: `WITH weekly_taps AS (SELECT CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as user_id, COUNT(*) as weekly_taps FROM public.taps t WHERE (t.id1 = $1 OR t.id2 = $1) AND t."time" >= CURRENT_DATE - INTERVAL '7 days' GROUP BY user_id HAVING COUNT(*) > 0) SELECT wt.user_id, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name, wt.weekly_taps FROM weekly_taps wt JOIN public.users u ON wt.user_id = u.id WHERE wt.user_id != $1 ORDER BY wt.weekly_taps DESC LIMIT 5`,
+            streak_masters: `WITH user_streaks AS (SELECT CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as user_id, COUNT(DISTINCT DATE(t."time")) as streak_days FROM public.taps t WHERE (t.id1 = $1 OR t.id2 = $1) AND t."time" >= CURRENT_DATE - INTERVAL '30 days' GROUP BY user_id HAVING COUNT(DISTINCT DATE(t."time")) > 0) SELECT us.user_id, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name, us.streak_days FROM user_streaks us JOIN public.users u ON us.user_id = u.id WHERE us.user_id != $1 ORDER BY us.streak_days DESC LIMIT 5`,
+            recommendations: `WITH direct_connections AS (SELECT DISTINCT CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END AS connected_user_id FROM public.taps t WHERE (t.id1 = $1 OR t.id2 = $1)), mutual_connections AS (SELECT CASE WHEN t.id1 = dc.connected_user_id THEN t.id2 ELSE t.id1 END AS candidate_id, COUNT(DISTINCT dc.connected_user_id) as mutual_count, ARRAY_AGG(DISTINCT COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username)) as mutual_names FROM public.taps t JOIN direct_connections dc ON (t.id1 = dc.connected_user_id OR t.id2 = dc.connected_user_id) JOIN public.users u ON u.id = dc.connected_user_id WHERE (t.id1 = dc.connected_user_id OR t.id2 = dc.connected_user_id) AND CASE WHEN t.id1 = dc.connected_user_id THEN t.id2 ELSE t.id1 END != $1 AND NOT EXISTS (SELECT 1 FROM direct_connections dc2 WHERE dc2.connected_user_id = CASE WHEN t.id1 = dc.connected_user_id THEN t.id2 ELSE t.id1 END) GROUP BY candidate_id HAVING COUNT(DISTINCT dc.connected_user_id) >= 2) SELECT mc.candidate_id as user_id, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name, mc.mutual_count, mc.mutual_names FROM mutual_connections mc JOIN public.users u ON mc.candidate_id = u.id ORDER BY mc.mutual_count DESC LIMIT 3`
+          }
         } : undefined,
         week: {
           year: currentYear,
@@ -308,7 +332,7 @@ const handler = async (req, res) => {
           duration_ms: Date.now() - startTime,
           user_id: user_id,
           watermark: new Date().toISOString(),
-          warnings: ['geo_expansion not computed: no geohash in taps']
+          warnings: warnings
         }
       };
 
@@ -393,52 +417,51 @@ function getWeekEnd(date) {
 }
 
 
-// Recommendations query function - 2-hop edge strength
+// Recommendations query function - simple mutual connections algorithm
 async function getRecommendations(client, user_id) {
   try {
+    // EXPLAIN: Find users with ≥2 mutual connections, not already first-degree
+    // Consider index on: public.taps("time", id1, id2) for performance
     const query = `
-      WITH direct AS (
-        SELECT CASE WHEN u1 = $1 THEN u2 ELSE u1 END AS nbr
-        FROM gamification.edge_strength
-        WHERE u1 = $1 OR u2 = $1
+      WITH direct_connections AS (
+        SELECT DISTINCT CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END AS connected_user_id
+        FROM public.taps t
+        WHERE (t.id1 = $1 OR t.id2 = $1)
       ),
-      two_hop AS (
-        SELECT
-          CASE WHEN es2.u1 = d.nbr THEN es2.u2 ELSE es2.u1 END AS candidate,
-          MAX(es1.strength_f32 * es2.strength_f32) AS score
-        FROM gamification.edge_strength es1
-        JOIN direct d
-          ON (es1.u1 = $1 AND es1.u2 = d.nbr) OR (es1.u2 = $1 AND es1.u1 = d.nbr)
-        JOIN gamification.edge_strength es2
-          ON es2.u1 = d.nbr OR es2.u2 = d.nbr
-        WHERE NOT (
-          (es2.u1 = $1) OR (es2.u2 = $1)
-        )
-        GROUP BY candidate
-      ),
-      filtered AS (
-        SELECT t.candidate, t.score
-        FROM two_hop t
-        WHERE NOT EXISTS (
-          SELECT 1 FROM direct d2 WHERE d2.nbr = t.candidate
-        )
+      mutual_connections AS (
+        SELECT 
+          CASE WHEN t.id1 = dc.connected_user_id THEN t.id2 ELSE t.id1 END AS candidate_id,
+          COUNT(DISTINCT dc.connected_user_id) as mutual_count,
+          ARRAY_AGG(DISTINCT COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username)) as mutual_names
+        FROM public.taps t
+        JOIN direct_connections dc ON (t.id1 = dc.connected_user_id OR t.id2 = dc.connected_user_id)
+        JOIN public.users u ON u.id = dc.connected_user_id
+        WHERE (t.id1 = dc.connected_user_id OR t.id2 = dc.connected_user_id)
+          AND CASE WHEN t.id1 = dc.connected_user_id THEN t.id2 ELSE t.id1 END != $1
+          AND NOT EXISTS (
+            SELECT 1 FROM direct_connections dc2 
+            WHERE dc2.connected_user_id = CASE WHEN t.id1 = dc.connected_user_id THEN t.id2 ELSE t.id1 END
+          )
+        GROUP BY candidate_id
+        HAVING COUNT(DISTINCT dc.connected_user_id) >= 2
       )
-      SELECT
-        f.candidate AS user_id,
-        f.score,
-        u.first_name, u.last_name, u.username, u.pfp_url
-      FROM filtered f
-      JOIN public.users u ON u.id = f.user_id
-      ORDER BY f.score DESC
-      LIMIT 5
+      SELECT 
+        mc.candidate_id as user_id,
+        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
+        mc.mutual_count,
+        mc.mutual_names
+      FROM mutual_connections mc
+      JOIN public.users u ON mc.candidate_id = u.id
+      ORDER BY mc.mutual_count DESC
+      LIMIT 3
     `;
     const result = await client.query(query, [user_id]);
     return result.rows.map(row => ({
       user_id: row.user_id,
-      name: [row.first_name, row.last_name].filter(Boolean).join(' ') || row.username || 'User',
-      scores: { total: Number(row.score || 0) },
-      mutuals: [], // optional: fill later
-      explain: 'High-strength second-degree connection'
+      name: row.name,
+      scores: { total: Number(row.mutual_count || 0) / 10 }, // Normalize to 0-1 range
+      mutuals: row.mutual_names || [],
+      explain: `Connected through ${row.mutual_count} mutual friends`
     }));
   } catch (error) {
     console.error('Error fetching recommendations:', error);
@@ -446,17 +469,19 @@ async function getRecommendations(client, user_id) {
   }
 }
 
-// Community activity query function
+// Community activity query function - daily taps for current ISO week
 async function getCommunityActivity(client, currentWeek, currentYear) {
   try {
-    // Get week start and end dates
+    // Get week start and end dates for current ISO week
     const weekStart = getWeekStart(new Date());
     const weekEnd = getWeekEnd(new Date());
     
+    // EXPLAIN: This query aggregates daily tap counts for the current week
+    // Consider index on: gamification.user_day_activity(day) for performance
     const query = `
       SELECT 
         day,
-        SUM(tap_count)::int AS taps
+        COALESCE(SUM(tap_count), 0)::int AS taps
       FROM gamification.user_day_activity
       WHERE day >= $1::date AND day <= $2::date
       GROUP BY day
@@ -474,23 +499,36 @@ async function getCommunityActivity(client, currentWeek, currentYear) {
   }
 }
 
-// Leaderboard query functions - using pre-calculated weekly_leaderboard data
+// Leaderboard query functions - direct queries from public tables
 async function getNewConnectionsLeaderboard(client, user_id, currentWeek, currentYear) {
   try {
+    // EXPLAIN: Find users who formed new first-degree connections this week
+    // Consider index on: public.taps("time", id1, id2) for performance
     const query = `
+      WITH new_connections AS (
+        SELECT 
+          CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as connected_user_id,
+          MAX(t."time") as last_tap_at,
+          COUNT(*) as new_first_degree
+        FROM public.taps t
+        WHERE (t.id1 = $1 OR t.id2 = $1)
+          AND t."time" >= DATE_TRUNC('week', CURRENT_DATE)::date
+          AND t."time" < DATE_TRUNC('week', CURRENT_DATE)::date + INTERVAL '1 week'
+        GROUP BY connected_user_id
+        HAVING COUNT(*) > 0
+      )
       SELECT 
-        u.id as user_id,
+        nc.connected_user_id as user_id,
         COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
-        wl.new_first_degree
-      FROM gamification.weekly_leaderboard wl
-      JOIN public.users u ON wl.user_id = u.id
-      WHERE wl.iso_week = $2 AND wl.year = $3
-        AND wl.user_id != $1
-        AND wl.new_first_degree > 0
-      ORDER BY wl.new_first_degree DESC
-      LIMIT 10
+        nc.new_first_degree,
+        nc.last_tap_at
+      FROM new_connections nc
+      JOIN public.users u ON nc.connected_user_id = u.id
+      WHERE nc.connected_user_id != $1
+      ORDER BY nc.new_first_degree DESC, nc.last_tap_at DESC
+      LIMIT 5
     `;
-    const result = await client.query(query, [user_id, currentWeek, currentYear]);
+    const result = await client.query(query, [user_id]);
     return result.rows;
   } catch (error) {
     console.error('Error fetching new connections leaderboard:', error);
@@ -500,20 +538,30 @@ async function getNewConnectionsLeaderboard(client, user_id, currentWeek, curren
 
 async function getCommunityBuildersLeaderboard(client, user_id, currentWeek, currentYear) {
   try {
+    // EXPLAIN: Find users with most taps in the last 7 days
+    // Consider index on: public.taps("time", id1, id2) for performance
     const query = `
+      WITH weekly_taps AS (
+        SELECT 
+          CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as user_id,
+          COUNT(*) as weekly_taps
+        FROM public.taps t
+        WHERE (t.id1 = $1 OR t.id2 = $1)
+          AND t."time" >= CURRENT_DATE - INTERVAL '7 days'
+        GROUP BY user_id
+        HAVING COUNT(*) > 0
+      )
       SELECT 
-        u.id as user_id,
+        wt.user_id,
         COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
-        wl.delta_second_degree
-      FROM gamification.weekly_leaderboard wl
-      JOIN public.users u ON wl.user_id = u.id
-      WHERE wl.iso_week = $2 AND wl.year = $3
-        AND wl.user_id != $1
-        AND wl.delta_second_degree > 0
-      ORDER BY wl.delta_second_degree DESC
-      LIMIT 10
+        wt.weekly_taps
+      FROM weekly_taps wt
+      JOIN public.users u ON wt.user_id = u.id
+      WHERE wt.user_id != $1
+      ORDER BY wt.weekly_taps DESC
+      LIMIT 5
     `;
-    const result = await client.query(query, [user_id, currentWeek, currentYear]);
+    const result = await client.query(query, [user_id]);
     return result.rows;
   } catch (error) {
     console.error('Error fetching community builders leaderboard:', error);
@@ -523,17 +571,28 @@ async function getCommunityBuildersLeaderboard(client, user_id, currentWeek, cur
 
 async function getStreakMastersLeaderboard(client, user_id) {
   try {
+    // EXPLAIN: Find users with longest active streaks (simplified calculation)
+    // Consider index on: public.taps("time", id1, id2) for performance
     const query = `
+      WITH user_streaks AS (
+        SELECT 
+          CASE WHEN t.id1 = $1 THEN t.id2 ELSE t.id1 END as user_id,
+          COUNT(DISTINCT DATE(t."time")) as streak_days
+        FROM public.taps t
+        WHERE (t.id1 = $1 OR t.id2 = $1)
+          AND t."time" >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY user_id
+        HAVING COUNT(DISTINCT DATE(t."time")) > 0
+      )
       SELECT 
-        u.id as user_id,
+        us.user_id,
         COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) as name,
-        wl.streak_days
-      FROM gamification.weekly_leaderboard wl
-      JOIN public.users u ON wl.user_id = u.id
-      WHERE wl.user_id != $1
-        AND wl.streak_days > 0
-      ORDER BY wl.streak_days DESC
-      LIMIT 10
+        us.streak_days
+      FROM user_streaks us
+      JOIN public.users u ON us.user_id = u.id
+      WHERE us.user_id != $1
+      ORDER BY us.streak_days DESC
+      LIMIT 5
     `;
     const result = await client.query(query, [user_id]);
     return result.rows;
