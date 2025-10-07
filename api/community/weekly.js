@@ -8,19 +8,12 @@ import { Pool } from 'pg';
 export const runtime = 'nodejs';
 
 // Use exact same DB client pattern as data-export.js (Vercel-friendly)
-let pool;
-function getPool() {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 30000,
-      max: 1,
-    });
-  }
-  return pool;
-}
+// Strip SSL parameters from connection string to avoid file path issues
+const connectionString = process.env.DATABASE_URL.split('?')[0];
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: { rejectUnauthorized: false }
+});
 
 export default async function handler(req, res) {
   console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
@@ -39,9 +32,8 @@ export default async function handler(req, res) {
   try {
     console.log('📊 Fetching community weekly data from database...');
     
-    // Get database pool
-    const dbPool = getPool();
-    const client = await dbPool.connect();
+        // Get database client
+        const client = await pool.connect();
     
     try {
       // Get current week data
@@ -108,8 +100,9 @@ export default async function handler(req, res) {
       `;
       const connectionsResult = await client.query(connectionsQuery, [user_id]);
       
-      // Build the weekly data structure with null-safety
+      // Build the weekly data structure with guaranteed arrays
       const weeklyData = {
+        source: "db",
         generated_at: new Date().toISOString(),
         week: {
           year: currentYear,

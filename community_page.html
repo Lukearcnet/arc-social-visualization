@@ -597,6 +597,7 @@
                     
                     const responseData = await response.json();
                     console.log('📊 API response data:', responseData);
+                    console.log('Community payload source:', responseData?.source || 'unknown');
                     
                     // Add null-safety defaults to prevent crashes
                     const weekly = responseData || {};
@@ -608,9 +609,36 @@
                     this.renderWeeklyPulse();
                 } catch (error) {
                     console.error('Error loading weekly pulse:', error);
-                    // Fallback to mock data
-                    this.loadMockData();
+                    // Only fallback to mock if explicitly enabled
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const useMock = urlParams.get('mock') === '1' || process.env.COMMUNITY_USE_MOCK === 'true';
+                    
+                    if (useMock) {
+                        console.log('Using mock data (explicitly enabled)');
+                        this.loadMockData();
+                    } else {
+                        // Show UI error instead of mock data
+                        this.showUIError('Failed to load community data. Please try again.');
+                    }
                 }
+            }
+
+            showUIError(message) {
+                console.log('📊 Showing UI error:', message);
+                
+                // Hide loading state and show content
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('content-state').style.display = 'block';
+                
+                // Show error message in the main content area
+                const contentState = document.getElementById('content-state');
+                contentState.innerHTML = `
+                    <div class="error-state">
+                        <h3>⚠️ Unable to Load Community Data</h3>
+                        <p>${message}</p>
+                        <button onclick="location.reload()" class="retry-btn">Retry</button>
+                    </div>
+                `;
             }
 
             renderEmptyWeeklyState() {
@@ -671,13 +699,13 @@
                         weekly_goal: { target_taps: 5, progress: 4 }
                     },
                     leaderboard: {
-                        top_connectors: [
+                        new_connections: [
                             { user_id: "u321", name: "Owen", new_first_degree: 6 }
                         ],
-                        expanding_reach: [
+                        community_builders: [
                             { user_id: "u555", name: "Mia", delta_second_degree: 18 }
                         ],
-                        consistency: [
+                        streak_masters: [
                             { user_id: "u789", name: "Alex", streak_days: 21 }
                         ]
                     },
@@ -759,8 +787,8 @@
                 const data = this.data.weekly;
                 if (!data) return;
 
-                // Safe array access with null-safety
-                const lb = data?.leaderboard ?? {};
+                // Comprehensive null-safety for leaderboard
+                const lb = data.leaderboard || {};
                 const newConnections = Array.isArray(lb.new_connections) ? lb.new_connections : [];
                 const communityBuilders = Array.isArray(lb.community_builders) ? lb.community_builders : [];
                 const streakMasters = Array.isArray(lb.streak_masters) ? lb.streak_masters : [];
@@ -805,12 +833,15 @@
 
             renderRecommendations() {
                 const data = this.data.weekly;
-                if (!data || !data.recommendations) return;
+                if (!data) return;
 
+                // Null-safety for recommendations
+                const recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+                
                 const container = document.getElementById('recommendations-list');
                 container.innerHTML = '';
 
-                data.recommendations.forEach(rec => {
+                recs.forEach(rec => {
                     const div = document.createElement('div');
                     div.className = 'recommendation-card';
                     div.innerHTML = `
