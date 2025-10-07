@@ -23,6 +23,7 @@ function getPool() {
 }
 
 export default async function handler(req, res) {
+  console.log('🚀 COMMUNITY API HANDLER CALLED - NEW VERSION');
   const startTime = Date.now();
   
   if (req.method !== 'GET') {
