@@ -1,12 +1,14 @@
 // GET /api/community/health
-// Health check endpoint for Community API database connectivity
+// Health check endpoint for Community API with smart proxy
 // Date: 2025-01-15
 
 // Use shared database pool
 const { getPool } = require('../../lib/db');
+const { proxyOr } = require('../../lib/http');
 const pool = getPool();
 
-const handler = async (req, res) => {
+// Local function for direct DB access (fallback)
+const localHandler = async (req, res) => {
   console.log('🏥 COMMUNITY HEALTH CHECK');
   console.log('🔍 DATABASE_URL present:', !!process.env.DATABASE_URL);
   console.log('🔍 DATABASE_URL starts with postgres:', process.env.DATABASE_URL?.startsWith('postgres'));
@@ -112,6 +114,22 @@ const handler = async (req, res) => {
       severity: err.severity
     });
   }
+};
+
+// Main handler that uses smart proxy
+const handler = async (req, res) => {
+  const startTime = Date.now();
+  
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Use smart proxy: DATA_READER_URL if available, otherwise direct DB
+  await proxyOr(localHandler, '/community/health', req, res);
+  
+  const duration = Date.now() - startTime;
+  const mode = process.env.DATA_READER_URL ? 'reader' : 'direct';
+  console.log(`📊 [community/health] mode=${mode} duration=${duration}ms`);
 };
 
 handler.config = { runtime: 'nodejs' };
