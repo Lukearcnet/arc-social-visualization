@@ -587,11 +587,18 @@
 
             async loadWeeklyPulse() {
                 try {
+                    console.log('🔄 Loading weekly pulse for user:', this.currentUser.user_id);
                     const response = await fetch(`/api/community/weekly?user_id=${this.currentUser.user_id}`);
+                    console.log('📡 API response status:', response.status);
+                    
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    this.data.weekly = await response.json();
+                    
+                    const responseData = await response.json();
+                    console.log('📊 API response data:', responseData);
+                    
+                    this.data.weekly = responseData;
                     this.renderWeeklyPulse();
                 } catch (error) {
                     console.error('Error loading weekly pulse:', error);
@@ -664,12 +671,17 @@
                 const data = this.data.weekly;
                 if (!data) return;
 
+                // Debug: Log the actual data structure
+                console.log('🔍 Weekly data received:', data);
+                console.log('🔍 Data.recap:', data.recap);
+                console.log('🔍 Data.recap.first_degree_new:', data.recap?.first_degree_new);
+
                 // Hide loading state and show content
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-state').style.display = 'block';
 
-                // Update recap cards
-                document.getElementById('new-connections-count').textContent = data.recap.first_degree_new.length;
+                // Update recap cards with null checks
+                document.getElementById('new-connections-count').textContent = data.recap?.first_degree_new?.length || 0;
                 document.getElementById('network-growth-count').textContent = data.recap.second_degree_delta;
                 document.getElementById('community-activity-count').textContent = data.recap.community_activity.length;
 
