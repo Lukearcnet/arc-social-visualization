@@ -598,7 +598,13 @@
                     const responseData = await response.json();
                     console.log('📊 API response data:', responseData);
                     
-                    this.data.weekly = responseData;
+                    // Add null-safety defaults to prevent crashes
+                    const weekly = responseData || {};
+                    weekly.recap ??= { first_degree_new: [], second_degree_delta: 0, community_activity: [], geo_expansion: [] };
+                    weekly.momentum ??= {};
+                    weekly.momentum.weekly_goal ??= { progress: 0, target_taps: 25 }; // fallback target
+                    
+                    this.data.weekly = weekly;
                     this.renderWeeklyPulse();
                 } catch (error) {
                     console.error('Error loading weekly pulse:', error);
@@ -716,10 +722,11 @@
                 // Update momentum ring
                 document.getElementById('current-streak').textContent = data.momentum?.current_streak_days || 0;
                 
-                // Update weekly goal progress
-                const progress = (data.momentum.weekly_goal.progress / data.momentum.weekly_goal.target_taps) * 100;
+                // Update weekly goal progress with null-safety
+                const goal = data.momentum?.weekly_goal ?? { progress: 0, target_taps: 25 };
+                const pct = goal.target_taps ? Math.min(100, (goal.progress / goal.target_taps) * 100) : 0;
                 const ring = document.getElementById('weekly-goal-progress');
-                ring.style.background = `conic-gradient(var(--accent) ${progress * 3.6}deg, var(--stroke) 0deg)`;
+                ring.style.background = `conic-gradient(var(--accent) ${pct * 3.6}deg, var(--stroke) 0deg)`;
 
                 // Render leaderboard
                 this.renderLeaderboard('connectors');

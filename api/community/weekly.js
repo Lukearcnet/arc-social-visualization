@@ -58,6 +58,21 @@ export default async function handler(req, res) {
       `;
       const streakResult = await client.query(streakQuery, [user_id]);
       
+      // Query weekly goal progress
+      const goal = Number(process.env.WEEKLY_GOAL_TAPS || 25);
+      const weeklyGoalQuery = `
+        SELECT COALESCE(SUM(tap_count), 0) AS progress
+        FROM gamification.user_week_activity
+        WHERE user_id = $1
+          AND year = EXTRACT(isoyear FROM NOW())::int
+          AND iso_week = EXTRACT(week FROM NOW())::int
+      `;
+      const weeklyGoalResult = await client.query(weeklyGoalQuery, [user_id]);
+      const weekly_goal = { 
+        progress: Number(weeklyGoalResult.rows[0]?.progress || 0), 
+        target_taps: goal 
+      };
+      
       // Query recent first-degree connections (last 7 days)
       const connectionsQuery = `
         SELECT DISTINCT 
@@ -104,7 +119,8 @@ export default async function handler(req, res) {
           current_streak_days: streakResult.rows[0]?.current_streak_days || 0,
           longest_streak_days: streakResult.rows[0]?.longest_streak_days || 0,
           weekly_taps: weekActivityResult.rows[0]?.tap_count || 0,
-          new_connections: weekActivityResult.rows[0]?.first_degree_new_count || 0
+          new_connections: weekActivityResult.rows[0]?.first_degree_new_count || 0,
+          weekly_goal: weekly_goal
         },
         leaderboard: {
           new_connections: [], // TODO: Implement leaderboard queries
