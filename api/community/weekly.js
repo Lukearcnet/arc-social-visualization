@@ -28,9 +28,13 @@ export default async function handler(req, res) {
 
   try {
     console.log('📊 Fetching community weekly data from database...');
+    console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('🔍 Pool created successfully');
     
     // Query gamification tables directly
+    console.log('🔍 Attempting to connect to database...');
     const client = await pool.connect();
+    console.log('✅ Database connection successful');
     
     try {
       // Get current week data
@@ -153,6 +157,8 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Error fetching community data from database:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
     
     // Fallback to mock data on any error
     console.log('📊 Database error, returning mock data as fallback');
