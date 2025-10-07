@@ -607,6 +607,27 @@
                 }
             }
 
+            renderEmptyWeeklyState() {
+                console.log('📊 Rendering empty weekly state due to data structure issues');
+                
+                // Hide loading state and show content
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('content-state').style.display = 'block';
+                
+                // Set all values to zero/empty
+                document.getElementById('new-connections-count').textContent = '0';
+                document.getElementById('network-growth-count').textContent = '0';
+                document.getElementById('community-activity-count').textContent = '0';
+                document.getElementById('current-streak').textContent = '0';
+                
+                // Show error message
+                const contentState = document.getElementById('content-state');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = '<p>⚠️ Unable to load community data. Please try refreshing the page.</p>';
+                contentState.appendChild(errorDiv);
+            }
+
             async loadQuests() {
                 console.log('Loading quests...');
                 // TODO: Implement quests loading
@@ -676,17 +697,24 @@
                 console.log('🔍 Data.recap:', data.recap);
                 console.log('🔍 Data.recap.first_degree_new:', data.recap?.first_degree_new);
 
+                // Defensive guard: ensure we have the correct data structure
+                if (!data.recap) {
+                    console.error('❌ Invalid data structure: missing recap property');
+                    this.renderEmptyWeeklyState();
+                    return;
+                }
+
                 // Hide loading state and show content
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-state').style.display = 'block';
 
                 // Update recap cards with null checks
                 document.getElementById('new-connections-count').textContent = data.recap?.first_degree_new?.length || 0;
-                document.getElementById('network-growth-count').textContent = data.recap.second_degree_delta;
-                document.getElementById('community-activity-count').textContent = data.recap.community_activity.length;
+                document.getElementById('network-growth-count').textContent = data.recap?.second_degree_delta || 0;
+                document.getElementById('community-activity-count').textContent = data.recap?.community_activity?.length || 0;
 
                 // Update momentum ring
-                document.getElementById('current-streak').textContent = data.momentum.current_streak_days;
+                document.getElementById('current-streak').textContent = data.momentum?.current_streak_days || 0;
                 
                 // Update weekly goal progress
                 const progress = (data.momentum.weekly_goal.progress / data.momentum.weekly_goal.target_taps) * 100;

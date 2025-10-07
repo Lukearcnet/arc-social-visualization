@@ -2,11 +2,18 @@
 // Weekly Pulse endpoint for Community page
 // Date: 2025-01-15
 
+import { Pool } from 'pg';
+
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs';
 
-const DATA_READER_URL = process.env.DATA_READER_URL;
-const DATA_READER_SECRET = process.env.DATA_READER_SECRET;
+// Create a connection pool for reuse across function invocations
+// Strip SSL parameters from connection string to avoid file path issues
+const connectionString = process.env.DATABASE_URL.split('?')[0];
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: { rejectUnauthorized: false }
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -20,42 +27,115 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('📊 Fetching community weekly data from Cloud Run backend...');
+    console.log('📊 Fetching community weekly data from database...');
     
-    // Call the Cloud Run backend service for community data
-    const response = await fetch(`${DATA_READER_URL}/community/weekly?user_id=${encodeURIComponent(user_id)}`, {
-      method: 'GET',
-      headers: {
-        'x-data-key': DATA_READER_SECRET,
-        'Content-Type': 'application/json'
-      },
-      // Add timeout
-      signal: AbortSignal.timeout(10000) // 10 second timeout
-    });
+    // Query gamification tables directly
+    const client = await pool.connect();
+    
+    try {
+      // Get current week data
+      const currentWeek = getISOWeek(new Date());
+      const currentYear = new Date().getFullYear();
+      
+      // Query user week activity
+      const weekActivityQuery = `
+        SELECT 
+          first_degree_new_count,
+          second_degree_count,
+          tap_count
+        FROM gamification.user_week_activity 
+        WHERE user_id = $1 AND iso_week = $2 AND year = $3
+      `;
+      const weekActivityResult = await client.query(weekActivityQuery, [user_id, currentWeek, currentYear]);
+      
+      // Query user streaks
+      const streakQuery = `
+        SELECT 
+          current_streak_days,
+          longest_streak_days
+        FROM gamification.user_streaks 
+        WHERE user_id = $1
+      `;
+      const streakResult = await client.query(streakQuery, [user_id]);
+      
+      // Query recent first-degree connections (last 7 days)
+      const connectionsQuery = `
+        SELECT DISTINCT 
+          CASE 
+            WHEN t.id1 = $1 THEN t.id2 
+            ELSE t.id1 
+          END as connected_user_id,
+          u.name as connected_user_name,
+          MAX(t."time") as last_tap_at
+        FROM public.taps t
+        JOIN public.users u ON (
+          CASE 
+            WHEN t.id1 = $1 THEN u.id = t.id2 
+            ELSE u.id = t.id1 
+          END
+        )
+        WHERE (t.id1 = $1 OR t.id2 = $1)
+          AND t."time" >= NOW() - INTERVAL '7 days'
+        GROUP BY connected_user_id, connected_user_name
+        ORDER BY last_tap_at DESC
+        LIMIT 10
+      `;
+      const connectionsResult = await client.query(connectionsQuery, [user_id]);
+      
+      // Build the weekly data structure
+      const weeklyData = {
+        generated_at: new Date().toISOString(),
+        week: {
+          year: currentYear,
+          iso_week: currentWeek,
+          range: [getWeekStart(new Date()).toISOString().split('T')[0], getWeekEnd(new Date()).toISOString().split('T')[0]]
+        },
+        recap: {
+          first_degree_new: connectionsResult.rows.map(row => ({
+            user_id: row.connected_user_id,
+            name: row.connected_user_name,
+            last_tap_at: row.last_tap_at
+          })),
+          second_degree_delta: weekActivityResult.rows[0]?.second_degree_count || 0,
+          community_activity: [], // TODO: Implement community detection
+          geo_expansion: [] // TODO: Implement geo expansion
+        },
+        momentum: {
+          current_streak_days: streakResult.rows[0]?.current_streak_days || 0,
+          longest_streak_days: streakResult.rows[0]?.longest_streak_days || 0,
+          weekly_taps: weekActivityResult.rows[0]?.tap_count || 0,
+          new_connections: weekActivityResult.rows[0]?.first_degree_new_count || 0
+        },
+        leaderboard: {
+          new_connections: [], // TODO: Implement leaderboard queries
+          community_builders: [],
+          streak_masters: []
+        },
+        recommendations: [] // TODO: Implement recommendation algorithm
+      };
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        // Backend doesn't have community endpoint yet, return mock data
-        console.log('📊 Community endpoint not available, returning mock data');
+      // Defensive guard: ensure we never leak reader payload
+      if (!weeklyData.recap && weeklyData.taps) {
+        console.warn('⚠️ Detected reader payload leak, using mock data');
         return res.status(200).json(getMockWeeklyData());
       }
-      throw new Error(`Backend service failed: ${response.status} ${response.statusText}`);
+
+      // Set cache headers for Vercel
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
+      res.setHeader('Content-Type', 'application/json');
+      
+      console.log('✅ Successfully fetched community data from database');
+      return res.status(200).json(weeklyData);
+
+    } finally {
+      client.release();
     }
 
-    const data = await response.json();
-    console.log('✅ Successfully fetched community data from backend service');
-
-    // Set cache headers for Vercel
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
-    res.setHeader('Content-Type', 'application/json');
-    
-    return res.status(200).json(data);
-
   } catch (error) {
-    console.error('❌ Error fetching community data from backend service:', error);
+    console.error('❌ Error fetching community data from database:', error);
     
     // Fallback to mock data on any error
-    console.log('📊 Backend error, returning mock data as fallback');
+    console.log('📊 Database error, returning mock data as fallback');
     return res.status(200).json(getMockWeeklyData());
   }
 }
