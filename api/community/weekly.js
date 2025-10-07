@@ -50,13 +50,27 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Explicit checks before main query
-      const who = await client.query('SELECT current_user, current_database()');
-      const schemas = await client.query(`
-        SELECT nspname FROM pg_namespace WHERE nspname IN ('public','gamification')
-      `);
+      // Step 1: Explicit checks before main query
+      let who, schemas;
+      try {
+        who = await client.query('SELECT current_user, current_database()');
+        schemas = await client.query(`
+          SELECT nspname FROM pg_namespace WHERE nspname IN ('public','gamification')
+        `);
+      } catch (stepError) {
+        if (isDebug) {
+          return res.status(500).json({
+            ok: false,
+            at: 'weekly:connect',
+            code: stepError.code,
+            message: stepError.message,
+            detail: stepError.detail || null
+          });
+        }
+        throw stepError;
+      }
       
-      // Test permissions on gamification schema
+      // Step 2: Test permissions on gamification schema
       try {
         await client.query('SELECT COUNT(*) FROM gamification.user_day_activity');
       } catch (permError) {
@@ -65,14 +79,24 @@ export default async function handler(req, res) {
           const body = isDebug
             ? { 
                 ok: false, 
-                source: 'db', 
+                at: 'weekly:permissions',
                 code: permError.code, 
-                error: 'Permission denied on gamification schema',
+                message: 'Permission denied on gamification schema',
+                detail: permError.detail || null,
                 hint: 'DATABASE_URL/SSL/permissions',
                 sql: `GRANT USAGE ON SCHEMA gamification TO "${who.rows[0].current_user}"; GRANT SELECT ON ALL TABLES IN SCHEMA gamification TO "${who.rows[0].current_user}"; ALTER DEFAULT PRIVILEGES IN SCHEMA gamification GRANT SELECT ON TABLES TO "${who.rows[0].current_user}";`
               }
             : { ok: false };
           return res.status(500).json(body);
+        }
+        if (isDebug) {
+          return res.status(500).json({
+            ok: false,
+            at: 'weekly:permissions',
+            code: permError.code,
+            message: permError.message,
+            detail: permError.detail || null
+          });
         }
         throw permError;
       }
@@ -81,65 +105,121 @@ export default async function handler(req, res) {
       const currentWeek = getISOWeek(new Date());
       const currentYear = new Date().getFullYear();
       
-      // Query user week activity (schema-qualified)
-      const weekActivityQuery = `
-        SELECT 
-          first_degree_new_count,
-          second_degree_count,
-          tap_count
-        FROM gamification.user_week_activity 
-        WHERE user_id = $1 AND iso_week = $2 AND year = $3
-      `;
-      const weekActivityResult = await client.query(weekActivityQuery, [user_id, currentWeek, currentYear]);
+      // Step 3: Query user week activity (schema-qualified)
+      let weekActivityResult;
+      try {
+        const weekActivityQuery = `
+          SELECT 
+            first_degree_new_count,
+            second_degree_count,
+            tap_count
+          FROM gamification.user_week_activity 
+          WHERE user_id = $1 AND iso_week = $2 AND year = $3
+        `;
+        weekActivityResult = await client.query(weekActivityQuery, [user_id, currentWeek, currentYear]);
+      } catch (stepError) {
+        if (isDebug) {
+          return res.status(500).json({
+            ok: false,
+            at: 'weekly:week_activity',
+            code: stepError.code,
+            message: stepError.message,
+            detail: stepError.detail || null
+          });
+        }
+        throw stepError;
+      }
       
-      // Query user streaks (schema-qualified)
-      const streakQuery = `
-        SELECT 
-          current_streak_days,
-          longest_streak_days
-        FROM gamification.user_streaks 
-        WHERE user_id = $1
-      `;
-      const streakResult = await client.query(streakQuery, [user_id]);
+      // Step 4: Query user streaks (schema-qualified)
+      let streakResult;
+      try {
+        const streakQuery = `
+          SELECT 
+            current_streak_days,
+            longest_streak_days
+          FROM gamification.user_streaks 
+          WHERE user_id = $1
+        `;
+        streakResult = await client.query(streakQuery, [user_id]);
+      } catch (stepError) {
+        if (isDebug) {
+          return res.status(500).json({
+            ok: false,
+            at: 'weekly:streaks',
+            code: stepError.code,
+            message: stepError.message,
+            detail: stepError.detail || null
+          });
+        }
+        throw stepError;
+      }
       
-      // Query weekly goal progress (schema-qualified)
-      const goal = Number(process.env.WEEKLY_GOAL_TAPS || 25);
-      const weeklyGoalQuery = `
-        SELECT COALESCE(SUM(tap_count), 0) AS progress
-        FROM gamification.user_week_activity
-        WHERE user_id = $1
-          AND year = EXTRACT(isoyear FROM NOW())::int
-          AND iso_week = EXTRACT(week FROM NOW())::int
-      `;
-      const weeklyGoalResult = await client.query(weeklyGoalQuery, [user_id]);
-      const weekly_goal = { 
-        progress: Number(weeklyGoalResult.rows[0]?.progress || 0), 
-        target_taps: goal 
-      };
+      // Step 5: Query weekly goal progress (schema-qualified)
+      let weekly_goal;
+      try {
+        const goal = Number(process.env.WEEKLY_GOAL_TAPS || 25);
+        const weeklyGoalQuery = `
+          SELECT COALESCE(SUM(tap_count), 0) AS progress
+          FROM gamification.user_week_activity
+          WHERE user_id = $1
+            AND year = EXTRACT(isoyear FROM NOW())::int
+            AND iso_week = EXTRACT(week FROM NOW())::int
+        `;
+        const weeklyGoalResult = await client.query(weeklyGoalQuery, [user_id]);
+        weekly_goal = { 
+          progress: Number(weeklyGoalResult.rows[0]?.progress || 0), 
+          target_taps: goal 
+        };
+      } catch (stepError) {
+        if (isDebug) {
+          return res.status(500).json({
+            ok: false,
+            at: 'weekly:goal',
+            code: stepError.code,
+            message: stepError.message,
+            detail: stepError.detail || null
+          });
+        }
+        throw stepError;
+      }
       
-      // Query recent first-degree connections (schema-qualified)
-      const connectionsQuery = `
-        SELECT DISTINCT 
-          CASE 
-            WHEN t.id1 = $1 THEN t.id2 
-            ELSE t.id1 
-          END as connected_user_id,
-          u.name as connected_user_name,
-          MAX(t."time") as last_tap_at
-        FROM public.taps t
-        JOIN public.users u ON (
-          CASE 
-            WHEN t.id1 = $1 THEN u.id = t.id2 
-            ELSE u.id = t.id1 
-          END
-        )
-        WHERE (t.id1 = $1 OR t.id2 = $1)
-          AND t."time" >= NOW() - INTERVAL '7 days'
-        GROUP BY connected_user_id, connected_user_name
-        ORDER BY last_tap_at DESC
-        LIMIT 10
-      `;
-      const connectionsResult = await client.query(connectionsQuery, [user_id]);
+      // Step 6: Query recent first-degree connections (schema-qualified)
+      let connectionsResult;
+      try {
+        const connectionsQuery = `
+          SELECT DISTINCT 
+            CASE 
+              WHEN t.id1 = $1 THEN t.id2 
+              ELSE t.id1 
+            END as connected_user_id,
+            u.name as connected_user_name,
+            MAX(t."time") as last_tap_at
+          FROM public.taps t
+          JOIN public.users u ON (
+            CASE 
+              WHEN t.id1 = $1 THEN u.id = t.id2 
+              ELSE u.id = t.id1 
+            END
+          )
+          WHERE (t.id1 = $1 OR t.id2 = $1)
+            AND t."time" >= NOW() - INTERVAL '7 days'
+          GROUP BY connected_user_id, connected_user_name
+          ORDER BY last_tap_at DESC
+          LIMIT 10
+        `;
+        connectionsResult = await client.query(connectionsQuery, [user_id]);
+      } catch (stepError) {
+        if (isDebug) {
+          return res.status(500).json({
+            ok: false,
+            at: 'weekly:connections',
+            code: stepError.code,
+            message: stepError.message,
+            detail: stepError.detail || null
+          });
+        }
+        throw stepError;
+      }
       
       // Add debug information
       const hasDbUrl = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'));

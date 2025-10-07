@@ -5,6 +5,9 @@ const DATA_READER_URL = process.env.DATA_READER_URL;
 const DATA_READER_SECRET = process.env.DATA_READER_SECRET;
 
 export default async function handler(req, res) {
+  const { debug } = req.query;
+  const isDebug = debug === '1';
+  
   try {
     console.log('📊 Fetching data from Cloud Run reader...');
     
@@ -34,8 +37,19 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ Error fetching data from reader service:', error);
     
-    return res.status(503).json({ 
-      error: 'upstream_unavailable'
-    });
+    if (isDebug) {
+      return res.status(500).json({
+        ok: false,
+        at: 'data-export',
+        code: error.code || 'FETCH_ERROR',
+        message: error.message,
+        detail: error.detail || null,
+        hint: 'check schema/privs'
+      });
+    } else {
+      return res.status(503).json({ 
+        error: 'upstream_unavailable'
+      });
+    }
   }
 }

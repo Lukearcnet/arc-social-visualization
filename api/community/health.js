@@ -19,32 +19,37 @@ export default async function handler(req, res) {
     const client = await pool.connect();
     
     try {
-      // Rich diagnostics
-      const nowResult = await client.query('SELECT NOW() AS now');
-      const whoResult = await client.query('SELECT current_user, current_database()');
-      const ipResult = await client.query('SELECT inet_server_addr() AS db_ip');
-      const schemasResult = await client.query(`
-        SELECT nspname FROM pg_namespace WHERE nspname IN ('public','gamification')
+      // Single diagnostic query to fix current_database() bug
+      const diagResult = await client.query(`
+        SELECT 
+          current_database() AS db,
+          current_user       AS user,
+          inet_server_addr()::text AS host,
+          inet_server_port() AS port,
+          NOW()              AS now
       `);
       
-      // Check gamification table counts
-      const dayResult = await client.query('SELECT COUNT(*) AS day_rows FROM gamification.user_day_activity');
-      const weekResult = await client.query('SELECT COUNT(*) AS week_rows FROM gamification.user_week_activity');
-      const edgesResult = await client.query('SELECT COUNT(*) AS edges FROM gamification.edge_strength');
+      // Check table existence
+      const tableResult = await client.query(`
+        SELECT 
+          to_regclass('public.taps')                                  AS has_taps,
+          to_regclass('public.users')                                 AS has_users,
+          to_regclass('gamification.user_week_activity')              AS has_user_week_activity,
+          to_regclass('gamification.edge_strength')                   AS has_edge_strength
+      `);
       
       const healthData = {
         ok: true,
-        now: nowResult.rows[0].now,
-        whoami: {
-          user: whoResult.rows[0].current_user,
-          database: whoResult.rows[0].current_database()
-        },
-        db_ip: ipResult.rows[0].db_ip,
-        schemas: schemasResult.rows.map(r => r.nspname),
-        counts: {
-          day_rows: Number(dayResult.rows[0].day_rows),
-          week_rows: Number(weekResult.rows[0].week_rows),
-          edges: Number(edgesResult.rows[0].edges)
+        db: diagResult.rows[0].db,
+        user: diagResult.rows[0].user,
+        host: diagResult.rows[0].host,
+        port: diagResult.rows[0].port,
+        now: diagResult.rows[0].now,
+        has: {
+          taps: tableResult.rows[0].has_taps,
+          users: tableResult.rows[0].has_users,
+          user_week_activity: tableResult.rows[0].has_user_week_activity,
+          edge_strength: tableResult.rows[0].has_edge_strength
         }
       };
       
@@ -60,8 +65,8 @@ export default async function handler(req, res) {
     return res.status(500).json({
       ok: false,
       code: err.code,
-      error: String(err.message),
-      hint: 'DATABASE_URL/SSL/permissions'
+      message: err.message,
+      detail: err.detail || null
     });
   }
 }
