@@ -16,16 +16,20 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
+  console.log('🚀 Community API handler started');
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { user_id } = req.query;
+  console.log('🔍 User ID received:', user_id);
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
   }
 
+  console.log('🔍 About to enter try block');
   try {
     console.log('📊 Fetching community weekly data from database...');
     console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
@@ -164,6 +168,8 @@ export default async function handler(req, res) {
     console.log('📊 Database error, returning mock data as fallback');
     return res.status(200).json(getMockWeeklyData());
   }
+  
+  console.log('🔍 Handler function completed');
 }
 
 // Helper functions
