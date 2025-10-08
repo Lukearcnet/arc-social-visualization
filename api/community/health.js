@@ -151,7 +151,8 @@ const handler = async (req, res) => {
       response.meta.debug = {
         total_connections: connections.length,
         taps_processed: userTaps.length,
-        time_window_days: 90
+        time_window_days: 90,
+        names_resolved: users.length
       };
     }
     

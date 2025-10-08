@@ -124,6 +124,12 @@ const handler = async (req, res) => {
         },
         recommendations: payload.recommendations.length
       });
+      
+      // Add names resolved debug info
+      payload.meta.debug = {
+        ...payload.meta.debug,
+        names_resolved: exportData.users?.length || 0
+      };
     }
     
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
