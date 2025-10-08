@@ -94,6 +94,18 @@ const handler = async (req, res) => {
       nowUtc: new Date().toISOString()
     });
     
+    // Check if assembler returned an error payload
+    if (payload.meta?.warnings?.some(w => w.includes('Assembler error'))) {
+      console.error('❌ [weekly] Assembler error detected:', payload.meta.debug);
+      if (isDebug) {
+        return res.status(500).json({
+          error: 'assembler_error',
+          message: payload.meta.warnings[0],
+          debug: payload.meta.debug
+        });
+      }
+    }
+    
     // Override meta with current context
     payload.meta = {
       ...payload.meta,
