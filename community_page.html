@@ -439,6 +439,9 @@
             padding: var(--space-4);
             max-width: 600px;
             margin: 0 auto;
+            min-height: 400px; /* Ensure minimum height */
+            background: var(--bg-secondary); /* Temporary background for debugging */
+            border: 2px solid var(--accent); /* Temporary border for debugging */
         }
 
         .quests-header {
@@ -1438,6 +1441,32 @@
                 `;
 
                 console.log('🎯 [Quests] Content updated, innerHTML length:', content.innerHTML.length);
+
+                // Debug: Check if quests section is visible
+                const questsSection = document.getElementById('quests-section');
+                if (questsSection) {
+                    const computedStyle = window.getComputedStyle(questsSection);
+                    console.log('🎯 [Quests] Section visibility:', {
+                        display: computedStyle.display,
+                        visibility: computedStyle.visibility,
+                        opacity: computedStyle.opacity,
+                        height: computedStyle.height,
+                        width: computedStyle.width
+                    });
+                }
+
+                // Debug: Check if quests container is visible
+                const questsContainer = document.querySelector('.quests-container');
+                if (questsContainer) {
+                    const containerStyle = window.getComputedStyle(questsContainer);
+                    console.log('🎯 [Quests] Container visibility:', {
+                        display: containerStyle.display,
+                        visibility: containerStyle.visibility,
+                        opacity: containerStyle.opacity,
+                        height: containerStyle.height,
+                        width: containerStyle.width
+                    });
+                }
 
                 // Setup refresh button
                 this.setupQuestsRefresh();
