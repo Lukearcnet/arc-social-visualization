@@ -905,6 +905,8 @@
             }
 
             switchSection(section) {
+                console.log('🔄 [Community] Switching to section:', section);
+                
                 // Update nav tabs
                 document.querySelectorAll('.nav-tab').forEach(tab => {
                     tab.classList.remove('active');
@@ -915,10 +917,20 @@
                 document.querySelectorAll('.community-section').forEach(sec => {
                     sec.style.display = 'none';
                 });
-                document.getElementById(`${section}-section`).style.display = 'block';
+                
+                const targetSection = document.getElementById(`${section}-section`);
+                console.log('🔄 [Community] Target section element:', targetSection);
+                
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                    console.log('🔄 [Community] Section displayed');
+                } else {
+                    console.error('❌ [Community] Section not found:', `${section}-section`);
+                }
 
                 // Load section-specific data
                 if (section === 'quests') {
+                    console.log('🔄 [Community] Loading quests...');
                     this.loadQuests();
                 } else if (section === 'radar') {
                     this.loadRadar();
@@ -1392,26 +1404,40 @@
             }
 
             renderQuests(data) {
+                console.log('🎯 [Quests] Rendering quests:', data);
                 const content = document.getElementById('quests-content');
+                console.log('🎯 [Quests] Content element:', content);
+                
+                if (!content) {
+                    console.error('❌ [Quests] quests-content element not found!');
+                    return;
+                }
                 
                 if (!data.quests || data.quests.length === 0) {
+                    console.log('🎯 [Quests] No quests data, showing empty state');
                     this.renderQuestsEmpty();
                     return;
                 }
+                
+                console.log('🎯 [Quests] Found', data.quests.length, 'quests');
                 
                 // Update week info
                 this.updateQuestsWeekInfo(data.week);
                 
                 // Sort quests by status: active → nearly done → completed
                 const sortedQuests = this.sortQuestsByStatus(data.quests);
+                console.log('🎯 [Quests] Sorted quests:', sortedQuests);
                 
                 const questsHTML = sortedQuests.map(quest => this.renderQuestCard(quest)).join('');
+                console.log('🎯 [Quests] Generated HTML length:', questsHTML.length);
                 
                 content.innerHTML = `
                     <div class="quests-list">
                         ${questsHTML}
                     </div>
                 `;
+
+                console.log('🎯 [Quests] Content updated, innerHTML length:', content.innerHTML.length);
 
                 // Setup refresh button
                 this.setupQuestsRefresh();
