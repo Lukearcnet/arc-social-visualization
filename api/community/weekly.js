@@ -106,47 +106,79 @@ const handler = async (req, res) => {
       }
     }
     
-    // Override meta with current context
-    payload.meta = {
-      ...payload.meta,
+    // Ensure required fields are present
+    const nowUtc = new Date().toISOString();
+    
+    function isoWeekRange(d = new Date()) {
+      const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      const day = utc.getUTCDay() || 7;                // Mon=1..Sun=7
+      const monday = new Date(utc); monday.setUTCDate(utc.getUTCDate() - (day - 1));
+      const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 6);
+      const pad = x => String(x).padStart(2,'0');
+      const toYMD = x => `${x.getUTCFullYear()}-${pad(x.getUTCMonth()+1)}-${pad(x.getUTCDate())}`;
+      const firstThu = new Date(Date.UTC(utc.getUTCFullYear(),0,4));
+      const week = Math.floor(( (utc - new Date(Date.UTC(utc.getUTCFullYear(),0,1)))/86400000 + firstThu.getUTCDay()+1 )/7);
+      return { year: utc.getUTCFullYear(), iso_week: week, range: [toYMD(monday), toYMD(sunday)] };
+    }
+    
+    // Build final output with required fields
+    const out = {
       source: 'reader',
+      generated_at: nowUtc,
+      week: isoWeekRange(new Date(nowUtc)),
+      ...payload,            // must contain recap, momentum, leaderboard, recommendations, meta
+    };
+    
+    // Defensive: if assembler already set source/week, keep them
+    out.source = out.source ?? 'reader';
+    out.week   = out.week   ?? isoWeekRange(new Date(nowUtc));
+    
+    // Add duration to meta
+    out.meta = {
+      ...out.meta,
       duration_ms: Date.now() - startTime,
       user_id: user_id,
       watermark: new Date().toISOString(),
-      warnings: payload.meta?.warnings || []
+      warnings: out.meta?.warnings || []
     };
+    
+    // Final shape check
+    if (!out.source || !out.week) {
+      console.error('WEEKLY_SHAPE_ERROR', { keys: Object.keys(out) });
+      if (isDebug) out.meta = { ...(out.meta||{}), warnings:[...(out.meta?.warnings||[]),'fixed missing source/week'] };
+    }
     
     // Debug logging
     if (isDebug) {
       console.log('🔍 [weekly] Assembled payload counts:', {
         recap: {
-          first_degree_new: payload.recap.first_degree_new.length,
-          second_degree_delta: payload.recap.second_degree_delta,
-          community_activity: payload.recap.community_activity.length
+          first_degree_new: out.recap.first_degree_new.length,
+          second_degree_delta: out.recap.second_degree_delta,
+          community_activity: out.recap.community_activity.length
         },
         momentum: {
-          current_streak_days: payload.momentum.current_streak_days,
-          weekly_taps: payload.momentum.weekly_taps,
-          new_connections: payload.momentum.new_connections
+          current_streak_days: out.momentum.current_streak_days,
+          weekly_taps: out.momentum.weekly_taps,
+          new_connections: out.momentum.new_connections
         },
         leaderboard: {
-          new_connections: payload.leaderboard.new_connections.length,
-          community_builders: payload.leaderboard.community_builders.length,
-          streak_masters: payload.leaderboard.streak_masters.length
+          new_connections: out.leaderboard.new_connections.length,
+          community_builders: out.leaderboard.community_builders.length,
+          streak_masters: out.leaderboard.streak_masters.length
         },
-        recommendations: payload.recommendations.length
+        recommendations: out.recommendations.length
       });
       
       // Add names resolved debug info
-      payload.meta.debug = {
-        ...payload.meta.debug,
+      out.meta.debug = {
+        ...out.meta.debug,
         names_resolved: exportData.users?.length || 0
       };
     }
     
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json(payload);
+    return res.status(200).json(out);
     
   } catch (error) {
     console.error('❌ [weekly] Data Reader fetch failed:', error);
