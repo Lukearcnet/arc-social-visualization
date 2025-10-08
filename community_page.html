@@ -433,6 +433,204 @@
                 opacity: 1;
             }
         }
+
+        /* Quests Section Styles */
+        .quests-container {
+            padding: var(--space-4);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .quests-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .quests-header h2 {
+            font-size: var(--text-3xl);
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .quests-subtitle {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            margin-bottom: var(--space-4);
+        }
+
+        .week-info {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+            background: var(--bg-secondary);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-2);
+            display: inline-block;
+        }
+
+        .quests-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .quest-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            transition: all 0.2s ease;
+        }
+
+        .quest-card:hover {
+            border-color: var(--accent);
+        }
+
+        .quest-card.completed {
+            border-color: var(--success);
+        }
+
+        .quest-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .quest-icon {
+            font-size: var(--text-xl);
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-2);
+        }
+
+        .quest-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+
+        .quest-progress {
+            margin-bottom: var(--space-3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-2);
+            overflow: hidden;
+            margin-bottom: var(--space-2);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: var(--radius-2);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-fill.completed {
+            background: var(--success);
+        }
+
+        .progress-fill.over-achieved {
+            background: var(--warning);
+        }
+
+        .progress-text {
+            font-size: var(--text-sm);
+            color: var(--fg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-percentage {
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+
+        .quest-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-sm);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--fg-muted);
+        }
+
+        .status-indicator.completed {
+            background: var(--success);
+        }
+
+        .status-indicator.in-progress {
+            background: var(--accent);
+        }
+
+        .status-indicator.not-started {
+            background: var(--fg-muted);
+        }
+
+        .refresh-button {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            color: var(--fg-secondary);
+            padding: var(--space-2);
+            border-radius: var(--radius-2);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            transition: all 0.2s ease;
+        }
+
+        .refresh-button:hover {
+            background: var(--bg-tertiary);
+            color: var(--fg-primary);
+        }
+
+        .refresh-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .routes-placeholder {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            margin-top: var(--space-6);
+            text-align: center;
+            color: var(--fg-muted);
+        }
+
+        .routes-placeholder h3 {
+            font-size: var(--text-lg);
+            margin-bottom: var(--space-2);
+            color: var(--fg-secondary);
+        }
+
+        .routes-placeholder p {
+            font-size: var(--text-sm);
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .progress-fill {
+                transition: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -511,8 +709,29 @@
 
                     <!-- Other sections will be added here -->
                     <div id="quests-section" class="community-section" style="display: none;">
-                        <h2>Quests & Routes</h2>
-                        <p>Quest system coming soon...</p>
+                        <div class="quests-container">
+                            <div class="quests-header">
+                                <h2>Quests & Routes</h2>
+                                <div class="quests-subtitle">Complete weekly challenges to grow your network</div>
+                                <div class="week-info" id="quests-week-info">Loading week info...</div>
+                            </div>
+
+                            <button class="refresh-button" id="quests-refresh-button" title="Refresh quests">
+                                ↻
+                            </button>
+
+                            <div id="quests-content">
+                                <div class="loading-state">
+                                    <div class="loading-spinner"></div>
+                                    <div>Loading quests...</div>
+                                </div>
+                            </div>
+
+                            <div class="routes-placeholder">
+                                <h3>Routes</h3>
+                                <p>Personalized connection suggestions coming soon</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="radar-section" class="community-section" style="display: none;">
@@ -697,6 +916,15 @@
                     sec.style.display = 'none';
                 });
                 document.getElementById(`${section}-section`).style.display = 'block';
+
+                // Load section-specific data
+                if (section === 'quests') {
+                    this.loadQuests();
+                } else if (section === 'radar') {
+                    this.loadRadar();
+                } else if (section === 'health') {
+                    this.loadHealth();
+                }
 
                 this.currentSection = section;
 
@@ -1135,6 +1363,232 @@
                     minute: '2-digit' 
                 });
                 document.getElementById('last-updated-time').textContent = timeString;
+            }
+
+            async loadQuests() {
+                console.log('🎯 [Quests] Loading quest data...');
+                
+                try {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    if (!userId) {
+                        throw new Error('No user ID available');
+                    }
+
+                    const response = await fetch(`/api/community/quests?user_id=${userId}&debug=1`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('🎯 [Quests] Loaded:', data);
+                    
+                    this.renderQuests(data);
+                    
+                } catch (error) {
+                    console.error('❌ [Quests] Failed to load:', error);
+                    this.renderQuestsError(error);
+                }
+            }
+
+            renderQuests(data) {
+                const content = document.getElementById('quests-content');
+                
+                if (!data.quests || data.quests.length === 0) {
+                    this.renderQuestsEmpty();
+                    return;
+                }
+                
+                // Update week info
+                this.updateQuestsWeekInfo(data.week);
+                
+                // Sort quests by status: active → nearly done → completed
+                const sortedQuests = this.sortQuestsByStatus(data.quests);
+                
+                const questsHTML = sortedQuests.map(quest => this.renderQuestCard(quest)).join('');
+                
+                content.innerHTML = `
+                    <div class="quests-list">
+                        ${questsHTML}
+                    </div>
+                `;
+
+                // Setup refresh button
+                this.setupQuestsRefresh();
+            }
+
+            sortQuestsByStatus(quests) {
+                return quests.sort((a, b) => {
+                    const statusA = this.getQuestStatus(a);
+                    const statusB = this.getQuestStatus(b);
+                    
+                    // Sort order: active → nearly done → completed
+                    const statusOrder = { 'active': 0, 'nearly-done': 1, 'completed': 2 };
+                    return statusOrder[statusA] - statusOrder[statusB];
+                });
+            }
+
+            getQuestStatus(quest) {
+                const progress = quest.progress || 0;
+                const target = quest.target || 0;
+                
+                if (target === 0) return 'active';
+                if (progress >= target) return 'completed';
+                if (progress >= target * 0.8) return 'nearly-done';
+                return 'active';
+            }
+
+            renderQuestCard(quest) {
+                const progress = quest.progress || 0;
+                const target = quest.target || 0;
+                const percentage = target > 0 ? Math.min(100, Math.round((progress / target) * 100)) : 0;
+                const status = this.getQuestStatus(quest);
+                
+                const icon = this.getQuestIcon(quest.id);
+                const statusText = this.getQuestStatusText(status, progress, target);
+                const statusClass = this.getQuestStatusClass(status);
+                
+                return `
+                    <div class="quest-card ${statusClass}" data-quest-id="${quest.id}">
+                        <div class="quest-header">
+                            <div class="quest-icon">${icon}</div>
+                            <div class="quest-title">${quest.title}</div>
+                        </div>
+                        <div class="quest-progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 aria-valuenow="${progress}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="${target}"
+                                 aria-label="Progress: ${progress} of ${target} ${quest.unit}">
+                                <div class="progress-fill ${this.getProgressClass(status, percentage)}" 
+                                     style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span>${progress} / ${target} ${quest.unit}</span>
+                                <span class="progress-percentage">${percentage}%</span>
+                            </div>
+                        </div>
+                        <div class="quest-status">
+                            <div class="status-indicator ${statusClass}"></div>
+                            <span>${statusText}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getQuestIcon(questId) {
+                const icons = {
+                    'connect_5': '👥',
+                    'taps_25': '📱',
+                    'streak_3': '🔥'
+                };
+                return icons[questId] || '🎯';
+            }
+
+            getQuestStatusText(status, progress, target) {
+                switch (status) {
+                    case 'completed':
+                        return 'Completed!';
+                    case 'nearly-done':
+                        return 'Almost there!';
+                    case 'active':
+                        return target === 0 ? 'Ready to start' : 'In progress';
+                    default:
+                        return 'In progress';
+                }
+            }
+
+            getQuestStatusClass(status) {
+                switch (status) {
+                    case 'completed':
+                        return 'completed';
+                    case 'nearly-done':
+                        return 'nearly-done';
+                    case 'active':
+                        return 'active';
+                    default:
+                        return 'active';
+                }
+            }
+
+            getProgressClass(status, percentage) {
+                if (status === 'completed') return 'completed';
+                if (percentage > 100) return 'over-achieved';
+                return '';
+            }
+
+            updateQuestsWeekInfo(week) {
+                const weekInfo = document.getElementById('quests-week-info');
+                if (week && week.year && week.iso_week) {
+                    weekInfo.textContent = `Week ${week.iso_week}, ${week.year} (server week UTC, shown in your local time)`;
+                } else {
+                    weekInfo.textContent = 'Current week';
+                }
+            }
+
+            renderQuestsEmpty() {
+                const content = document.getElementById('quests-content');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div>🎯</div>
+                        <div>No quests available</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-2);">
+                            Check back later for new challenges
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderQuestsError(error) {
+                const content = document.getElementById('quests-content');
+                content.innerHTML = `
+                    <div class="error-state">
+                        <div>❌</div>
+                        <div>Failed to load quests</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-2);">
+                            ${error.message}
+                        </div>
+                        <button class="retry-button" onclick="location.reload()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+
+            setupQuestsRefresh() {
+                const refreshButton = document.getElementById('quests-refresh-button');
+                if (refreshButton) {
+                    refreshButton.onclick = () => this.refreshQuests();
+                }
+            }
+
+            async refreshQuests() {
+                const refreshButton = document.getElementById('quests-refresh-button');
+                if (refreshButton) {
+                    refreshButton.disabled = true;
+                    refreshButton.textContent = '⟳';
+                }
+                
+                try {
+                    await this.loadQuests();
+                } finally {
+                    if (refreshButton) {
+                        setTimeout(() => {
+                            refreshButton.disabled = false;
+                            refreshButton.textContent = '↻';
+                        }, 1000);
+                    }
+                }
+            }
+
+            loadRadar() {
+                console.log('📡 [Radar] Loading radar data...');
+                // TODO: Implement radar loading
+            }
+
+            loadHealth() {
+                console.log('🏥 [Health] Loading health data...');
+                // TODO: Implement health loading
             }
         }
 
