@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Quests UI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+        .test-buttons {
+            margin-bottom: 20px;
+        }
+        .test-buttons button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-buttons button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Quests & Routes UI Test</h1>
+        
+        <div class="test-info">
+            <h3>Test Scenarios:</h3>
+            <ul>
+                <li><strong>Normal Data:</strong> Shows 3 quests with progress bars</li>
+                <li><strong>Empty State:</strong> No quests available</li>
+                <li><strong>Over-achievement:</strong> Progress exceeds target</li>
+                <li><strong>Error State:</strong> API failure with retry button</li>
+                <li><strong>Loading State:</strong> Spinner while fetching</li>
+            </ul>
+        </div>
+        
+        <div class="test-buttons">
+            <button onclick="loadNormalData()">Normal Data</button>
+            <button onclick="loadEmptyData()">Empty State</button>
+            <button onclick="loadOverAchievement()">Over-achievement</button>
+            <button onclick="loadErrorState()">Error State</button>
+            <button onclick="loadLoadingState()">Loading State</button>
+            <button onclick="loadRealData()">Real API Data</button>
+        </div>
+        
+        <iframe id="questsFrame" src="quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&debug=1"></iframe>
+    </div>
+
+    <script>
+        function loadNormalData() {
+            document.getElementById('questsFrame').src = 'quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&test=normal&debug=1';
+        }
+        
+        function loadEmptyData() {
+            document.getElementById('questsFrame').src = 'quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&test=empty&debug=1';
+        }
+        
+        function loadOverAchievement() {
+            document.getElementById('questsFrame').src = 'quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&test=overachievement&debug=1';
+        }
+        
+        function loadErrorState() {
+            document.getElementById('questsFrame').src = 'quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&test=error&debug=1';
+        }
+        
+        function loadLoadingState() {
+            document.getElementById('questsFrame').src = 'quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&test=loading&debug=1';
+        }
+        
+        function loadRealData() {
+            document.getElementById('questsFrame').src = 'quests_routes.html?user_id=2a227da2-b09a-402f-81e8-1976633cf682&debug=1';
+        }
+    </script>
+</body>
+</html>

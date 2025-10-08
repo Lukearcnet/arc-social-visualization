@@ -21,6 +21,13 @@
 - ✅ **edge_strength**: 667 rows
 - ✅ **Watermark**: `_watermark.last_run_at = 2025-10-06 19:08:35+00`
 
+### **Live API Endpoints (DEPLOYED)**
+- ✅ **Weekly Pulse**: `/api/community/weekly?user_id=...` - Returns weekly metrics, leaderboards, recommendations
+- ✅ **Quests & Routes**: `/api/community/quests?user_id=...` - Returns quest progress with targets and units
+- ✅ **Opportunity Radar**: `/api/community/radar?user_id=...&hours=24` - Returns hourly activity buckets and top participants
+- ✅ **Relationship Health**: `/api/community/health?user_id=...` - Returns connection strength analysis and health buckets
+- ✅ **Name Resolution**: Unified via `lib/community/names.js` with `getDisplayName`, `userById`, `buildUserIndex`
+
 ### **Safety & Security (VERIFIED)**
 - ✅ **Read-only**: From `public.*` tables only (taps, users)
 - ✅ **Write-only**: To `gamification.*` schema only
@@ -29,9 +36,50 @@
 
 ---
 
+## 🎯 **RECOMMENDATIONS V1.1 (TUNABLE)**
+
+**State**: Implemented in `/api/community/weekly` and will be tunable.
+
+**Config Keys** (env or JSON):
+- `REC_MIN_MUTUALS` (default: 2)
+- `REC_MAX_RESULTS` (default: 3) 
+- `REC_SCORE_WEIGHTS` with `{mutuals:0.7, recency:0.2, geo:0.1}` defaults
+- `REC_MAX_DAYS_FOR_RECENCY` (default: 90)
+- `REC_GEO_MAX_KM` (default: 50)
+- `REC_BLOCKLIST_IDS`, `REC_BLOCKLIST_USERNAMES`
+
+**Scoring Formula**:
+```
+score = w_m * f(mutuals) + w_r * f(recency_decay) + w_g * f(geo_proximity)
+```
+
+**Scoring Components**:
+- **Mutuals**: Normalized by cap (e.g., /10)
+- **Recency**: Exponential decay by last interaction (cap at 90d)
+- **Geo**: Inverse distance up to `REC_GEO_MAX_KM`
+
+**Debug/Telemetry**: When `debug=1`, return `meta.debug.recs` echoing effective config and top factors used.
+
+---
+
+## 🌍 **TIMEZONE POLICY**
+
+**Global Policy**: Compute server-side in UTC, present/segment in user TZ when provided.
+
+**Endpoint Behavior**:
+- Endpoints accept `tz` (IANA, e.g., `America/Chicago`); fallback to profile TZ, else UTC
+- **Weekly/Quests**: ISO week boundaries use `tz`
+- **Radar**: Hourly buckets use `tz`; include `meta.tz_used` and `meta.debug.boundaries` when `debug=1`
+- **Note**: Keep timestamps in UTC in payloads; add local date labels only where applicable
+- **Caching**: Responses vary by `tz` (document that we may add `Vary: tz` or bake `tz` into URL)
+
+---
+
 ## 🚧 **NEXT DEVELOPMENT TASKS**
 
-### **A) Improve Weekly User Metrics**
+> **Note**: Sections A–E (SQL rollups) are **Optional / Phase 2 (nice-to-have)** since current pages use the Data Reader export and server-side aggregation. We already have working endpoints (`/api/community/weekly`, `/api/community/quests`, `/api/community/radar`, `/api/community/health`) that compute metrics without new DB jobs; rollups can come later for cost/perf.
+
+### **A) Improve Weekly User Metrics (Optional / Phase 2)**
 
 #### **A.1 First-Degree New Count**
 ```sql
@@ -176,6 +224,34 @@ gcloud scheduler jobs create http gamification-rollup-30min \
 
 ---
 
+## 🎨 **UI BUILD ROADMAP (NOW)**
+
+### **🎯 Quests & Routes (READY)**
+**Status**: Show 3 quests with progress bars
+**Acceptance**: `/api/community/quests` returns `progress`/`target`/`unit` for each
+**Screenshots/Todo**: 
+- [ ] Quest cards with progress bars
+- [ ] Completion states and animations
+- [ ] Quest descriptions and rewards
+
+### **📡 Opportunity Radar (READY)**
+**Status**: 24 buckets, top participants in current window
+**Acceptance**: `/api/community/radar?hours=24&tz=...` returns 24 buckets, `meta.tz_used`
+**Screenshots/Todo**:
+- [ ] Activity timeline visualization
+- [ ] Top participants cards
+- [ ] Surge indicators and alerts
+
+### **🏥 Relationship Health (READY)**
+**Status**: List top ~15 connections with `strength_f32` and health buckets
+**Acceptance**: `/api/community/health` returns real names and categories
+**Screenshots/Todo**:
+- [ ] Health dashboard layout
+- [ ] Connection strength cards
+- [ ] Health bucket visualization
+
+---
+
 ## 📋 **DEVELOPMENT CONSTRAINTS**
 
 ### **Critical Requirements**
@@ -220,4 +296,55 @@ The gamification system is **production-ready** with:
 - ✅ Data processing confirmed (1,000+ records)
 - ✅ Safety constraints validated
 
-**Next Step**: Implement the improvements (A-D) to enhance weekly metrics, edge strength calculations, and leaderboard population.
+**Next Step**: Build UI components for Quests & Routes, Opportunity Radar, and Relationship Health using the live API endpoints.
+
+---
+
+## ⚙️ **CONFIG SURFACE**
+
+### **Environment Variables**
+- `DATABASE_URL` - PostgreSQL connection string
+- `DATA_READER_URL` - Cloud Run reader service URL
+- `DATA_READER_SECRET` - Authentication key for reader service
+- `WEEKLY_GOAL_TAPS` - Default weekly tap target (default: 25)
+
+### **Recommendation Tunables**
+- `REC_MIN_MUTUALS` - Minimum mutual connections required (default: 2)
+- `REC_MAX_RESULTS` - Maximum recommendations returned (default: 3)
+- `REC_SCORE_WEIGHTS` - JSON weights for scoring (default: `{"mutuals":0.7,"recency":0.2,"geo":0.1}`)
+- `REC_MAX_DAYS_FOR_RECENCY` - Maximum days for recency scoring (default: 90)
+- `REC_GEO_MAX_KM` - Maximum distance for geo scoring (default: 50)
+- `REC_BLOCKLIST_IDS` - Comma-separated user IDs to block
+- `REC_BLOCKLIST_USERNAMES` - Comma-separated usernames to block
+
+### **Timezone Support**
+- `TZ` - Default timezone for calculations (IANA format, e.g., `America/Chicago`)
+- Endpoints accept `tz` query parameter to override
+
+---
+
+## 🔍 **DIAGNOSTICS**
+
+### **Testing Endpoints**
+Test all endpoints with `?debug=1` to see detailed metadata:
+
+```bash
+# Weekly Pulse
+curl -s "$HOST/api/community/weekly?user_id=$USER&debug=1" | jq '.meta.debug'
+
+# Quests & Routes  
+curl -s "$HOST/api/community/quests?user_id=$USER&debug=1" | jq '.meta.debug'
+
+# Opportunity Radar
+curl -s "$HOST/api/community/radar?user_id=$USER&hours=24&debug=1" | jq '.meta.debug'
+
+# Relationship Health
+curl -s "$HOST/api/community/health?user_id=$USER&debug=1" | jq '.meta.debug'
+```
+
+### **Debug Information Available**
+- **Boundaries**: Week start/end times, timezone used
+- **Counts**: Taps processed, users mapped, connections analyzed
+- **Performance**: Duration in milliseconds
+- **Recommendations**: Effective config and scoring factors
+- **Names**: Resolution success rate and fallback usage

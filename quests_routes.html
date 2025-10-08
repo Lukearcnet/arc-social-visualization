@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quests & Routes - ARC Social Graph</title>
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --fg-primary: #ffffff;
+            --fg-secondary: #cccccc;
+            --fg-muted: #888888;
+            --accent: #007bff;
+            --accent-hover: #0056b3;
+            --success: #28a745;
+            --warning: #ffc107;
+            --stroke: #333333;
+            --radius: 8px;
+            --radius-2: 4px;
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --text-xs: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --text-3xl: 1.875rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Disable zoom but allow scrolling */
+        html {
+            touch-action: pan-y;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--fg-primary);
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .quests-container {
+            padding: var(--space-4);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .quests-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .quests-header h1 {
+            font-size: var(--text-3xl);
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .quests-subtitle {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            margin-bottom: var(--space-4);
+        }
+
+        .week-info {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+            background: var(--bg-secondary);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-2);
+            display: inline-block;
+        }
+
+        .quests-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .quest-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            transition: all 0.2s ease;
+        }
+
+        .quest-card:hover {
+            border-color: var(--accent);
+        }
+
+        .quest-card.completed {
+            border-color: var(--success);
+        }
+
+        .quest-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .quest-icon {
+            font-size: var(--text-xl);
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-2);
+        }
+
+        .quest-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+
+        .quest-progress {
+            margin-bottom: var(--space-3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-2);
+            overflow: hidden;
+            margin-bottom: var(--space-2);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: var(--radius-2);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-fill.completed {
+            background: var(--success);
+        }
+
+        .progress-fill.over-achieved {
+            background: var(--warning);
+        }
+
+        .progress-text {
+            font-size: var(--text-sm);
+            color: var(--fg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-percentage {
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+
+        .quest-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-sm);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--fg-muted);
+        }
+
+        .status-indicator.completed {
+            background: var(--success);
+        }
+
+        .status-indicator.in-progress {
+            background: var(--accent);
+        }
+
+        .status-indicator.not-started {
+            background: var(--fg-muted);
+        }
+
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-8);
+            color: var(--fg-muted);
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--stroke);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--space-3);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-8);
+            color: var(--fg-muted);
+            text-align: center;
+        }
+
+        .retry-button {
+            background: var(--accent);
+            color: var(--fg-primary);
+            border: none;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-2);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            margin-top: var(--space-3);
+            transition: background 0.2s ease;
+        }
+
+        .retry-button:hover {
+            background: var(--accent-hover);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-8);
+            color: var(--fg-muted);
+            text-align: center;
+        }
+
+        .routes-placeholder {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            margin-top: var(--space-6);
+            text-align: center;
+            color: var(--fg-muted);
+        }
+
+        .routes-placeholder h3 {
+            font-size: var(--text-lg);
+            margin-bottom: var(--space-2);
+            color: var(--fg-secondary);
+        }
+
+        .routes-placeholder p {
+            font-size: var(--text-sm);
+        }
+
+        .refresh-button {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            color: var(--fg-secondary);
+            padding: var(--space-2);
+            border-radius: var(--radius-2);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            transition: all 0.2s ease;
+        }
+
+        .refresh-button:hover {
+            background: var(--bg-tertiary);
+            color: var(--fg-primary);
+        }
+
+        .refresh-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .progress-fill {
+                transition: none;
+            }
+            
+            .loading-spinner {
+                animation: none;
+            }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .quests-container {
+                padding: var(--space-3);
+            }
+            
+            .quest-card {
+                padding: var(--space-3);
+            }
+            
+            .quest-header {
+                gap: var(--space-2);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="quests-container">
+        <div class="quests-header">
+            <h1>Quests & Routes</h1>
+            <div class="quests-subtitle">Complete weekly challenges to grow your network</div>
+            <div class="week-info" id="weekInfo">Loading week info...</div>
+        </div>
+
+        <button class="refresh-button" id="refreshButton" title="Refresh quests">
+            ↻
+        </button>
+
+        <div id="questsContent">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <div>Loading quests...</div>
+            </div>
+        </div>
+
+        <div class="routes-placeholder">
+            <h3>Routes</h3>
+            <p>Personalized connection suggestions coming soon</p>
+        </div>
+    </div>
+
+    <script>
+        class QuestsPage {
+            constructor() {
+                this.userId = this.getUserId();
+                this.isDebug = this.getDebugMode();
+                this.refreshInterval = null;
+                this.isVisible = true;
+                
+                this.init();
+            }
+
+            getUserId() {
+                // Try to get from sessionStorage first
+                const stored = sessionStorage.getItem('authenticatedUser');
+                if (stored) {
+                    try {
+                        const user = JSON.parse(stored);
+                        return user.id || user.user_id;
+                    } catch (e) {
+                        console.warn('Failed to parse stored user:', e);
+                    }
+                }
+                
+                // Fallback to URL params
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('user_id') || '2a227da2-b09a-402f-81e8-1976633cf682';
+            }
+
+            getDebugMode() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('debug') === '1';
+            }
+
+            async init() {
+                console.log('🎯 [Quests] Initializing...');
+                
+                this.setupEventListeners();
+                this.setupVisibilityListener();
+                await this.loadQuests();
+                this.startAutoRefresh();
+            }
+
+            setupEventListeners() {
+                const refreshButton = document.getElementById('refreshButton');
+                refreshButton.addEventListener('click', () => this.refreshQuests());
+            }
+
+            setupVisibilityListener() {
+                document.addEventListener('visibilitychange', () => {
+                    this.isVisible = !document.hidden;
+                    if (this.isVisible) {
+                        this.startAutoRefresh();
+                    } else {
+                        this.stopAutoRefresh();
+                    }
+                });
+            }
+
+            startAutoRefresh() {
+                this.stopAutoRefresh();
+                if (this.isVisible) {
+                    this.refreshInterval = setInterval(() => {
+                        this.loadQuests();
+                    }, 5 * 60 * 1000); // 5 minutes
+                }
+            }
+
+            stopAutoRefresh() {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                    this.refreshInterval = null;
+                }
+            }
+
+            async loadQuests() {
+                const startTime = Date.now();
+                console.log('🎯 [Quests] Loading quest data...');
+                
+                try {
+                    // Check for test scenarios
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const testScenario = urlParams.get('test');
+                    
+                    let apiUrl = `/api/community/quests?user_id=${this.userId}&debug=${this.isDebug ? '1' : '0'}`;
+                    
+                    if (testScenario) {
+                        apiUrl = `/api/community/quests-test?scenario=${testScenario}&user_id=${this.userId}`;
+                    }
+                    
+                    const response = await fetch(apiUrl);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    const duration = Date.now() - startTime;
+                    
+                    console.log(`🎯 [Quests] Loaded in ${duration}ms:`, {
+                        quests: data.quests?.length || 0,
+                        source: data.source,
+                        week: data.week,
+                        scenario: data.meta?.debug?.scenario
+                    });
+                    
+                    if (this.isDebug) {
+                        console.log('🔍 [Quests] Debug info:', data.meta?.debug);
+                    }
+                    
+                    this.renderQuests(data);
+                    
+                } catch (error) {
+                    console.error('❌ [Quests] Failed to load:', error);
+                    this.renderError(error);
+                }
+            }
+
+            renderQuests(data) {
+                const content = document.getElementById('questsContent');
+                
+                if (!data.quests || data.quests.length === 0) {
+                    this.renderEmptyState();
+                    return;
+                }
+                
+                // Update week info
+                this.updateWeekInfo(data.week);
+                
+                // Sort quests by status: active → nearly done → completed
+                const sortedQuests = this.sortQuestsByStatus(data.quests);
+                
+                const questsHTML = sortedQuests.map(quest => this.renderQuestCard(quest)).join('');
+                
+                content.innerHTML = `
+                    <div class="quests-list">
+                        ${questsHTML}
+                    </div>
+                `;
+            }
+
+            sortQuestsByStatus(quests) {
+                return quests.sort((a, b) => {
+                    const statusA = this.getQuestStatus(a);
+                    const statusB = this.getQuestStatus(b);
+                    
+                    // Sort order: active → nearly done → completed
+                    const statusOrder = { 'active': 0, 'nearly-done': 1, 'completed': 2 };
+                    return statusOrder[statusA] - statusOrder[statusB];
+                });
+            }
+
+            getQuestStatus(quest) {
+                const progress = quest.progress || 0;
+                const target = quest.target || 0;
+                
+                if (target === 0) return 'active';
+                if (progress >= target) return 'completed';
+                if (progress >= target * 0.8) return 'nearly-done';
+                return 'active';
+            }
+
+            renderQuestCard(quest) {
+                const progress = quest.progress || 0;
+                const target = quest.target || 0;
+                const percentage = target > 0 ? Math.min(100, Math.round((progress / target) * 100)) : 0;
+                const status = this.getQuestStatus(quest);
+                
+                const icon = this.getQuestIcon(quest.id);
+                const statusText = this.getStatusText(status, progress, target);
+                const statusClass = this.getStatusClass(status);
+                
+                return `
+                    <div class="quest-card ${statusClass}" data-quest-id="${quest.id}">
+                        <div class="quest-header">
+                            <div class="quest-icon">${icon}</div>
+                            <div class="quest-title">${quest.title}</div>
+                        </div>
+                        <div class="quest-progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 aria-valuenow="${progress}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="${target}"
+                                 aria-label="Progress: ${progress} of ${target} ${quest.unit}">
+                                <div class="progress-fill ${this.getProgressClass(status, percentage)}" 
+                                     style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span>${progress} / ${target} ${quest.unit}</span>
+                                <span class="progress-percentage">${percentage}%</span>
+                            </div>
+                        </div>
+                        <div class="quest-status">
+                            <div class="status-indicator ${statusClass}"></div>
+                            <span>${statusText}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getQuestIcon(questId) {
+                const icons = {
+                    'connect_5': '👥',
+                    'taps_25': '📱',
+                    'streak_3': '🔥'
+                };
+                return icons[questId] || '🎯';
+            }
+
+            getStatusText(status, progress, target) {
+                switch (status) {
+                    case 'completed':
+                        return 'Completed!';
+                    case 'nearly-done':
+                        return 'Almost there!';
+                    case 'active':
+                        return target === 0 ? 'Ready to start' : 'In progress';
+                    default:
+                        return 'In progress';
+                }
+            }
+
+            getStatusClass(status) {
+                switch (status) {
+                    case 'completed':
+                        return 'completed';
+                    case 'nearly-done':
+                        return 'nearly-done';
+                    case 'active':
+                        return 'active';
+                    default:
+                        return 'active';
+                }
+            }
+
+            getProgressClass(status, percentage) {
+                if (status === 'completed') return 'completed';
+                if (percentage > 100) return 'over-achieved';
+                return '';
+            }
+
+            updateWeekInfo(week) {
+                const weekInfo = document.getElementById('weekInfo');
+                if (week && week.year && week.iso_week) {
+                    weekInfo.textContent = `Week ${week.iso_week}, ${week.year} (server week UTC, shown in your local time)`;
+                } else {
+                    weekInfo.textContent = 'Current week';
+                }
+            }
+
+            renderEmptyState() {
+                const content = document.getElementById('questsContent');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div>🎯</div>
+                        <div>No quests available</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-2);">
+                            Check back later for new challenges
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderError(error) {
+                const content = document.getElementById('questsContent');
+                content.innerHTML = `
+                    <div class="error-state">
+                        <div>❌</div>
+                        <div>Failed to load quests</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-2);">
+                            ${error.message}
+                        </div>
+                        <button class="retry-button" onclick="location.reload()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+
+            async refreshQuests() {
+                const refreshButton = document.getElementById('refreshButton');
+                refreshButton.disabled = true;
+                refreshButton.textContent = '⟳';
+                
+                try {
+                    await this.loadQuests();
+                } finally {
+                    setTimeout(() => {
+                        refreshButton.disabled = false;
+                        refreshButton.textContent = '↻';
+                    }, 1000);
+                }
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new QuestsPage();
+        });
+    </script>
+</body>
+</html>
