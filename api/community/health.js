@@ -1,122 +1,11 @@
-// GET /api/community/health
-// Health check endpoint for Community API with smart proxy
+// GET /api/community/health?user_id=:id
+// Relationship Health endpoint for Community page
 // Date: 2025-01-15
 
-// Use shared database pool
-const { getPool } = require('../../lib/db');
-const { proxyOr } = require('../../lib/http');
-const pool = getPool();
+const { getExport } = require('../../lib/community/exportReader');
+const { getDisplayName, userById } = require('../../lib/community/names');
 
-// Local function for direct DB access (fallback)
-const localHandler = async (req, res) => {
-  console.log('🏥 COMMUNITY HEALTH CHECK');
-  console.log('🔍 DATABASE_URL present:', !!process.env.DATABASE_URL);
-  console.log('🔍 DATABASE_URL starts with postgres:', process.env.DATABASE_URL?.startsWith('postgres'));
-  console.log('🔍 Pool exists:', !!pool);
-  console.log('🔍 Pool totalCount:', pool?.totalCount);
-  console.log('🔍 Pool idleCount:', pool?.idleCount);
-  console.log('🔍 Pool waitingCount:', pool?.waitingCount);
-  
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    console.log('🔌 Attempting to connect to database...');
-    const startTime = Date.now();
-    const client = await pool.connect();
-    const connectTime = Date.now() - startTime;
-    console.log(`✅ Database connection established in ${connectTime}ms`);
-    console.log('🔍 Client process ID:', client?.processID);
-    console.log('🔍 Client secret key:', client?.secretKey);
-    
-    try {
-      // Single diagnostic query to fix current_database() bug
-      console.log('🔍 Running diagnostic query...');
-      const queryStartTime = Date.now();
-      const diagResult = await client.query(`
-        SELECT 
-          current_database() AS db,
-          current_user       AS user,
-          inet_server_addr()::text AS host,
-          inet_server_port() AS port,
-          NOW()              AS now
-      `);
-      const queryTime = Date.now() - queryStartTime;
-      console.log(`✅ Diagnostic query completed in ${queryTime}ms`);
-      console.log('🔍 Query result:', diagResult.rows[0]);
-      
-      // Check table existence
-      console.log('🔍 Checking table existence...');
-      const tableStartTime = Date.now();
-      const tableResult = await client.query(`
-        SELECT 
-          to_regclass('public.taps')                                  AS has_taps,
-          to_regclass('public.users')                                 AS has_users,
-          to_regclass('gamification.user_week_activity')              AS has_user_week_activity,
-          to_regclass('gamification.edge_strength')                   AS has_edge_strength
-      `);
-      const tableTime = Date.now() - tableStartTime;
-      console.log(`✅ Table check completed in ${tableTime}ms`);
-      console.log('🔍 Table results:', tableResult.rows[0]);
-      
-      const healthData = {
-        ok: true,
-        db: diagResult.rows[0].db,
-        user: diagResult.rows[0].user,
-        host: diagResult.rows[0].host,
-        port: diagResult.rows[0].port,
-        now: diagResult.rows[0].now,
-        has: {
-          taps: tableResult.rows[0].has_taps,
-          users: tableResult.rows[0].has_users,
-          user_week_activity: tableResult.rows[0].has_user_week_activity,
-          edge_strength: tableResult.rows[0].has_edge_strength
-        }
-      };
-      
-      console.log('✅ Community health check passed:', healthData);
-      return res.status(200).json(healthData);
-      
-    } finally {
-      client.release();
-    }
-    
-  } catch (err) {
-    console.error('❌ [community/health] FULL ERROR STACK:');
-    console.error('❌ Error name:', err.name);
-    console.error('❌ Error message:', err.message);
-    console.error('❌ Error code:', err.code);
-    console.error('❌ Error detail:', err.detail);
-    console.error('❌ Error hint:', err.hint);
-    console.error('❌ Error position:', err.position);
-    console.error('❌ Error internalPosition:', err.internalPosition);
-    console.error('❌ Error internalQuery:', err.internalQuery);
-    console.error('❌ Error where:', err.where);
-    console.error('❌ Error schema:', err.schema);
-    console.error('❌ Error table:', err.table);
-    console.error('❌ Error column:', err.column);
-    console.error('❌ Error dataType:', err.dataType);
-    console.error('❌ Error constraint:', err.constraint);
-    console.error('❌ Error file:', err.file);
-    console.error('❌ Error line:', err.line);
-    console.error('❌ Error routine:', err.routine);
-    console.error('❌ Error severity:', err.severity);
-    console.error('❌ Error stack:', err.stack);
-    console.error('❌ Full error object:', JSON.stringify(err, null, 2));
-    
-    return res.status(500).json({
-      ok: false,
-      code: err.code,
-      message: err.message,
-      detail: err.detail || null,
-      name: err.name,
-      severity: err.severity
-    });
-  }
-};
-
-// Main handler that uses smart proxy
+// Main handler
 const handler = async (req, res) => {
   const startTime = Date.now();
   
@@ -124,12 +13,170 @@ const handler = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Use smart proxy: DATA_READER_URL if available, otherwise direct DB
-  await proxyOr(localHandler, '/community/health', req, res);
+  const { user_id, debug } = req.query;
+  const isDebug = debug === '1';
   
-  const duration = Date.now() - startTime;
-  const mode = process.env.DATA_READER_URL ? 'reader' : 'direct';
-  console.log(`📊 [community/health] mode=${mode} duration=${duration}ms`);
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
+  }
+
+  try {
+    console.log('🏥 [health] Computing relationship health...');
+    
+    // Fetch data from Data Reader
+    const { taps, users } = await getExport({ req, res, debug: isDebug });
+    
+    // Filter taps where user participated in last 90 days
+    const now = new Date();
+    const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+    
+    const userTaps = taps.filter(tap => {
+      const tapTime = new Date(tap.time);
+      const id1 = tap.user1_id || tap.id1;
+      const id2 = tap.user2_id || tap.id2;
+      return (id1 === user_id || id2 === user_id) && tapTime >= ninetyDaysAgo;
+    });
+    
+    // Build pairwise counts
+    const connectionCounts = new Map();
+    
+    userTaps.forEach(tap => {
+      const id1 = tap.user1_id || tap.id1;
+      const id2 = tap.user2_id || tap.id2;
+      const otherId = id1 === user_id ? id2 : id1;
+      
+      if (otherId && otherId !== user_id) {
+        if (!connectionCounts.has(otherId)) {
+          connectionCounts.set(otherId, {
+            taps_7d: 0,
+            taps_30d: 0,
+            taps_90d: 0,
+            last_tap_at: null
+          });
+        }
+        
+        const counts = connectionCounts.get(otherId);
+        const tapTime = new Date(tap.time);
+        
+        // Count taps in different time windows
+        if (tapTime >= new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000))) {
+          counts.taps_7d++;
+        }
+        if (tapTime >= new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))) {
+          counts.taps_30d++;
+        }
+        counts.taps_90d++;
+        
+        // Track most recent tap
+        if (!counts.last_tap_at || tapTime > new Date(counts.last_tap_at)) {
+          counts.last_tap_at = tap.time;
+        }
+      }
+    });
+    
+    // Calculate health metrics for each connection
+    const connections = Array.from(connectionCounts.entries()).map(([otherUserId, counts]) => {
+      const daysSinceLastTap = counts.last_tap_at 
+        ? Math.ceil((now - new Date(counts.last_tap_at)) / (24 * 60 * 60 * 1000))
+        : 999;
+      
+      // Calculate strength: 0.5*(taps_30d/10) + 0.3*(taps_90d/30) + 0.2*(1/(1+days_since_last_tap))
+      const strength_f32 = Math.min(1, Math.max(0, 
+        0.5 * (counts.taps_30d / 10) + 
+        0.3 * (counts.taps_90d / 30) + 
+        0.2 * (1 / (1 + daysSinceLastTap))
+      ));
+      
+      // Determine health bucket
+      let health;
+      if (strength_f32 >= 0.8) health = 'excellent';
+      else if (strength_f32 >= 0.6) health = 'good';
+      else if (strength_f32 >= 0.4) health = 'fair';
+      else health = 'needs_attention';
+      
+      const user = userById(users, otherUserId);
+      
+      return {
+        other_user_id: otherUserId,
+        name: getDisplayName(user),
+        strength_f32: Math.round(strength_f32 * 100) / 100,
+        taps_7d: counts.taps_7d,
+        taps_30d: counts.taps_30d,
+        taps_90d: counts.taps_90d,
+        days_since_last_tap: daysSinceLastTap,
+        health: health
+      };
+    });
+    
+    // Sort by strength and take top 15
+    const topConnections = connections
+      .sort((a, b) => b.strength_f32 - a.strength_f32)
+      .slice(0, 15);
+    
+    // Calculate summary statistics
+    const healthBuckets = {
+      excellent: 0,
+      good: 0,
+      fair: 0,
+      needs_attention: 0
+    };
+    
+    topConnections.forEach(conn => {
+      healthBuckets[conn.health]++;
+    });
+    
+    const avgStrength = topConnections.length > 0 
+      ? topConnections.reduce((sum, conn) => sum + conn.strength_f32, 0) / topConnections.length
+      : 0;
+    
+    const response = {
+      source: 'reader',
+      user_id: user_id,
+      as_of: now.toISOString(),
+      summary: {
+        avg_strength: Math.round(avgStrength * 100) / 100,
+        excellent: healthBuckets.excellent,
+        good: healthBuckets.good,
+        fair: healthBuckets.fair,
+        needs_attention: healthBuckets.needs_attention
+      },
+      connections: topConnections,
+      meta: {
+        duration_ms: Date.now() - startTime,
+        warnings: []
+      }
+    };
+    
+    if (isDebug) {
+      response.meta.debug = {
+        total_connections: connections.length,
+        taps_processed: userTaps.length,
+        time_window_days: 90
+      };
+    }
+    
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).json(response);
+    
+  } catch (error) {
+    console.error('❌ [health] Relationship health calculation failed:', error);
+    
+    if (isDebug) {
+      return res.status(500).json({
+        ok: false,
+        at: 'health:calculation',
+        code: error.code || 'HEALTH_ERROR',
+        message: error.message,
+        detail: error.detail || null
+      });
+    } else {
+      return res.status(500).json({ 
+        error: 'health_calculation_failed',
+        message: 'Failed to calculate relationship health'
+      });
+    }
+  }
 };
 
 handler.config = { runtime: 'nodejs' };
