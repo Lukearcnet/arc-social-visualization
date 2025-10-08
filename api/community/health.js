@@ -3,7 +3,7 @@
 // Date: 2025-01-15
 
 const { getExport } = require('../../lib/community/exportReader');
-const { getDisplayName, userById } = require('../../lib/community/names');
+const { getDisplayName, userById, buildUserIndex } = require('../../lib/community/names');
 
 // Main handler
 const handler = async (req, res) => {
@@ -25,6 +25,11 @@ const handler = async (req, res) => {
     
     // Fetch data from Data Reader
     const { taps, users } = await getExport({ req, res, debug: isDebug });
+    
+    // Build user index and name resolver
+    const usersArray = users || [];
+    const usersById = buildUserIndex(usersArray);
+    const nameFor = (id) => getDisplayName(usersById.get(id) || userById(usersArray, id));
     
     // Filter taps where user participated in last 90 days
     const now = new Date();
@@ -94,11 +99,9 @@ const handler = async (req, res) => {
       else if (strength_f32 >= 0.4) health = 'fair';
       else health = 'needs_attention';
       
-      const user = userById(users, otherUserId);
-      
       return {
         other_user_id: otherUserId,
-        name: getDisplayName(user),
+        name: nameFor(otherUserId),
         strength_f32: Math.round(strength_f32 * 100) / 100,
         taps_7d: counts.taps_7d,
         taps_30d: counts.taps_30d,
@@ -152,7 +155,9 @@ const handler = async (req, res) => {
         total_connections: connections.length,
         taps_processed: userTaps.length,
         time_window_days: 90,
-        names_resolved: users.length
+        names_resolved: usersArray.length,
+        users_len: usersArray.length,
+        has_index: usersById instanceof Map
       };
     }
     
