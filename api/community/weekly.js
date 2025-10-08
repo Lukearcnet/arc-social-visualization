@@ -17,9 +17,10 @@ const localHandler = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { user_id, strict, debug, demo } = req.query;
+  const { user_id, strict, debug, demo, tz } = req.query;
   const isDebug = debug === '1';
   const isDemo = demo === '1';
+  const timezone = tz || process.env.WEEK_TZ || 'America/Chicago';
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
@@ -56,7 +57,11 @@ const localHandler = async (req, res) => {
     console.log('📊 Assembling weekly payload from database...');
     
     // Use the assembler to build the payload
-    const payload = await assembleWeeklyPayload(pool, user_id);
+    const { payload, trace } = await assembleWeeklyPayload(pool, {
+      userId: user_id,
+      debug: isDebug,
+      tz: timezone
+    });
     
     // Override meta with current context
     payload.meta = {
@@ -67,6 +72,49 @@ const localHandler = async (req, res) => {
       watermark: new Date().toISOString(),
       warnings: payload.meta?.warnings || []
     };
+    
+    // Add trace information if debug mode
+    if (isDebug && trace) {
+      payload.meta.trace = {
+        mode: process.env.DATA_READER_URL ? 'reader' : 'direct',
+        tzUsed: timezone,
+        week: trace.week,
+        counts: {
+          first_degree_new: trace.queries.first_degree_new?.row_count || 0,
+          community_activity_raw: trace.queries.community_activity_raw?.row_count || 0,
+          community_activity_daily: trace.queries.community_activity_daily?.row_count || 0,
+          leaderboard_new_connections: trace.queries.leaderboard_new_connections?.row_count || 0,
+          leaderboard_community_builders: trace.queries.leaderboard_community_builders?.row_count || 0,
+          leaderboard_streak_masters: trace.queries.leaderboard_streak_masters?.row_count || 0
+        },
+        samples: {
+          first_degree_new: trace.queries.first_degree_new?.sample || [],
+          community_activity_daily: trace.queries.community_activity_daily?.sample || []
+        },
+        sql: {
+          first_degree_new: {
+            text: trace.queries.first_degree_new?.text,
+            params: trace.queries.first_degree_new?.params
+          },
+          community_activity: {
+            text: trace.queries.community_activity_daily?.text,
+            params: trace.queries.community_activity_daily?.params
+          },
+          leaderboard_new_connections: {
+            text: trace.queries.leaderboard_new_connections?.text,
+            params: trace.queries.leaderboard_new_connections?.params
+          },
+          leaderboard_community_builders: {
+            text: trace.queries.leaderboard_community_builders?.text,
+            params: trace.queries.leaderboard_community_builders?.params
+          },
+          leaderboard_streak_masters: {
+            text: trace.queries.leaderboard_streak_masters?.text,
+            params: trace.queries.leaderboard_streak_masters?.params
+          }
+        }
+      };
+    }
     
     // Debug logging
     if (isDebug) {
