@@ -1698,7 +1698,7 @@
                         <div class="user-meta">
                             ${user.connected_via ? `via ${user.connected_via}` : ''}
                             <br>
-                            ${new Date(user.last_tap_at).toLocaleDateString()}
+                            ${user.last_tap_at ? new Date(user.last_tap_at).toLocaleDateString() : 'Recent'}
                         </div>
                     </div>
                 `).join('');
