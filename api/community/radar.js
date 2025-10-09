@@ -43,8 +43,8 @@ const handler = async (req, res) => {
     const buckets = new Map();
     const hourMs = 60 * 60 * 1000;
     
-    // Initialize buckets for the last 24 hours (even if zero)
-    for (let i = 0; i < 24; i++) {
+    // Initialize buckets for the requested time window (even if zero)
+    for (let i = 0; i < hoursBack; i++) {
       const bucketTime = new Date(now.getTime() - (i * hourMs));
       const bucketKey = new Date(Date.UTC(
         bucketTime.getUTCFullYear(),
