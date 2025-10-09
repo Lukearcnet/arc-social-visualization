@@ -434,6 +434,19 @@
             }
         }
 
+        /* Community Section Visibility */
+        .community-section {
+            display: none;
+        }
+        
+        .community-section.active {
+            display: block;
+        }
+        
+        .community-content {
+            min-height: 400px;
+        }
+
         /* Quests Section Styles */
         .quests-container {
             padding: var(--space-4);
@@ -711,7 +724,7 @@
                     </div>
 
                     <!-- Other sections will be added here -->
-                    <div id="quests-section" class="community-section" style="display: none;">
+                    <div id="quests-section" class="community-section">
                         <div class="quests-container">
                             <div class="quests-header">
                                 <h2>Quests & Routes</h2>
@@ -737,12 +750,12 @@
                         </div>
                     </div>
 
-                    <div id="radar-section" class="community-section" style="display: none;">
+                    <div id="radar-section" class="community-section">
                         <h2>Opportunity Radar</h2>
                         <p>Live activity radar coming soon...</p>
                     </div>
 
-                    <div id="health-section" class="community-section" style="display: none;">
+                    <div id="health-section" class="community-section">
                         <h2>Relationship Health</h2>
                         <p>Relationship management coming soon...</p>
                     </div>
@@ -919,36 +932,20 @@
                 });
                 document.querySelector(`[data-section="${section}"]`).classList.add('active');
 
-                // Hide all community sections
+                // Hide all community sections by removing active class
                 document.querySelectorAll('.community-section').forEach(sec => {
-                    sec.style.display = 'none';
+                    sec.classList.remove('active');
                 });
                 
-                // Show only the target section
+                // Show only the target section by adding active class
                 const targetSection = document.getElementById(`${section}-section`);
                 console.log('🔄 [Community] Target section element:', targetSection);
                 
                 if (targetSection) {
-                    targetSection.style.display = 'block';
+                    targetSection.classList.add('active');
                     console.log('🔄 [Community] Section displayed');
-                    
-                    // Ensure parent container doesn't collapse
-                    const communityContent = document.querySelector('.community-content');
-                    if (communityContent) {
-                        communityContent.style.height = 'auto';
-                    }
                 } else {
                     console.error('❌ [Community] Section not found:', `${section}-section`);
-                }
-
-                // Load section-specific data
-                if (section === 'quests') {
-                    console.log('🔄 [Community] Loading quests...');
-                    this.loadQuests();
-                } else if (section === 'radar') {
-                    this.loadRadar();
-                } else if (section === 'health') {
-                    this.loadHealth();
                 }
 
                 this.currentSection = section;
