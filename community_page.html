@@ -846,6 +846,9 @@
             // Wait for authentication to complete
             await this.waitForAuthentication();
             
+            // Ensure the initial section is displayed
+            this.switchSection('pulse');
+            
             // Load initial data
             await this.loadWeeklyPulse();
             
@@ -916,17 +919,24 @@
                 });
                 document.querySelector(`[data-section="${section}"]`).classList.add('active');
 
-                // Update content sections
+                // Hide all community sections
                 document.querySelectorAll('.community-section').forEach(sec => {
                     sec.style.display = 'none';
                 });
                 
+                // Show only the target section
                 const targetSection = document.getElementById(`${section}-section`);
                 console.log('🔄 [Community] Target section element:', targetSection);
                 
                 if (targetSection) {
                     targetSection.style.display = 'block';
                     console.log('🔄 [Community] Section displayed');
+                    
+                    // Ensure parent container doesn't collapse
+                    const communityContent = document.querySelector('.community-content');
+                    if (communityContent) {
+                        communityContent.style.height = 'auto';
+                    }
                 } else {
                     console.error('❌ [Community] Section not found:', `${section}-section`);
                 }
