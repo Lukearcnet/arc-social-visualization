@@ -435,6 +435,10 @@
         }
 
         /* Quests Section Styles */
+        #quests-section {
+            min-height: 240px;
+        }
+        
         .quests-container {
             padding: var(--space-4);
             max-width: 600px;
@@ -910,6 +914,9 @@
             switchSection(section) {
                 console.log('🔄 [Community] Switching to section:', section);
                 
+                // Guard against re-loading same section
+                if (this.currentSection === section) return;
+                
                 // Update nav tabs
                 document.querySelectorAll('.nav-tab').forEach(tab => {
                     tab.classList.remove('active');
@@ -929,16 +936,6 @@
                     console.log('🔄 [Community] Section displayed');
                 } else {
                     console.error('❌ [Community] Section not found:', `${section}-section`);
-                }
-
-                // Load section-specific data
-                if (section === 'quests') {
-                    console.log('🔄 [Community] Loading quests...');
-                    this.loadQuests();
-                } else if (section === 'radar') {
-                    this.loadRadar();
-                } else if (section === 'health') {
-                    this.loadHealth();
                 }
 
                 this.currentSection = section;
