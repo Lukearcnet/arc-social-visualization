@@ -1516,6 +1516,12 @@
                     return;
                 }
                 
+                // Hide loading state
+                const loadingState = content.querySelector('.loading-state');
+                if (loadingState) {
+                    loadingState.style.display = 'none';
+                }
+                
                 if (!data.connections || data.connections.length === 0) {
                     console.log('🏥 [Health] No connections data, showing empty state');
                     this.renderHealthEmpty();
@@ -1610,12 +1616,18 @@
                 const content = document.getElementById('health-content');
                 if (!content) return;
                 
+                // Hide loading state
+                const loadingState = content.querySelector('.loading-state');
+                if (loadingState) {
+                    loadingState.style.display = 'none';
+                }
+                
                 content.innerHTML = `
                     <div class="error-state">
                         <div class="error-icon">⚠️</div>
                         <div class="error-message">Failed to load relationship data</div>
                         <div class="error-details">${error.message}</div>
-                        <button class="retry-button" onclick="communityPage.loadHealth()">Try Again</button>
+                        <button class="retry-button" onclick="window.communityPage.loadHealth()">Try Again</button>
                     </div>
                 `;
             }
@@ -1623,6 +1635,12 @@
             renderHealthEmpty() {
                 const content = document.getElementById('health-content');
                 if (!content) return;
+                
+                // Hide loading state
+                const loadingState = content.querySelector('.loading-state');
+                if (loadingState) {
+                    loadingState.style.display = 'none';
+                }
                 
                 content.innerHTML = `
                     <div class="empty-state">
@@ -2366,15 +2384,11 @@
                 `;
             }
 
-            loadHealth() {
-                console.log('🏥 [Health] Loading health data...');
-                // TODO: Implement health loading
-            }
         }
 
         // Initialize the community page when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            new CommunityPage();
+            window.communityPage = new CommunityPage();
         });
     </script>
 </body>
