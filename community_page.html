@@ -1848,25 +1848,25 @@
                     return;
                 }
                 
-                if (!data.activity || data.activity.length === 0) {
+                if (!data.buckets || data.buckets.length === 0) {
                     console.log('📡 [Radar] No activity data, showing empty state');
                     this.renderRadarEmpty();
                     return;
                 }
                 
-                console.log('📡 [Radar] Found', data.activity.length, 'activity buckets');
+                console.log('📡 [Radar] Found', data.buckets.length, 'activity buckets');
                 
                 // Update timezone info
                 this.updateRadarTimezoneInfo(data.meta);
                 
                 // Generate activity timeline
-                const timelineHTML = this.renderActivityTimeline(data.activity);
+                const timelineHTML = this.renderActivityTimeline(data.buckets);
                 
                 // Generate participants section
-                const participantsHTML = this.renderParticipants(data.participants || []);
+                const participantsHTML = this.renderParticipants(data.top_current_window || []);
                 
                 // Check for surge indicators
-                const surgeHTML = this.renderSurgeIndicators(data.activity);
+                const surgeHTML = this.renderSurgeIndicators(data.buckets);
                 
                 content.innerHTML = `
                     ${surgeHTML}
@@ -1884,15 +1884,16 @@
                 console.log('📡 [Radar] Content updated, innerHTML length:', content.innerHTML.length);
             }
 
-            renderActivityTimeline(activity) {
-                return activity.map((hour, index) => {
-                    const hourLabel = `${index}:00`;
-                    const activityLevel = this.getActivityLevel(hour.activity_count || 0);
-                    const tooltip = `${hourLabel}: ${hour.activity_count || 0} activities`;
+            renderActivityTimeline(buckets) {
+                return buckets.map((bucket, index) => {
+                    const hour = new Date(bucket.ts).getHours();
+                    const activityCount = bucket.activity_count || 0;
+                    const activityLevel = this.getActivityLevel(activityCount);
+                    const tooltip = `${hour}:00: ${activityCount} activities`;
                     
                     return `
                         <div class="hour-bucket ${activityLevel}" title="${tooltip}">
-                            ${index}
+                            ${hour}
                         </div>
                     `;
                 }).join('');
@@ -1907,20 +1908,23 @@
 
             renderParticipants(participants) {
                 if (!participants || participants.length === 0) {
-                    return '<div class="empty-state">No participants data available</div>';
+                    return '<div class="empty-state">No recent participants</div>';
                 }
                 
                 return participants.slice(0, 6).map(participant => `
                     <div class="participant-card">
-                        <div class="participant-name">${participant.name || 'Unknown'}</div>
+                        <div class="participant-name">${participant.name || participant.user_id || 'Unknown'}</div>
                         <div class="participant-activity">${participant.activity_count || 0} activities</div>
                     </div>
                 `).join('');
             }
 
-            renderSurgeIndicators(activity) {
-                const surgeHours = activity
-                    .map((hour, index) => ({ hour: index, count: hour.activity_count || 0 }))
+            renderSurgeIndicators(buckets) {
+                const surgeHours = buckets
+                    .map(bucket => ({ 
+                        hour: new Date(bucket.ts).getHours(), 
+                        count: bucket.activity_count || 0 
+                    }))
                     .filter(h => h.count >= 10)
                     .slice(0, 3);
                 
