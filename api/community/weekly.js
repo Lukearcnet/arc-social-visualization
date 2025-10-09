@@ -93,7 +93,8 @@ const handler = async (req, res) => {
       taps: exportData.taps || [],
       users: exportData.users || [],
       nowUtc: new Date().toISOString(),
-      timeWindow: timeWindow
+      timeWindow: timeWindow,
+      isDebug: isDebug
     });
     
     // Check if assembler returned an error payload
