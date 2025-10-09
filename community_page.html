@@ -1497,7 +1497,7 @@
             async loadWeeklyPulse() {
                 try {
                     console.log('🔄 Loading weekly pulse for user:', this.currentUser.user_id);
-                    const response = await fetch(`/api/community/weekly?user_id=${this.currentUser.user_id}`);
+                    const response = await fetch(`/api/community/weekly?user_id=${this.currentUser.user_id}&time_window=7d`);
                     console.log('📡 API response status:', response.status);
                     
                     if (!response.ok) {

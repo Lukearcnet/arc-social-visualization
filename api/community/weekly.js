@@ -15,7 +15,17 @@ const handler = async (req, res) => {
   const { user_id, debug, demo, time_window } = req.query;
   const isDebug = debug === '1';
   const isDemo = demo === '1';
-  const timeWindow = time_window || '1week';
+  
+  // Normalize time window values
+  const timeWindowMap = {
+    '1day': '1d',
+    '1week': '7d', 
+    '1month': '30d',
+    '6months': '180d',
+    '1year': '365d'
+  };
+  
+  const timeWindow = timeWindowMap[time_window] || time_window || '7d';
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
@@ -179,7 +189,12 @@ const handler = async (req, res) => {
       };
     }
     
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    // Set cache headers - no-store for debug mode to avoid stale responses
+    if (isDebug) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    } else {
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    }
     res.setHeader('Content-Type', 'application/json');
     return res.status(200).json(out);
     
