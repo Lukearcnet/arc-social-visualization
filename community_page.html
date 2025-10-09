@@ -170,6 +170,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 1;
         }
 
         .ring-progress {
@@ -957,13 +958,12 @@
         }
 
         .recap-card.clickable:hover {
-            transform: translateY(-2px);
             border-color: var(--accent);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
         }
 
         .recap-card.clickable:active {
-            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .recap-subtitle {
@@ -973,27 +973,39 @@
             text-align: center;
         }
 
-        /* Dropdown Styles */
-        .degree-dropdown {
-            position: absolute;
-            top: 100%;
+        /* Portal Dropdown Styles */
+        .portal-root {
+            position: fixed;
+            top: 0;
             left: 0;
-            right: 0;
-            background: var(--bg-secondary) !important;
-            border: 1px solid var(--stroke);
-            border-radius: var(--radius);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 99999 !important;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            isolation: isolate;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
         }
 
-        .degree-dropdown.show {
-            display: block;
+        .portal-dropdown {
+            position: fixed;
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 10000;
+            max-height: 300px;
+            overflow-y: auto;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Mobile responsive dropdown */
+        @media (max-width: 768px) {
+            .portal-dropdown {
+                left: var(--space-4) !important;
+                right: var(--space-4) !important;
+                width: auto !important;
+                max-width: none;
+            }
         }
 
         .degree-user-item {
@@ -1667,10 +1679,51 @@
 
                 // Close dropdowns when clicking outside
                 document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.recap-card.clickable')) {
+                    if (!e.target.closest('.recap-card.clickable') && !e.target.closest('.portal-dropdown')) {
                         this.closeAllDropdowns();
                     }
                 });
+
+                // Close dropdowns on escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeAllDropdowns();
+                    }
+                });
+
+                // Update dropdown position on scroll/resize
+                window.addEventListener('scroll', () => this.updateDropdownPosition());
+                window.addEventListener('resize', () => this.updateDropdownPosition());
+            }
+
+            // Portal utility
+            getPortalRoot() {
+                let portalRoot = document.querySelector('.portal-root');
+                if (!portalRoot) {
+                    portalRoot = document.createElement('div');
+                    portalRoot.className = 'portal-root';
+                    document.body.appendChild(portalRoot);
+                }
+                return portalRoot;
+            }
+
+            updateDropdownPosition() {
+                const dropdown = document.querySelector('.portal-dropdown');
+                if (!dropdown || !this.currentTriggerCard) return;
+
+                const rect = this.currentTriggerCard.getBoundingClientRect();
+                const isMobile = window.innerWidth <= 768;
+                
+                if (isMobile) {
+                    dropdown.style.left = 'var(--space-4)';
+                    dropdown.style.right = 'var(--space-4)';
+                    dropdown.style.top = `${rect.bottom + 8}px`;
+                    dropdown.style.width = 'auto';
+                } else {
+                    dropdown.style.left = `${rect.left}px`;
+                    dropdown.style.top = `${rect.bottom + 8}px`;
+                    dropdown.style.width = `${rect.width}px`;
+                }
             }
 
             toggleDegreeDropdown(degree) {
@@ -1686,13 +1739,15 @@
                     return;
                 }
 
-                // Create dropdown if it doesn't exist
-                let dropdown = card.querySelector('.degree-dropdown');
-                if (!dropdown) {
-                    dropdown = document.createElement('div');
-                    dropdown.className = 'degree-dropdown';
-                    card.appendChild(dropdown);
-                }
+                // Store reference to trigger card for positioning
+                this.currentTriggerCard = card;
+
+                // Get portal root
+                const portalRoot = this.getPortalRoot();
+
+                // Create dropdown in portal
+                const dropdown = document.createElement('div');
+                dropdown.className = 'portal-dropdown';
 
                 // Populate dropdown with users
                 dropdown.innerHTML = users.map(user => `
@@ -1704,20 +1759,30 @@
                     </div>
                 `).join('');
 
-                // Force the dropdown to have the highest z-index and solid background
-                dropdown.style.zIndex = '999999';
-                dropdown.style.backgroundColor = 'var(--bg-secondary)';
-                dropdown.style.position = 'absolute';
-                dropdown.style.isolation = 'isolate';
+                // Position dropdown
+                this.updateDropdownPosition();
+                
+                // Add to portal
+                portalRoot.appendChild(dropdown);
 
-                // Show dropdown
-                dropdown.classList.add('show');
+                // Focus management
+                dropdown.setAttribute('tabindex', '0');
+                dropdown.focus();
+
+                // Store reference for cleanup
+                this.currentDropdown = dropdown;
             }
 
             closeAllDropdowns() {
-                document.querySelectorAll('.degree-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('show');
-                });
+                // Remove portal dropdowns
+                const portalRoot = document.querySelector('.portal-root');
+                if (portalRoot) {
+                    portalRoot.innerHTML = '';
+                }
+                
+                // Clear references
+                this.currentTriggerCard = null;
+                this.currentDropdown = null;
             }
 
             async loadQuests() {
