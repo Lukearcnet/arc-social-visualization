@@ -979,16 +979,17 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: var(--bg-secondary);
+            background: var(--bg-secondary) !important;
             border: 1px solid var(--stroke);
             border-radius: var(--radius);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 9999;
+            z-index: 99999 !important;
             max-height: 300px;
             overflow-y: auto;
             display: none;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            isolation: isolate;
         }
 
         .degree-dropdown.show {
@@ -1702,6 +1703,12 @@
                         </div>
                     </div>
                 `).join('');
+
+                // Force the dropdown to have the highest z-index and solid background
+                dropdown.style.zIndex = '999999';
+                dropdown.style.backgroundColor = 'var(--bg-secondary)';
+                dropdown.style.position = 'absolute';
+                dropdown.style.isolation = 'isolate';
 
                 // Show dropdown
                 dropdown.classList.add('show');
