@@ -708,6 +708,202 @@
             background: var(--fg-muted);
         }
 
+        /* Health Section Styles */
+        .health-container {
+            padding: var(--space-4);
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 400px;
+        }
+
+        .health-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .health-header h2 {
+            font-size: var(--text-3xl);
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .health-subtitle {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            margin-bottom: var(--space-4);
+        }
+
+        .health-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .health-stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .health-stat-card:hover {
+            border-color: var(--accent);
+        }
+
+        .health-stat-number {
+            font-size: var(--text-2xl);
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .health-stat-label {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+        }
+
+        .connections-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .connection-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            transition: all 0.2s ease;
+        }
+
+        .connection-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .connection-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-3);
+        }
+
+        .connection-name {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+
+        .health-badge {
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-2);
+            font-size: var(--text-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .health-badge.excellent {
+            background: #10b981;
+            color: white;
+        }
+
+        .health-badge.good {
+            background: var(--accent);
+            color: white;
+        }
+
+        .health-badge.fair {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .health-badge.needs_attention {
+            background: #ef4444;
+            color: white;
+        }
+
+        .strength-section {
+            margin-bottom: var(--space-3);
+        }
+
+        .strength-label {
+            font-size: var(--text-sm);
+            color: var(--fg-secondary);
+            margin-bottom: var(--space-1);
+        }
+
+        .strength-indicator {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-2);
+            overflow: hidden;
+            margin-bottom: var(--space-2);
+        }
+
+        .strength-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: var(--radius-2);
+            transition: width 0.3s ease;
+        }
+
+        .strength-fill.excellent {
+            background: #10b981;
+        }
+
+        .strength-fill.good {
+            background: var(--accent);
+        }
+
+        .strength-fill.fair {
+            background: #f59e0b;
+        }
+
+        .strength-fill.needs_attention {
+            background: #ef4444;
+        }
+
+        .strength-text {
+            font-size: var(--text-sm);
+            color: var(--fg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .connection-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .metric-label {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+        }
+
+        .last-tap-info {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            text-align: center;
+        }
+
         .refresh-button {
             position: fixed;
             top: var(--space-4);
@@ -884,8 +1080,23 @@
                     </div>
 
                     <div id="health-section" class="community-section">
-                        <h2>Relationship Health</h2>
-                        <p>Relationship management coming soon...</p>
+                        <div class="health-container">
+                            <div class="health-header">
+                                <h2>Relationship Health</h2>
+                                <div class="health-subtitle">Connection strength analysis and relationship insights</div>
+                            </div>
+
+                            <button class="refresh-button" id="health-refresh-button" title="Refresh health data">
+                                ↻
+                            </button>
+
+                            <div id="health-content">
+                                <div class="loading-state">
+                                    <div class="loading-spinner"></div>
+                                    <div>Loading relationship data...</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1270,8 +1481,156 @@
             }
 
             async loadHealth() {
-                console.log('Loading health...');
-                // TODO: Implement health loading
+                console.log('🏥 [Health] Loading health data...');
+                
+                try {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    if (!userId) {
+                        throw new Error('No user ID available');
+                    }
+
+                    const response = await fetch(`/api/community/health?user_id=${userId}&debug=1`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('🏥 [Health] Loaded:', data);
+                    
+                    this.renderHealth(data);
+                    
+                } catch (error) {
+                    console.error('❌ [Health] Failed to load:', error);
+                    this.renderHealthError(error);
+                }
+            }
+
+            renderHealth(data) {
+                console.log('🏥 [Health] Rendering health:', data);
+                const content = document.getElementById('health-content');
+                console.log('🏥 [Health] Content element:', content);
+                
+                if (!content) {
+                    console.error('❌ [Health] health-content element not found!');
+                    return;
+                }
+                
+                if (!data.connections || data.connections.length === 0) {
+                    console.log('🏥 [Health] No connections data, showing empty state');
+                    this.renderHealthEmpty();
+                    return;
+                }
+                
+                console.log('🏥 [Health] Found', data.connections.length, 'connections');
+                
+                // Generate summary stats
+                const summaryHTML = this.renderHealthSummary(data.summary);
+                
+                // Generate connections list
+                const connectionsHTML = this.renderConnections(data.connections);
+                
+                content.innerHTML = `
+                    <div class="health-summary">
+                        ${summaryHTML}
+                    </div>
+                    <div class="connections-list">
+                        ${connectionsHTML}
+                    </div>
+                `;
+
+                console.log('🏥 [Health] Content updated, innerHTML length:', content.innerHTML.length);
+
+                // Setup refresh button
+                this.setupHealthRefresh();
+            }
+
+            renderHealthSummary(summary) {
+                const stats = [
+                    { label: 'Excellent', count: summary.excellent || 0, class: 'excellent' },
+                    { label: 'Good', count: summary.good || 0, class: 'good' },
+                    { label: 'Fair', count: summary.fair || 0, class: 'fair' },
+                    { label: 'Needs Attention', count: summary.needs_attention || 0, class: 'needs_attention' }
+                ];
+
+                return stats.map(stat => `
+                    <div class="health-stat-card">
+                        <div class="health-stat-number">${stat.count}</div>
+                        <div class="health-stat-label">${stat.label}</div>
+                    </div>
+                `).join('');
+            }
+
+            renderConnections(connections) {
+                if (!connections || connections.length === 0) {
+                    return '<div class="empty-state">No connections found</div>';
+                }
+                
+                return connections.map(connection => `
+                    <div class="connection-card">
+                        <div class="connection-header">
+                            <div class="connection-name">${connection.name}</div>
+                            <div class="health-badge ${connection.health}">${connection.health.replace('_', ' ')}</div>
+                        </div>
+                        
+                        <div class="strength-section">
+                            <div class="strength-label">Relationship Strength</div>
+                            <div class="strength-indicator">
+                                <div class="strength-fill ${connection.health}" style="width: ${(connection.strength_f32 * 100).toFixed(1)}%"></div>
+                            </div>
+                            <div class="strength-text">
+                                <span>${(connection.strength_f32 * 100).toFixed(1)}%</span>
+                                <span>${connection.health.replace('_', ' ')}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="connection-metrics">
+                            <div class="metric-item">
+                                <div class="metric-value">${connection.taps_7d}</div>
+                                <div class="metric-label">7d</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${connection.taps_30d}</div>
+                                <div class="metric-label">30d</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${connection.taps_90d}</div>
+                                <div class="metric-label">90d</div>
+                            </div>
+                        </div>
+                        
+                        <div class="last-tap-info">
+                            Last interaction: ${connection.days_since_last_tap} days ago
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderHealthError(error) {
+                const content = document.getElementById('health-content');
+                if (!content) return;
+                
+                content.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-icon">⚠️</div>
+                        <div class="error-message">Failed to load relationship data</div>
+                        <div class="error-details">${error.message}</div>
+                        <button class="retry-button" onclick="communityPage.loadHealth()">Try Again</button>
+                    </div>
+                `;
+            }
+
+            renderHealthEmpty() {
+                const content = document.getElementById('health-content');
+                if (!content) return;
+                
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <div class="empty-message">No relationship data available</div>
+                        <div class="empty-details">Start connecting with people to see relationship insights</div>
+                    </div>
+                `;
             }
 
             loadMockData() {
@@ -1793,6 +2152,13 @@
                 }
             }
 
+            setupHealthRefresh() {
+                const refreshButton = document.getElementById('health-refresh-button');
+                if (refreshButton) {
+                    refreshButton.onclick = () => this.refreshHealth();
+                }
+            }
+
             async refreshQuests() {
                 const refreshButton = document.getElementById('quests-refresh-button');
                 if (refreshButton) {
@@ -1802,6 +2168,25 @@
                 
                 try {
                     await this.loadQuests();
+                } finally {
+                    if (refreshButton) {
+                        setTimeout(() => {
+                            refreshButton.disabled = false;
+                            refreshButton.textContent = '↻';
+                        }, 1000);
+                    }
+                }
+            }
+
+            async refreshHealth() {
+                const refreshButton = document.getElementById('health-refresh-button');
+                if (refreshButton) {
+                    refreshButton.disabled = true;
+                    refreshButton.textContent = '⟳';
+                }
+                
+                try {
+                    await this.loadHealth();
                 } finally {
                     if (refreshButton) {
                         setTimeout(() => {
