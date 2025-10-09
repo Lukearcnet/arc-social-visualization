@@ -8,13 +8,15 @@ const { assembleWeeklyFromExport } = require('../../lib/weekly/assembleFromExpor
 const handler = async (req, res) => {
   const startTime = Date.now();
   
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  // Top-level try/catch to ensure we always return JSON
+  try {
+    if (req.method !== 'GET') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  const { user_id, debug, demo, time_window } = req.query;
-  const isDebug = debug === '1';
-  const isDemo = demo === '1';
+    const { user_id, debug, demo, time_window } = req.query;
+    const isDebug = debug === '1';
+    const isDemo = demo === '1';
   
   // Normalize time window values
   const timeWindowMap = {
@@ -202,20 +204,62 @@ const handler = async (req, res) => {
     console.error('❌ [weekly] Data Reader fetch failed:', error);
     
     if (isDebug) {
-      return res.status(500).json({
+      return res.status(200).json({
         ok: false,
-        at: 'weekly:reader',
-        code: error.code || 'READER_ERROR',
-        message: error.message,
-        detail: error.detail || null,
-        hint: 'Check DATA_READER_URL and DATA_READER_SECRET configuration'
+        where: 'weekly-assemble',
+        error: String(error.message || error)
       });
     } else {
-      return res.status(500).json({ 
-        error: 'reader_error',
-        message: 'Failed to fetch community data from Data Reader'
+      // Return safe skeleton payload to keep UI alive
+      const nowUtc = new Date().toISOString();
+      return res.status(200).json({
+        source: 'reader',
+        generated_at: nowUtc,
+        week: { year: new Date().getFullYear(), iso_week: 1 },
+        recap: {
+          first_degree_new: [],
+          second_degree_new: [],
+          third_degree_new: [],
+          community_activity: [],
+          geo_expansion: []
+        },
+        momentum: {
+          current_streak_days: 0,
+          longest_streak_days: 0,
+          weekly_taps: 0,
+          new_connections: 0,
+          weekly_goal: { progress: 0, target_taps: 25 }
+        },
+        leaderboard: {
+          new_connections: [],
+          community_builders: [],
+          streak_masters: [],
+          connectors: []
+        },
+        recommendations: [],
+        meta: {
+          source: 'reader',
+          duration_ms: Date.now() - startTime,
+          user_id: user_id,
+          watermark: nowUtc,
+          time_window: timeWindow,
+          warnings: ['Assembler error - returning safe fallback'],
+          debug: {}
+        }
       });
     }
+  }
+  
+  } catch (topLevelError) {
+    console.error('❌ [weekly] Top-level error:', topLevelError);
+    
+    // Always return JSON, never 500
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).json({
+      ok: false,
+      where: 'weekly-handler',
+      error: String(topLevelError.message || topLevelError)
+    });
   }
 };
 
