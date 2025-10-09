@@ -721,7 +721,8 @@
                             <h3>People You Should Meet</h3>
                             <div class="recommendations-carousel" id="recommendations-list"></div>
                         </div>
-                    </div>
+                            </div>
+                        </div>
 
                     <!-- Other sections will be added here -->
                     <div id="quests-section" class="community-section">
@@ -859,6 +860,9 @@
             // Wait for authentication to complete
             await this.waitForAuthentication();
             
+            // Runtime sanity check: verify DOM structure
+            this.validateDOMStructure();
+            
             // Ensure the initial section is displayed
             this.switchSection('pulse');
             
@@ -867,6 +871,37 @@
             
             // Update last updated time
             this.updateLastUpdatedTime();
+        }
+
+        validateDOMStructure() {
+            const communityContent = document.querySelector('.community-content');
+            if (!communityContent) {
+                console.error('❌ [Community] .community-content not found!');
+                return;
+            }
+
+            const sections = ['pulse-section', 'quests-section', 'radar-section', 'health-section'];
+            const errors = [];
+
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (!section) {
+                    errors.push(`❌ [Community] ${sectionId} not found!`);
+                    return;
+                }
+
+                const parent = section.parentElement;
+                if (parent !== communityContent) {
+                    errors.push(`❌ [Community] ${sectionId} parent is ${parent?.className || 'unknown'}, expected .community-content`);
+                }
+            });
+
+            if (errors.length > 0) {
+                console.error('❌ [Community] DOM structure validation failed:');
+                errors.forEach(error => console.error(error));
+            } else {
+                console.log('✅ [Community] DOM structure validation passed - all sections are direct children of .community-content');
+            }
         }
 
         async waitForAuthentication() {
@@ -932,19 +967,17 @@
                 });
                 document.querySelector(`[data-section="${section}"]`).classList.add('active');
 
-                // Hide all community sections by removing active class and setting display
+                // Hide all community sections by removing active class
                 document.querySelectorAll('.community-section').forEach(sec => {
                     sec.classList.remove('active');
-                    sec.style.display = 'none';
                 });
                 
-                // Show only the target section by adding active class and setting display
+                // Show only the target section by adding active class
                 const targetSection = document.getElementById(`${section}-section`);
                 console.log('🔄 [Community] Target section element:', targetSection);
                 
                 if (targetSection) {
                     targetSection.classList.add('active');
-                    targetSection.style.display = 'block';
                     console.log('🔄 [Community] Section displayed');
                 } else {
                     console.error('❌ [Community] Section not found:', `${section}-section`);
