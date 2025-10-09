@@ -904,6 +904,122 @@
             text-align: center;
         }
 
+        /* Time Window Selector Styles */
+        .time-window-selector {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            border: 1px solid var(--stroke);
+        }
+
+        .time-window-selector label {
+            font-size: var(--text-sm);
+            color: var(--fg-secondary);
+            font-weight: 500;
+        }
+
+        .time-window-dropdown {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius-2);
+            color: var(--fg-primary);
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-window-dropdown:hover {
+            border-color: var(--accent);
+        }
+
+        .time-window-dropdown:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        .time-period-display {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            font-style: italic;
+        }
+
+        /* Clickable Recap Cards */
+        .recap-card.clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .recap-card.clickable:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .recap-card.clickable:active {
+            transform: translateY(0);
+        }
+
+        .recap-subtitle {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+            margin-top: var(--space-1);
+            text-align: center;
+        }
+
+        /* Dropdown Styles */
+        .degree-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .degree-dropdown.show {
+            display: block;
+        }
+
+        .degree-user-item {
+            padding: var(--space-3);
+            border-bottom: 1px solid var(--stroke);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+
+        .degree-user-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .degree-user-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--fg-primary);
+        }
+
+        .user-meta {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+        }
+
         .refresh-button {
             position: fixed;
             top: var(--space-4);
@@ -986,19 +1102,35 @@
                             
                             <!-- Content (hidden initially) -->
                             <div id="content-state" style="display: none;">
+                                <!-- Time Window Selector -->
+                                <div class="time-window-selector">
+                                    <label for="time-window">Time Period:</label>
+                                    <select id="time-window" class="time-window-dropdown">
+                                        <option value="1day">Last 24 Hours</option>
+                                        <option value="1week" selected>Last 7 Days</option>
+                                        <option value="1month">Last 30 Days</option>
+                                        <option value="6months">Last 6 Months</option>
+                                        <option value="1year">Last Year</option>
+                                    </select>
+                                    <div class="time-period-display" id="time-period-display">Last 7 Days</div>
+                                </div>
+
                                 <!-- Recap Cards -->
                                 <div class="recap-strip">
-                                    <div class="recap-card">
-                                        <h3>New Connections</h3>
-                                        <div class="recap-value" id="new-connections-count">-</div>
+                                    <div class="recap-card clickable" id="first-degree-card">
+                                        <h3>New 1st Degree</h3>
+                                        <div class="recap-value" id="first-degree-count">-</div>
+                                        <div class="recap-subtitle">Direct connections</div>
                                     </div>
-                                    <div class="recap-card">
-                                        <h3>Network Growth</h3>
-                                        <div class="recap-value" id="network-growth-count">-</div>
+                                    <div class="recap-card clickable" id="second-degree-card">
+                                        <h3>New 2nd Degree</h3>
+                                        <div class="recap-value" id="second-degree-count">-</div>
+                                        <div class="recap-subtitle">Friends of friends</div>
                                     </div>
-                                    <div class="recap-card">
-                                        <h3>Community Activity</h3>
-                                        <div class="recap-value" id="community-activity-count">-</div>
+                                    <div class="recap-card clickable" id="third-degree-card">
+                                        <h3>New 3rd Degree</h3>
+                                        <div class="recap-value" id="third-degree-count">-</div>
+                                        <div class="recap-subtitle">Friends of friends of friends</div>
                                     </div>
                                 </div>
 
@@ -1457,9 +1589,9 @@
                 document.getElementById('content-state').style.display = 'block';
                 
                 // Set all values to zero/empty
-                document.getElementById('new-connections-count').textContent = '0';
-                document.getElementById('network-growth-count').textContent = '0';
-                document.getElementById('community-activity-count').textContent = '0';
+                document.getElementById('first-degree-count').textContent = '0';
+                document.getElementById('second-degree-count').textContent = '0';
+                document.getElementById('third-degree-count').textContent = '0';
                 document.getElementById('current-streak').textContent = '0';
                 
                 // Show error message
@@ -1468,6 +1600,117 @@
                 errorDiv.className = 'error-message';
                 errorDiv.innerHTML = '<p>⚠️ Unable to load community data. Please try refreshing the page.</p>';
                 contentState.appendChild(errorDiv);
+            }
+
+            getTimePeriodText(timeWindow) {
+                const periodMap = {
+                    '1day': 'Last 24 Hours',
+                    '1week': 'Last 7 Days',
+                    '1month': 'Last 30 Days',
+                    '6months': 'Last 6 Months',
+                    '1year': 'Last Year'
+                };
+                return periodMap[timeWindow] || 'Last 7 Days';
+            }
+
+            setupTimeWindowSelector() {
+                const timeWindowSelect = document.getElementById('time-window');
+                if (!timeWindowSelect) return;
+
+                timeWindowSelect.addEventListener('change', (e) => {
+                    const newTimeWindow = e.target.value;
+                    console.log('🕒 Time window changed to:', newTimeWindow);
+                    this.loadWeeklyPulseWithTimeWindow(newTimeWindow);
+                });
+            }
+
+            async loadWeeklyPulseWithTimeWindow(timeWindow) {
+                try {
+                    console.log('🔄 Loading weekly pulse with time window:', timeWindow);
+                    const response = await fetch(`/api/community/weekly?user_id=${this.currentUser.user_id}&time_window=${timeWindow}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const responseData = await response.json();
+                    console.log('📊 API response with time window:', responseData);
+                    
+                    // Update data and re-render
+                    this.data.weekly = responseData;
+                    this.renderWeeklyPulse();
+                    
+                } catch (error) {
+                    console.error('Error loading weekly pulse with time window:', error);
+                    this.showUIError('Failed to load data for selected time period. Please try again.');
+                }
+            }
+
+            setupDegreeDropdowns() {
+                // Setup click handlers for degree cards
+                const firstDegreeCard = document.getElementById('first-degree-card');
+                const secondDegreeCard = document.getElementById('second-degree-card');
+                const thirdDegreeCard = document.getElementById('third-degree-card');
+
+                if (firstDegreeCard) {
+                    firstDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('first'));
+                }
+                if (secondDegreeCard) {
+                    secondDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('second'));
+                }
+                if (thirdDegreeCard) {
+                    thirdDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('third'));
+                }
+
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.recap-card.clickable')) {
+                        this.closeAllDropdowns();
+                    }
+                });
+            }
+
+            toggleDegreeDropdown(degree) {
+                // Close all other dropdowns first
+                this.closeAllDropdowns();
+
+                const card = document.getElementById(`${degree}-degree-card`);
+                if (!card) return;
+
+                const users = this.degreeData[degree] || [];
+                if (users.length === 0) {
+                    console.log(`No ${degree} degree users to show`);
+                    return;
+                }
+
+                // Create dropdown if it doesn't exist
+                let dropdown = card.querySelector('.degree-dropdown');
+                if (!dropdown) {
+                    dropdown = document.createElement('div');
+                    dropdown.className = 'degree-dropdown';
+                    card.appendChild(dropdown);
+                }
+
+                // Populate dropdown with users
+                dropdown.innerHTML = users.map(user => `
+                    <div class="degree-user-item">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-meta">
+                            ${user.connected_via ? `via ${user.connected_via}` : ''}
+                            <br>
+                            ${new Date(user.last_tap_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                `).join('');
+
+                // Show dropdown
+                dropdown.classList.add('show');
+            }
+
+            closeAllDropdowns() {
+                document.querySelectorAll('.degree-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('show');
+                });
             }
 
             async loadQuests() {
@@ -1728,16 +1971,34 @@
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-state').style.display = 'block';
 
-                // Update recap cards with safe array access
-                const newConnectionsCount = this.safeArr(data.recap?.first_degree_new).length;
-                const networkGrowthCount = data.recap?.second_degree_delta || 0;
-                const communityActivityCount = this.safeArr(data.recap?.community_activity).length;
+                // Update recap cards with new degree structure
+                const firstDegreeCount = this.safeArr(data.recap?.first_degree_new).length;
+                const secondDegreeCount = this.safeArr(data.recap?.second_degree_new).length;
+                const thirdDegreeCount = this.safeArr(data.recap?.third_degree_new).length;
                 
-                console.log(`COMMUNITY: Recap cards - new_connections:${newConnectionsCount}, network_growth:${networkGrowthCount}, community_activity:${communityActivityCount}`);
+                console.log(`COMMUNITY: Degree cards - 1st:${firstDegreeCount}, 2nd:${secondDegreeCount}, 3rd:${thirdDegreeCount}`);
                 
-                document.getElementById('new-connections-count').textContent = newConnectionsCount;
-                document.getElementById('network-growth-count').textContent = networkGrowthCount;
-                document.getElementById('community-activity-count').textContent = communityActivityCount;
+                document.getElementById('first-degree-count').textContent = firstDegreeCount;
+                document.getElementById('second-degree-count').textContent = secondDegreeCount;
+                document.getElementById('third-degree-count').textContent = thirdDegreeCount;
+
+                // Update time period display
+                const timeWindow = data.week?.time_window || '1week';
+                const timePeriodText = this.getTimePeriodText(timeWindow);
+                document.getElementById('time-period-display').textContent = timePeriodText;
+
+                // Store degree data for dropdowns
+                this.degreeData = {
+                    first: data.recap?.first_degree_new || [],
+                    second: data.recap?.second_degree_new || [],
+                    third: data.recap?.third_degree_new || []
+                };
+
+                // Setup time window selector
+                this.setupTimeWindowSelector();
+                
+                // Setup degree card dropdowns
+                this.setupDegreeDropdowns();
 
                 // Update momentum ring
                 document.getElementById('current-streak').textContent = data.momentum?.current_streak_days || 0;

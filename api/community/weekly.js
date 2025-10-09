@@ -12,9 +12,10 @@ const handler = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { user_id, debug, demo } = req.query;
+  const { user_id, debug, demo, time_window } = req.query;
   const isDebug = debug === '1';
   const isDemo = demo === '1';
+  const timeWindow = time_window || '1week';
   
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
@@ -91,7 +92,8 @@ const handler = async (req, res) => {
       userId: user_id,
       taps: exportData.taps || [],
       users: exportData.users || [],
-      nowUtc: new Date().toISOString()
+      nowUtc: new Date().toISOString(),
+      timeWindow: timeWindow
     });
     
     // Check if assembler returned an error payload
