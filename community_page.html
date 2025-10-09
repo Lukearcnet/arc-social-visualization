@@ -932,23 +932,32 @@
                 });
                 document.querySelector(`[data-section="${section}"]`).classList.add('active');
 
-                // Hide all community sections by removing active class
+                // Hide all community sections by removing active class and setting display
                 document.querySelectorAll('.community-section').forEach(sec => {
                     sec.classList.remove('active');
+                    sec.style.display = 'none';
                 });
                 
-                // Show only the target section by adding active class
+                // Show only the target section by adding active class and setting display
                 const targetSection = document.getElementById(`${section}-section`);
                 console.log('🔄 [Community] Target section element:', targetSection);
                 
                 if (targetSection) {
                     targetSection.classList.add('active');
+                    targetSection.style.display = 'block';
                     console.log('🔄 [Community] Section displayed');
                 } else {
                     console.error('❌ [Community] Section not found:', `${section}-section`);
                 }
 
                 this.currentSection = section;
+
+                // Debug: Log each section's computed display and active class
+                console.log('🔍 [Community] Section visibility debug:');
+                document.querySelectorAll('.community-section').forEach(sec => {
+                    const computedStyle = window.getComputedStyle(sec);
+                    console.log(`  ${sec.id}: display=${computedStyle.display}, hasActive=${sec.classList.contains('active')}`);
+                });
 
                 // Load section data
                 this.loadSectionData(section);
