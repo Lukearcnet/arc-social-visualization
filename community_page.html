@@ -457,6 +457,117 @@
             border: 2px solid var(--accent); /* Temporary border for debugging */
         }
 
+        /* Radar Section Styles */
+        .radar-container {
+            padding: var(--space-4);
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 400px;
+        }
+
+        .radar-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .radar-header h2 {
+            font-size: var(--text-3xl);
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .radar-subtitle {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+            margin-bottom: var(--space-4);
+        }
+
+        .timezone-info {
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+        }
+
+        .activity-timeline {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 2px;
+            margin-bottom: var(--space-6);
+            background: var(--bg-secondary);
+            padding: var(--space-2);
+            border-radius: var(--radius);
+        }
+
+        .hour-bucket {
+            aspect-ratio: 1;
+            border-radius: var(--radius-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xs);
+            color: var(--fg-muted);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .hour-bucket:hover {
+            transform: scale(1.05);
+        }
+
+        .hour-bucket.low { background: var(--stroke); }
+        .hour-bucket.medium { background: var(--accent); opacity: 0.6; }
+        .hour-bucket.high { background: var(--accent); opacity: 0.8; }
+        .hour-bucket.surge { background: var(--accent); opacity: 1; }
+
+        .participants-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .participant-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: var(--space-4);
+            transition: all 0.2s ease;
+        }
+
+        .participant-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .participant-name {
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .participant-activity {
+            font-size: var(--text-sm);
+            color: var(--fg-muted);
+        }
+
+        .surge-indicator {
+            background: var(--accent);
+            color: var(--bg-primary);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            margin-bottom: var(--space-4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .quests-header {
             margin-bottom: var(--space-6);
         }
@@ -752,8 +863,24 @@
                     </div>
 
                     <div id="radar-section" class="community-section">
-                        <h2>Opportunity Radar</h2>
-                        <p>Live activity radar coming soon...</p>
+                        <div class="radar-container">
+                            <div class="radar-header">
+                                <h2>Opportunity Radar</h2>
+                                <div class="radar-subtitle">Live network activity and connection opportunities</div>
+                                <div class="timezone-info" id="radar-timezone-info">Loading timezone...</div>
+                            </div>
+
+                            <button class="refresh-button" id="radar-refresh-button" title="Refresh radar">
+                                ↻
+                            </button>
+
+                            <div id="radar-content">
+                                <div class="loading-state">
+                                    <div class="loading-spinner"></div>
+                                    <div>Loading activity data...</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="health-section" class="community-section">
@@ -1685,9 +1812,169 @@
                 }
             }
 
-            loadRadar() {
+            async loadRadar() {
                 console.log('📡 [Radar] Loading radar data...');
-                // TODO: Implement radar loading
+                
+                try {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    if (!userId) {
+                        throw new Error('No user ID available');
+                    }
+
+                    const response = await fetch(`/api/community/radar?user_id=${userId}&hours=24&debug=1`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📡 [Radar] Loaded:', data);
+                    
+                    this.renderRadar(data);
+                    
+                } catch (error) {
+                    console.error('❌ [Radar] Failed to load:', error);
+                    this.renderRadarError(error);
+                }
+            }
+
+            renderRadar(data) {
+                console.log('📡 [Radar] Rendering radar:', data);
+                const content = document.getElementById('radar-content');
+                console.log('📡 [Radar] Content element:', content);
+                
+                if (!content) {
+                    console.error('❌ [Radar] radar-content element not found!');
+                    return;
+                }
+                
+                if (!data.activity || data.activity.length === 0) {
+                    console.log('📡 [Radar] No activity data, showing empty state');
+                    this.renderRadarEmpty();
+                    return;
+                }
+                
+                console.log('📡 [Radar] Found', data.activity.length, 'activity buckets');
+                
+                // Update timezone info
+                this.updateRadarTimezoneInfo(data.meta);
+                
+                // Generate activity timeline
+                const timelineHTML = this.renderActivityTimeline(data.activity);
+                
+                // Generate participants section
+                const participantsHTML = this.renderParticipants(data.participants || []);
+                
+                // Check for surge indicators
+                const surgeHTML = this.renderSurgeIndicators(data.activity);
+                
+                content.innerHTML = `
+                    ${surgeHTML}
+                    <div class="activity-timeline">
+                        ${timelineHTML}
+                    </div>
+                    <div class="participants-section">
+                        <h3>Top Participants</h3>
+                        <div class="participants-grid">
+                            ${participantsHTML}
+                        </div>
+                    </div>
+                `;
+
+                console.log('📡 [Radar] Content updated, innerHTML length:', content.innerHTML.length);
+            }
+
+            renderActivityTimeline(activity) {
+                return activity.map((hour, index) => {
+                    const hourLabel = `${index}:00`;
+                    const activityLevel = this.getActivityLevel(hour.activity_count || 0);
+                    const tooltip = `${hourLabel}: ${hour.activity_count || 0} activities`;
+                    
+                    return `
+                        <div class="hour-bucket ${activityLevel}" title="${tooltip}">
+                            ${index}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            getActivityLevel(count) {
+                if (count === 0) return 'low';
+                if (count < 5) return 'medium';
+                if (count < 10) return 'high';
+                return 'surge';
+            }
+
+            renderParticipants(participants) {
+                if (!participants || participants.length === 0) {
+                    return '<div class="empty-state">No participants data available</div>';
+                }
+                
+                return participants.slice(0, 6).map(participant => `
+                    <div class="participant-card">
+                        <div class="participant-name">${participant.name || 'Unknown'}</div>
+                        <div class="participant-activity">${participant.activity_count || 0} activities</div>
+                    </div>
+                `).join('');
+            }
+
+            renderSurgeIndicators(activity) {
+                const surgeHours = activity
+                    .map((hour, index) => ({ hour: index, count: hour.activity_count || 0 }))
+                    .filter(h => h.count >= 10)
+                    .slice(0, 3);
+                
+                if (surgeHours.length === 0) {
+                    return '';
+                }
+                
+                const surgeText = surgeHours.length === 1 
+                    ? `Activity surge at ${surgeHours[0].hour}:00`
+                    : `Activity surges at ${surgeHours.map(h => `${h.hour}:00`).join(', ')}`;
+                
+                return `
+                    <div class="surge-indicator">
+                        🔥 ${surgeText}
+                    </div>
+                `;
+            }
+
+            updateRadarTimezoneInfo(meta) {
+                const timezoneInfo = document.getElementById('radar-timezone-info');
+                if (meta && meta.tz_used) {
+                    timezoneInfo.textContent = `Timezone: ${meta.tz_used}`;
+                } else {
+                    timezoneInfo.textContent = 'Timezone: UTC';
+                }
+            }
+
+            renderRadarEmpty() {
+                const content = document.getElementById('radar-content');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div>📡</div>
+                        <div>No activity data available</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-2);">
+                            Check back later for network activity
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderRadarError(error) {
+                const content = document.getElementById('radar-content');
+                content.innerHTML = `
+                    <div class="error-state">
+                        <div>❌</div>
+                        <div>Failed to load radar data</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-2);">
+                            ${error.message}
+                        </div>
+                        <button class="retry-button" onclick="location.reload()">
+                            Retry
+                        </button>
+                    </div>
+                `;
             }
 
             loadHealth() {
