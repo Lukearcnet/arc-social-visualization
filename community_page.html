@@ -1715,8 +1715,10 @@
                 const isMobile = window.innerWidth <= 768;
                 
                 if (isMobile) {
-                    dropdown.style.left = 'var(--space-4)';
-                    dropdown.style.right = 'var(--space-4)';
+                    // Use computed pixel values instead of CSS variables
+                    const padding = 16; // equivalent to --space-4
+                    dropdown.style.left = `${padding}px`;
+                    dropdown.style.right = `${padding}px`;
                     dropdown.style.top = `${rect.bottom + 8}px`;
                     dropdown.style.width = 'auto';
                 } else {
@@ -1759,11 +1761,11 @@
                     </div>
                 `).join('');
 
-                // Position dropdown
-                this.updateDropdownPosition();
-                
-                // Add to portal
+                // Add to portal first
                 portalRoot.appendChild(dropdown);
+
+                // Position dropdown after it's in the DOM
+                this.updateDropdownPosition();
 
                 // Focus management
                 dropdown.setAttribute('tabindex', '0');
