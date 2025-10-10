@@ -918,6 +918,21 @@
             shape-rendering: crispEdges; 
         }
         
+        #rbr-chart svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #rbr-chart .bar {
+            rx: 6;
+            ry: 6;
+        }
+        
+        #rbr-chart .label {
+            dominant-baseline: middle;
+        }
+        
         .bar-race-bar {
             fill: var(--accent);
             stroke: var(--accent-dark);
@@ -2855,8 +2870,10 @@
             renderRadarBarRace(data) {
                 console.log('📊 [Bar Race] Rendering bar race chart:', data);
                 
-                // Build frames from buckets
-                const frames = this.buildBarRaceFrames(data.buckets);
+                // Build frames from buckets with name resolution
+                const frames = this.buildBarRaceFrames(data.buckets, { 
+                    nameFor: id => this.resolveName(id) 
+                });
                 console.log('📊 [Bar Race] Built', frames.length, 'frames');
                 
                 if (frames.length === 0) {
@@ -2879,39 +2896,74 @@
                 this.setupBarRaceControls();
             }
 
-            buildBarRaceFrames(buckets) {
+            // Name resolution helper
+            resolveName(id) {
+                if (!id) return 'Unknown';
+                // 1) direct cache
+                this._nameCache = this._nameCache || new Map();
+                if (this._nameCache.has(id)) return this._nameCache.get(id);
+
+                // 2) try searchIndex/userIndex built elsewhere on the page
+                const hit = (this.searchIndex || []).find(u => u.user_id === id || u.id === id);
+                const name = hit?.name || hit?.user_name ||
+                             this.userIndex?.[id]?.name ||
+                             this.userIndex?.[id]?.user_name ||
+                             'Unknown';
+                
+                // If still unknown, add ID tail for distinction
+                const finalName = name === 'Unknown' ? `Unknown · ${id.slice(-4)}` : name;
+                this._nameCache.set(id, finalName);
+                return finalName;
+            }
+
+            buildBarRaceFrames(buckets, opts = {}) {
                 const frames = [];
                 const entityTotals = new Map(); // Track cumulative totals
+                const nameFor = opts?.nameFor || (id => this.resolveName(id));
                 
-                buckets.forEach((bucket, index) => {
-                    const time = new Date(bucket.ts);
+                // Adaptive grouping based on time window
+                const totalHours = buckets.length;
+                let groupSize = 1; // Default: hourly
+                if (totalHours <= 48) {
+                    groupSize = 1; // Hourly for 1-2 days
+                } else if (totalHours <= 30 * 24) {
+                    groupSize = 6; // 6-hour groups for up to 30 days
+                } else {
+                    groupSize = 24; // Daily groups for longer periods
+                }
+                
+                // Group buckets and process
+                for (let i = 0; i < buckets.length; i += groupSize) {
+                    const group = buckets.slice(i, i + groupSize);
+                    if (group.length === 0) continue;
                     
-                    // Update cumulative totals for each participant
-                    if (bucket.participants) {
-                        bucket.participants.forEach(participant => {
-                            const currentTotal = entityTotals.get(participant.user_id) || 0;
-                            entityTotals.set(participant.user_id, currentTotal + participant.count);
-                        });
-                    }
+                    const groupTime = new Date(group[0].ts);
+                    
+                    // Update cumulative totals for this group
+                    group.forEach(bucket => {
+                        if (bucket.participants) {
+                            bucket.participants.forEach(participant => {
+                                const currentTotal = entityTotals.get(participant.user_id) || 0;
+                                entityTotals.set(participant.user_id, currentTotal + participant.count);
+                            });
+                        }
+                    });
                     
                     // Create frame with current totals
                     const frameData = Array.from(entityTotals.entries())
-                        .map(([userId, total]) => {
-                            const participant = bucket.participants?.find(p => p.user_id === userId);
-                            return {
-                                id: userId,
-                                name: participant?.name || 'Unknown',
-                                value: total
-                            };
-                        })
+                        .map(([userId, total]) => ({
+                            id: userId,
+                            name: nameFor(userId),
+                            value: total
+                        }))
                         .sort((a, b) => b.value - a.value)
                         .slice(0, 10); // Top 10
                     
                     frames.push({
-                        time: time,
+                        time: groupTime,
                         rows: frameData
                     });
-                });
+                }
                 
                 return frames;
             }
@@ -2939,21 +2991,21 @@
                 svg.setAttribute('aria-label', 'Activity bar race');
                 host.appendChild(svg);
                 
-                // Responsive sizing
-                const W = host.clientWidth || 960;
-                const H = host.clientHeight || 420;
+                // Responsive sizing with proper margins
                 const margin = { top: 24, right: 24, bottom: 40, left: 140 };
-                const innerW = Math.max(0, W - margin.left - margin.right);
-                const innerH = Math.max(0, H - margin.top - margin.bottom);
+                const width = host.clientWidth || 744;
+                const height = host.clientHeight || 420;
+                const innerW = Math.max(0, width - margin.left - margin.right);
+                const innerH = Math.max(0, height - margin.top - margin.bottom);
                 
-                svg.setAttribute('width', W);
-                svg.setAttribute('height', H);
-                svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+                svg.setAttribute('width', width);
+                svg.setAttribute('height', height);
+                svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
                 svg.style.display = 'block';
                 
-                // Create content group
+                // Create chart group with proper transform
                 const g = document.createElementNS(NS, 'g');
-                g.id = 'rbr-g';
+                g.setAttribute('class', 'chart');
                 g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
                 svg.appendChild(g);
                 
@@ -2984,12 +3036,12 @@
                     animationTimer: null
                 };
                 
-                console.log('📊 [Bar Race] Container W×H:', W, '×', H, 'inner:', innerW, '×', innerH);
+                console.log('📊 [Bar Race] Container W×H:', width, '×', height, 'inner:', innerW, '×', innerH);
             }
 
             updateBarRaceFrame(frameIndex) {
                 const NS = 'http://www.w3.org/2000/svg';
-                const { svg, g, xScale, yFor, band, frames } = this.barRaceData;
+                const { svg, g, xScale, yFor, band, frames, width: innerW } = this.barRaceData;
                 const frame = frames[frameIndex];
                 
                 if (!frame) return;
@@ -3007,21 +3059,13 @@
                 // Skip empty frames
                 if (rows.length === 0) return;
                 
-                // Find or create bars group
-                let barsGroup = svg.querySelector('g.bars');
-                if (!barsGroup) {
-                    barsGroup = document.createElementNS(NS, 'g');
-                    barsGroup.setAttribute('class', 'bars');
-                    svg.appendChild(barsGroup);
-                }
-                
-                // Clear previous bars
-                barsGroup.querySelectorAll('*').forEach(n => n.remove());
+                // Clear previous content in chart group
+                g.querySelectorAll('*').forEach(n => n.remove());
                 
                 // Draw bars and labels
                 rows.forEach((row, i) => {
                     const y = yFor(i);
-                    const width = xScale(row.value);
+                    const barWidth = xScale(row.value);
                     
                     // Create bar
                     const rect = document.createElementNS(NS, 'rect');
@@ -3029,27 +3073,28 @@
                     rect.setAttribute('data-key', row.name);
                     rect.setAttribute('x', 0);
                     rect.setAttribute('y', y);
-                    rect.setAttribute('width', width);
+                    rect.setAttribute('width', barWidth);
                     rect.setAttribute('height', band * 0.7);
                     rect.setAttribute('rx', '6');
                     rect.setAttribute('ry', '6');
-                    barsGroup.appendChild(rect);
+                    g.appendChild(rect);
                     
-                    // Create name label
+                    // Create name label (left side)
                     const nameLabel = document.createElementNS(NS, 'text');
-                    nameLabel.setAttribute('class', 'rbr-label-name');
+                    nameLabel.setAttribute('class', 'rbr-label-name label');
                     nameLabel.setAttribute('x', -10);
                     nameLabel.setAttribute('y', y + band * 0.35);
-                    nameLabel.textContent = row.name;
-                    barsGroup.appendChild(nameLabel);
+                    nameLabel.textContent = row.name; // Always update text content
+                    g.appendChild(nameLabel);
                     
-                    // Create value label
+                    // Create value label (right side, inside chart bounds)
                     const valueLabel = document.createElementNS(NS, 'text');
-                    valueLabel.setAttribute('class', 'rbr-label-val');
-                    valueLabel.setAttribute('x', width + 10);
+                    valueLabel.setAttribute('class', 'rbr-label-val label');
+                    const valueX = Math.min(innerW - 6, barWidth + 6);
+                    valueLabel.setAttribute('x', valueX);
                     valueLabel.setAttribute('y', y + band * 0.35);
-                    valueLabel.textContent = row.value;
-                    barsGroup.appendChild(valueLabel);
+                    valueLabel.textContent = Math.round(row.value);
+                    g.appendChild(valueLabel);
                 });
             }
 
@@ -3083,6 +3128,11 @@
                 document.getElementById('rbr-play').style.display = 'none';
                 document.getElementById('rbr-pause').style.display = 'inline-block';
                 
+                // Adaptive timing: ~10s total duration
+                const total = frames.length || 1;
+                const durationMs = 10000; // 10s target
+                const stepMs = Math.max(60, Math.floor(durationMs / total)); // cap at ~16-60ms
+                
                 this.barRaceData.animationTimer = setInterval(() => {
                     let nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
                     
@@ -3099,7 +3149,7 @@
                     if (nextFrame === 0) {
                         this.pauseBarRace();
                     }
-                }, 700);
+                }, stepMs);
             }
 
             pauseBarRace() {
