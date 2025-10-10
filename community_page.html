@@ -3224,6 +3224,15 @@
                 if (new URLSearchParams(window.location.search).get('debug') === '1') {
                     console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex, 
                         'top names:', rows.slice(0, 3).map(r => r.name));
+                    
+                    // Debug: Show first 5 rows and their resolved names
+                    console.log('🔍 [Bar Race Debug] First 5 rows:', rows.slice(0, 5).map(row => ({
+                        id: row.id,
+                        value: row.value,
+                        resolvedName: this.safeName(row.id, row.label),
+                        userIndexValue: this.userIndex?.[row.id],
+                        searchIndexMatch: this.searchIndex?.find(u => u.id === row.id || u.user_id === row.id)
+                    })));
                 }
 
                 // D3 data join keyed by id
