@@ -154,52 +154,6 @@
             color: var(--fg-primary);
         }
 
-        /* Momentum Ring */
-        .momentum-section {
-            display: flex;
-            justify-content: center;
-            margin-bottom: var(--space-8);
-        }
-
-        .momentum-ring {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: conic-gradient(var(--accent) 0deg, var(--stroke) 0deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1;
-        }
-
-        .ring-progress {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            right: 4px;
-            bottom: 4px;
-            border-radius: 50%;
-            background: var(--bg-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .ring-text {
-            text-align: center;
-        }
-
-        .streak-days {
-            font-size: var(--text-2xl);
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .streak-label {
-            font-size: var(--text-xs);
-            color: var(--fg-muted);
-        }
 
         /* Leaderboard */
         .leaderboard-section {
@@ -1299,16 +1253,6 @@
                                     </div>
                                 </div>
 
-                        <!-- Momentum Ring -->
-                        <div class="momentum-section">
-                            <div class="momentum-ring">
-                                <div class="ring-progress" id="weekly-goal-progress"></div>
-                                <div class="ring-text">
-                                    <div class="streak-days" id="current-streak">-</div>
-                                    <div class="streak-label">day streak</div>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Leaderboard Tabs -->
                         <div class="leaderboard-section">
@@ -1455,7 +1399,6 @@
                 if (!data.source) warnings.push('Missing source field');
                 if (!data.week) errors.push('Missing week object');
                 if (!data.recap) errors.push('Missing recap object');
-                if (!data.momentum) errors.push('Missing momentum object');
                 if (!data.leaderboard) errors.push('Missing leaderboard object');
                 if (!data.meta) errors.push('Missing meta object');
 
@@ -1467,18 +1410,6 @@
                     if (!Array.isArray(data.recap.geo_expansion)) warnings.push('recap.geo_expansion should be array');
                 }
 
-                // Check momentum structure
-                if (data.momentum) {
-                    if (typeof data.momentum.current_streak_days !== 'number') warnings.push('momentum.current_streak_days should be number');
-                    if (typeof data.momentum.longest_streak_days !== 'number') warnings.push('momentum.longest_streak_days should be number');
-                    if (typeof data.momentum.weekly_taps !== 'number') warnings.push('momentum.weekly_taps should be number');
-                    if (typeof data.momentum.new_connections !== 'number') warnings.push('momentum.new_connections should be number');
-                    if (!data.momentum.weekly_goal) warnings.push('Missing momentum.weekly_goal');
-                    if (data.momentum.weekly_goal) {
-                        if (typeof data.momentum.weekly_goal.progress !== 'number') warnings.push('momentum.weekly_goal.progress should be number');
-                        if (typeof data.momentum.weekly_goal.target_taps !== 'number') warnings.push('momentum.weekly_goal.target_taps should be number');
-                    }
-                }
 
                 // Check leaderboard structure
                 if (data.leaderboard) {
@@ -1708,7 +1639,6 @@
                     // Normalize data with safe access patterns
                     const data = responseData || {};
                     const recap = data?.recap ?? {};
-                    const momentum = data?.momentum ?? {};
                     const leaderboard = data?.leaderboard ?? {};
                     const recommendations = this.safeArr(data?.recommendations);
                     const warnings = this.safeArr(data?.meta?.warnings);
@@ -1730,7 +1660,6 @@
                             community_activity: communityActivity,
                             geo_expansion: geoExpansion
                         },
-                        momentum,
                         leaderboard: {
                             new_connections: newConnections,
                             community_builders: communityBuilders,
@@ -1786,7 +1715,6 @@
                 document.getElementById('first-degree-count').textContent = '0';
                 document.getElementById('second-degree-count').textContent = '0';
                 document.getElementById('third-degree-count').textContent = '0';
-                document.getElementById('current-streak').textContent = '0';
                 
                 // Show error message
                 const contentState = document.getElementById('content-state');
@@ -2163,11 +2091,6 @@
                             { city: "Austin", new_taps: 5 }
                         ]
                     },
-                    momentum: {
-                        current_streak_days: 9,
-                        longest_streak_days: 17,
-                        weekly_goal: { target_taps: 5, progress: 4 }
-                    },
                     leaderboard: {
                         new_connections: [
                             { user_id: "u321", name: "Owen", new_first_degree: 6 }
@@ -2253,17 +2176,6 @@
                 // Setup degree card dropdowns
                 this.setupDegreeDropdowns();
 
-                // Update momentum ring
-                document.getElementById('current-streak').textContent = data.momentum?.current_streak_days || 0;
-                
-                // Update weekly goal progress with null-safety
-                const wg = data.momentum?.weekly_goal ?? {};
-                const wgProgress = Number.isFinite(wg.progress) ? wg.progress : 0;
-                const wgTarget = Number.isFinite(wg.target_taps) && wg.target_taps > 0 ? wg.target_taps : 25;
-                const wgPct = Math.max(0, Math.min(100, (wgTarget ? (wgProgress / wgTarget) * 100 : 0)));
-                
-                const ring = document.getElementById('weekly-goal-progress');
-                ring.style.background = `conic-gradient(var(--accent) ${wgPct * 3.6}deg, var(--stroke) 0deg)`;
 
                 // Render leaderboard
                 this.renderLeaderboard('connectors');
