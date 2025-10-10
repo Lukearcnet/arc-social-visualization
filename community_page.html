@@ -2147,9 +2147,9 @@
                         </div>
                         <div>
                             ${type === 'connectors' ? 
-                                (item.tap_count || item.new_first_degree || 0) + ' taps' :
+                                (item.tap_count || item.new_first_degree || 0) + ' new connections' :
                               type === 'reach' ? 
-                                '+' + (item.new_connections || item.delta_second_degree || 0) + ' new connections' :
+                                '+' + (item.new_connections || item.delta_second_degree || 0) + ' new taps' :
                               (item.streak_days || 0) + ' days'}
                         </div>
                     `;
