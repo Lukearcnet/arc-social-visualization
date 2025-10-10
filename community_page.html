@@ -3761,6 +3761,10 @@
                 const { g, xScale, yScale, colorScale } = d;
                 const frame = d.frames?.[frameIndex];
                 if (!g || !xScale || !yScale || !frame) return;
+                
+                // Determine transition duration based on playback speed
+                const isPlaying = this.barRaceData?.isPlaying || false;
+                const transitionDuration = isPlaying ? 200 : 400; // Faster during playback
 
                 // Get top 10 rows for this frame
                 const rows = (frame.rows || []).slice(0, 10);
@@ -3807,36 +3811,60 @@
                 // D3 data join keyed by id
                 const bars = g.selectAll('.bar').data(rows, d => d.id);
 
-                // EXIT
-                bars.exit().remove();
+                // EXIT - smooth fade out
+                bars.exit()
+                    .transition()
+                    .duration(transitionDuration * 0.75)
+                    .ease(d3.easeCubicInOut)
+                    .style('opacity', 0)
+                    .remove();
 
-                // ENTER
+                // ENTER - smooth fade in
                 const barsEnter = bars.enter().append('g').attr('class', 'bar');
                 barsEnter.append('rect');
                 barsEnter.append('text').attr('class', 'label').attr('text-anchor', 'end').attr('dy', '0.35em');
                 barsEnter.append('text').attr('class', 'value').attr('text-anchor', 'start').attr('dy', '0.35em');
+                
+                // Set initial opacity for new bars
+                barsEnter.style('opacity', 0);
 
                 // UPDATE + ENTER
                 const merged = barsEnter.merge(bars);
                 
-                // Horizontal bars: x=0, y=yScale(id), width=xScale(value), height=yScale.bandwidth()
+                // Add smooth transitions for bars
                 merged.select('rect')
+                    .transition()
+                    .duration(transitionDuration)
+                    .ease(d3.easeCubicInOut)
                     .attr('x', 0)
                     .attr('y', d => yScale(d.id))
                     .attr('height', yScale.bandwidth())
                     .attr('width', d => xScale(d.value))
                     .attr('fill', d => colorScale ? colorScale(d.id) : '#3b82f6');
+                
+                // Fade in new bars
+                barsEnter
+                    .transition()
+                    .duration(transitionDuration)
+                    .ease(d3.easeCubicInOut)
+                    .style('opacity', 1);
 
-                // Left name labels (white text, positioned left of bars)
+                // Add smooth transitions for name labels
                 merged.select('text.label')
                     .text(d => this.safeName(d.id))
+                    .transition()
+                    .duration(transitionDuration)
+                    .ease(d3.easeCubicInOut)
                     .attr('x', -8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
 
-                // Right value labels (muted gray, positioned at end of bars)
+                // Add smooth transitions for value labels
                 merged.select('text.value')
                     .text(d => String(d.value))
+                    .transition()
+                    .duration(transitionDuration)
+                    .ease(d3.easeCubicInOut)
                     .attr('x', d => xScale(d.value) + 8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#bbb');
