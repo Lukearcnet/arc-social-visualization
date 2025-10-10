@@ -3930,27 +3930,39 @@
                 // Adaptive speed for ~10s total playback with larger steps
                 const stepSize = Math.max(1, Math.floor(frames.length / 50)); // Larger steps for more direct movement
                 const totalSteps = Math.ceil(frames.length / stepSize); // Calculate actual number of steps
-                const interval = Math.max(16, Math.floor(10000 / totalSteps)); // Base interval on actual steps, not total frames
+                const stepInterval = Math.max(8, Math.floor(10000 / totalSteps)); // Smoother frame rate (8ms minimum = ~125 FPS)
                 
-                this.barRaceData.animationTimer = setInterval(() => {
-                    let nextFrame = this._barRaceIndex + stepSize; // Use larger steps
-                    
-                    // Skip empty frames
-                    while (nextFrame < frames.length && 
-                           frames[nextFrame] && 
-                           (frames[nextFrame].rows || []).length === 0) {
-                        nextFrame += stepSize;
+                let lastStepTime = 0;
+                const animateStep = (currentTime) => {
+                    if (currentTime - lastStepTime >= stepInterval) {
+                        let nextFrame = this._barRaceIndex + stepSize; // Use larger steps
+                        
+                        // Skip empty frames
+                        while (nextFrame < frames.length && 
+                               frames[nextFrame] && 
+                               (frames[nextFrame].rows || []).length === 0) {
+                            nextFrame += stepSize;
+                        }
+                        
+                        // Stop at last frame
+                        if (nextFrame >= frames.length) {
+                            this.pauseBarRace();
+                            return;
+                        }
+                        
+                        this.updateBarRaceFrame(nextFrame);
+                        this._barRaceIndex = nextFrame;
+                        lastStepTime = currentTime;
                     }
                     
-                    // Stop at last frame
-                    if (nextFrame >= frames.length) {
-                        this.pauseBarRace();
-                        return;
+                    // Continue animation if still playing
+                    if (this.barRaceData.isPlaying) {
+                        requestAnimationFrame(animateStep);
                     }
-                    
-                    this._barRaceIndex = nextFrame;
-                    this.updateBarRaceFrame(nextFrame);
-                }, interval);
+                };
+                
+                // Start the animation loop
+                requestAnimationFrame(animateStep);
             }
 
             pauseBarRace() {
@@ -3958,10 +3970,7 @@
                 document.getElementById('rbr-play').style.display = 'inline-block';
                 document.getElementById('rbr-pause').style.display = 'none';
                 
-                if (this.barRaceData.animationTimer) {
-                    clearInterval(this.barRaceData.animationTimer);
-                    this.barRaceData.animationTimer = null;
-                }
+                // No need to clear requestAnimationFrame - it stops automatically when isPlaying is false
             }
 
             stepBarRace() {
