@@ -3027,20 +3027,24 @@
                 // Clear queue
                 this._nameQueue = [];
                 
-                // Process each batch using the new bulk endpoint
+                // Process each batch using /api/data (bulk) instead of /api/users
                 for (const batch of batches) {
                     try {
-                        const bulkResponse = await fetch(`/api/users?ids=${batch.join(',')}`);
+                        const bulkResponse = await fetch(`/api/data`);
                         if (bulkResponse.ok) {
                             const bulkData = await bulkResponse.json();
                             if (bulkData.users && Array.isArray(bulkData.users)) {
-                                this.processBulkNames(bulkData.users);
+                                // Filter to only the users we need
+                                const neededUsers = bulkData.users.filter(user => 
+                                    batch.includes(user.id) || batch.includes(user.user_id)
+                                );
+                                this.processBulkNames(neededUsers);
                             }
                         } else {
-                            console.log('📊 [Bar Race] Bulk users endpoint failed:', bulkResponse.status);
+                            console.log('📊 [Bar Race] Bulk data endpoint failed:', bulkResponse.status);
                         }
                     } catch (error) {
-                        console.log('📊 [Bar Race] Bulk users endpoint error:', error.message);
+                        console.log('📊 [Bar Race] Bulk data endpoint error:', error.message);
                     }
                 }
                 
@@ -3202,6 +3206,17 @@
             async renderRadarBarRace(data, viewMode = 'connections') {
                 console.log('📊 [Bar Race] Rendering bar race chart:', { data, viewMode });
                 
+                // Set explicit mode tracking
+                this._barRaceMode = viewMode;
+                this.barRaceData = this.barRaceData || {};
+                this.barRaceData.meta = { ...(this.barRaceData.meta || {}), mode: viewMode };
+                
+                // Store last network data with mode
+                this._lastNetworkData = { 
+                    ...data, 
+                    meta: { ...(data.meta || {}), mode: viewMode } 
+                };
+                
                 // Ensure user indexes are loaded before rendering
                 if (!this.userIndex || Object.keys(this.userIndex).length === 0) {
                     console.log('📊 [Bar Race] Loading user indexes before rendering...');
@@ -3209,8 +3224,10 @@
                 }
                 
                 // Store view mode
-                this.barRaceData = this.barRaceData || {};
                 this.barRaceData.viewMode = viewMode;
+                
+                // Console diagnostics after fetch
+                console.log('[Bar Race] dataset mode:', viewMode, 'buckets:', data.buckets?.length || 0);
                 
                 let frames;
                 
@@ -3220,12 +3237,17 @@
                     
                     // Build frames from buckets with proper stride (existing logic)
                     frames = this.buildBarRaceFrames(data.buckets);
+                } else if (viewMode === 'network-connections') {
+                    // Use distinct frame builder for network-connections
+                    frames = await this.buildNetworkConnectionsFrames(data);
                 } else {
-                    // Network modes: build frames from network data
+                    // For network-taps mode, use the network data
                     frames = await this.buildBarRaceFramesFromNetwork(data, viewMode);
                 }
                 
-                console.log('📊 [Bar Race] Built', frames.length, 'frames for mode:', viewMode);
+                // Set framesForMode and console diagnostics after frames
+                this.barRaceData.framesForMode = viewMode;
+                console.log('[Bar Race] frames built for:', this.barRaceData.framesForMode, 'frameCount:', frames.length);
                 
                 if (frames.length === 0) {
                     this.renderRadarEmpty();
@@ -3451,6 +3473,97 @@
             async buildBarRaceFramesFromNetwork(data, viewMode) {
                 // Use the same logic as buildBarRaceFrames since network data now has same structure
                 return this.buildBarRaceFrames(data.buckets);
+            }
+
+            async buildNetworkConnectionsFrames(data) {
+                // Distinct frame builder for network-connections mode
+                // Input: raw taps within time window, network members
+                // Logic: count unique counterparts per network member cumulatively
+                
+                const { buckets, meta } = data;
+                const networkMembers = meta?.network_members || [];
+                
+                console.log('🔗 [Network Connections] Building frames for', networkMembers.length, 'network members');
+                
+                // Get network members from weekly API if not provided
+                if (networkMembers.length === 0) {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    const weeklyResponse = await fetch(`/api/community/weekly?user_id=${userId}&time_window=7d`);
+                    if (weeklyResponse.ok) {
+                        const weeklyData = await weeklyResponse.json();
+                        const members = new Set([userId]);
+                        if (weeklyData.recap?.first_degree_new) {
+                            weeklyData.recap.first_degree_new.forEach(conn => members.add(conn.user_id));
+                        }
+                        if (weeklyData.recap?.second_degree_new) {
+                            weeklyData.recap.second_degree_new.forEach(conn => members.add(conn.user_id));
+                        }
+                        if (weeklyData.recap?.third_degree_new) {
+                            weeklyData.recap.third_degree_new.forEach(conn => members.add(conn.user_id));
+                        }
+                        networkMembers.push(...Array.from(members));
+                    }
+                }
+                
+                const frames = [];
+                const seen = new Map(); // userId -> Set of counterpart IDs
+                const entityTotals = new Map(); // userId -> cumulative count
+                
+                // Initialize seen sets for network members
+                networkMembers.forEach(id => {
+                    seen.set(id, new Set());
+                    entityTotals.set(id, 0);
+                });
+                
+                // Calculate stride for ~10s playback
+                const targetFrames = 600;
+                const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
+                
+                console.log('🔗 [Network Connections] Processing', buckets.length, 'buckets with stride', stride);
+                
+                // Process buckets in stride windows
+                for (let i = 0; i < buckets.length; i += stride) {
+                    const windowEnd = Math.min(i + stride, buckets.length);
+                    const windowBuckets = buckets.slice(i, windowEnd);
+                    
+                    // Process each bucket in the window
+                    windowBuckets.forEach(bucket => {
+                        if (bucket && bucket.participants) {
+                            bucket.participants.forEach(participant => {
+                                const userId = participant.user_id;
+                                if (networkMembers.includes(userId)) {
+                                    // Count new unique counterparts for this user in this bucket
+                                    const newCounterparts = participant.count || 0;
+                                    const current = entityTotals.get(userId) || 0;
+                                    entityTotals.set(userId, current + newCounterparts);
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Create frame with top 10 participants
+                    const topParticipants = Array.from(entityTotals.entries())
+                        .filter(([userId, count]) => count > 0)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10)
+                        .map(([userId, total]) => ({
+                            id: userId,
+                            value: total
+                        }));
+                    
+                    // Skip empty frames
+                    if (topParticipants.length === 0) continue;
+                    
+                    // Use the last bucket in the window for timestamp
+                    const lastBucket = windowBuckets[windowBuckets.length - 1];
+                    frames.push({
+                        time: new Date(lastBucket.ts),
+                        rows: topParticipants
+                    });
+                }
+                
+                console.log('🔗 [Network Connections] Built', frames.length, 'frames with unique counterpart logic');
+                return frames;
             }
 
             initializeBarRace() {
@@ -3728,7 +3841,7 @@
                 
                 return {
                     buckets: networkData.buckets,
-                    meta: networkData.meta,
+                    meta: { ...networkData.meta, mode: viewMode },
                     hours: hours,
                     viewMode: viewMode
                 };
