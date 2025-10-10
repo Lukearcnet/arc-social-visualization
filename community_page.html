@@ -1316,7 +1316,6 @@
                 <!-- Navigation Tabs -->
                 <div class="community-nav">
                     <button class="nav-tab active" data-section="pulse">Weekly Pulse</button>
-                    <button class="nav-tab" data-section="quests">Quests & Routes</button>
                     <button class="nav-tab" data-section="radar">Opportunity Radar</button>
                     <button class="nav-tab" data-section="health">Relationship Health</button>
                 </div>
@@ -1389,7 +1388,7 @@
                         </div>
 
                     <!-- Other sections will be added here -->
-                    <div id="quests-section" class="community-section">
+                    <div id="quests-section" class="community-section" style="display: none;">
                         <div class="quests-container">
                             <div class="quests-header">
                                 <h2>Quests & Routes</h2>
@@ -1621,7 +1620,7 @@
                 return;
             }
 
-            const sections = ['pulse-section', 'quests-section', 'radar-section', 'health-section'];
+            const sections = ['pulse-section', 'radar-section', 'health-section'];
             const errors = [];
 
             sections.forEach(sectionId => {
@@ -1752,9 +1751,6 @@
                 switch (section) {
                     case 'pulse':
                         await this.loadWeeklyPulse();
-                        break;
-                    case 'quests':
-                        await this.loadQuests();
                         break;
                     case 'radar':
                         await this.loadRadar();
