@@ -2870,10 +2870,8 @@
             renderRadarBarRace(data) {
                 console.log('📊 [Bar Race] Rendering bar race chart:', data);
                 
-                // Build frames from buckets with name resolution
-                const frames = this.buildBarRaceFrames(data.buckets, { 
-                    nameFor: id => this.resolveName(id) 
-                });
+                // Build frames from buckets with proper stride
+                const frames = this.buildBarRaceFrames(data.buckets);
                 console.log('📊 [Bar Race] Built', frames.length, 'frames');
                 
                 if (frames.length === 0) {
@@ -2889,9 +2887,6 @@
                 const firstNonEmpty = frames.findIndex(f => (f.rows || []).length > 0);
                 this.barRaceData.firstFrameIndex = Math.max(0, firstNonEmpty);
                 
-                // Compute adaptive stride for ~10s playback
-                this._stride = this.computeStride(frames.length);
-                
                 this.initializeBarRace();
                 
                 // Compute a global max for x domain
@@ -2900,12 +2895,13 @@
                 if (xScale && typeof xScale.domain === 'function') xScale.domain([0, maxVal]);
                 
                 // Debug logging
-                console.log('📊 [Bar Race] Debug info:', {
-                    framesCount: frames.length,
-                    stride: this._stride,
-                    firstNonEmptyFrame: this.barRaceData.firstFrameIndex,
-                    firstFrameRows: frames[this.barRaceData.firstFrameIndex]?.rows?.slice(0, 3) || []
-                });
+                if (new URLSearchParams(window.location.search).get('debug') === '1') {
+                    console.log('📊 [Bar Race] Debug info:', {
+                        framesCount: frames.length,
+                        firstNonEmptyFrame: this.barRaceData.firstFrameIndex,
+                        firstFrameRows: frames[this.barRaceData.firstFrameIndex]?.rows?.slice(0, 3) || []
+                    });
+                }
                 
                 // draw first frame safely
                 this._barRaceIndex = 0;
@@ -2916,40 +2912,47 @@
             }
 
             // Name resolution helper
-            resolveName(id) {
-                if (!id) return 'Unknown';
+            resolveName(id, fallback) {
+                if (!id) return fallback || 'Unknown';
                 
-                // 1) Check radar meta names first
-                const radarName = this.data?.radar?.meta?.names?.[id];
-                if (radarName) return radarName;
-                
-                // 2) Build name map once from existing user data
-                const nameMap = this.buildNameMapOnce();
-                const mappedName = nameMap.get(id);
-                if (mappedName) return mappedName;
-                
-                // 3) Fallback with ID tail
-                return 'Unknown · ' + String(id).slice(-4);
-            }
-
-            buildNameMapOnce() {
-                if (this._nameMap) return this._nameMap;
-                const m = new Map();
-                
-                // searchIndex: [{user_id,name}] if present
-                (this.searchIndex || []).forEach(u => 
-                    m.set(u.user_id || u.id, u.name || u.user_name || u.displayName)
-                );
-                
-                // userIndex: {id:{name}} if present
-                if (this.userIndex) {
-                    Object.entries(this.userIndex).forEach(([id, u]) => 
-                        m.set(id, u?.name || u?.user_name || u?.displayName)
-                    );
+                // Build userIndex once from available sources
+                if (!this.userIndex) {
+                    this.buildUserIndex();
                 }
                 
-                this._nameMap = m;
-                return m;
+                // Check userIndex first
+                const user = this.userIndex[id];
+                if (user) {
+                    return user.name || user.user_name || user.displayName || fallback || 'Unknown';
+                }
+                
+                // Fallback with ID tail
+                return fallback || `Unknown · ${String(id).slice(-4)}`;
+            }
+
+            buildUserIndex() {
+                if (this.userIndex) return this.userIndex;
+                
+                this.userIndex = {};
+                
+                // searchIndex: [{user_id,name}] if present
+                (this.searchIndex || []).forEach(u => {
+                    const id = u.user_id || u.id;
+                    if (id) {
+                        this.userIndex[id] = {
+                            name: u.name || u.user_name || u.displayName,
+                            user_name: u.user_name,
+                            displayName: u.displayName
+                        };
+                    }
+                });
+                
+                // Additional sources could be added here:
+                // - /api/data users
+                // - /api/community/weekly (leaderboard/recap)
+                // - /api/community/health (connections)
+                
+                return this.userIndex;
             }
 
             // Stable color generation
@@ -2969,52 +2972,45 @@
                 return Math.max(1, Math.ceil(framesLen / targetFrames));
             }
 
-            buildBarRaceFrames(buckets, opts = {}) {
+            buildBarRaceFrames(buckets) {
                 const frames = [];
                 const entityTotals = new Map(); // Track cumulative totals
-                const nameFor = opts?.nameFor || (id => this.resolveName(id));
                 
-                // Adaptive grouping based on time window
-                const totalHours = buckets.length;
-                let groupSize = 1; // Default: hourly
-                if (totalHours <= 48) {
-                    groupSize = 1; // Hourly for 1-2 days
-                } else if (totalHours <= 30 * 24) {
-                    groupSize = 6; // 6-hour groups for up to 30 days
-                } else {
-                    groupSize = 24; // Daily groups for longer periods
-                }
+                // Calculate stride for ~10s playback at ~60 FPS (targetFrames ≈ 600)
+                const targetFrames = 600;
+                const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
                 
-                // Group buckets and process
-                for (let i = 0; i < buckets.length; i += groupSize) {
-                    const group = buckets.slice(i, i + groupSize);
-                    if (group.length === 0) continue;
+                console.log(`📊 [Bar Race] Processing ${buckets.length} buckets with stride ${stride} for ~10s playback`);
+                
+                // Sample buckets with stride and build frames
+                for (let i = 0; i < buckets.length; i += stride) {
+                    const bucket = buckets[i];
+                    if (!bucket) continue;
                     
-                    const groupTime = new Date(group[0].ts);
+                    // Update cumulative totals for this bucket
+                    if (bucket.participants) {
+                        bucket.participants.forEach(participant => {
+                            const current = entityTotals.get(participant.user_id) || 0;
+                            entityTotals.set(participant.user_id, current + participant.count);
+                        });
+                    }
                     
-                    // Update cumulative totals for this group
-                    group.forEach(bucket => {
-                        if (bucket.participants) {
-                            bucket.participants.forEach(participant => {
-                                const currentTotal = entityTotals.get(participant.user_id) || 0;
-                                entityTotals.set(participant.user_id, currentTotal + participant.count);
-                            });
-                        }
-                    });
-                    
-                    // Create frame with current totals
-                    const frameData = Array.from(entityTotals.entries())
+                    // Create frame with top 10 participants (sorted desc by value)
+                    const topParticipants = Array.from(entityTotals.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10)
                         .map(([userId, total]) => ({
                             id: userId,
-                            name: nameFor(userId),
+                            name: this.resolveName(userId),
                             value: total
-                        }))
-                        .sort((a, b) => b.value - a.value)
-                        .slice(0, 10); // Top 10
+                        }));
+                    
+                    // Skip empty frames
+                    if (topParticipants.length === 0) continue;
                     
                     frames.push({
-                        time: groupTime,
-                        rows: frameData
+                        time: new Date(bucket.ts),
+                        rows: topParticipants
                     });
                 }
                 
@@ -3022,10 +3018,22 @@
             }
 
             initializeBarRace() {
-                const host = document.getElementById('rbr-chart');
-                if (!host) return;
+                // Create host container if needed
+                let host = document.getElementById('rbr-chart');
+                if (!host) {
+                    const radarContent = document.getElementById('radar-content');
+                    if (radarContent) {
+                        host = document.createElement('div');
+                        host.id = 'rbr-chart';
+                        host.className = 'bar-race-host';
+                        radarContent.appendChild(host);
+                    } else {
+                        return;
+                    }
+                }
 
-                const margin = this.barRaceData?.margin || { top: 24, right: 24, bottom: 40, left: 180 };
+                // Define local margins (no global var)
+                const margin = { top: 24, right: 24, bottom: 40, left: 160 };
                 const width = host.clientWidth || 744;
                 const height = host.clientHeight || 420;
                 const innerW = Math.max(0, width - margin.left - margin.right);
@@ -3045,9 +3053,10 @@
                 }
                 const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-                // Always (re)create empty scales here
-                const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerW]);
-                const yScale = d3.scaleBand().domain([]).range([0, innerH]).padding(0.15);
+                // Create scales
+                const xScale = d3.scaleLinear().range([0, innerW]);
+                const yScale = d3.scaleBand().range([0, innerH]).padding(0.15);
+                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
                 // Persist state for updateBarRaceFrame
                 this.barRaceData = {
@@ -3055,15 +3064,34 @@
                     svg: svg.node(),
                     g,
                     margin, width, height, innerW, innerH,
-                    xScale, yScale,
+                    xScale, yScale, colorScale,
                 };
+
+                // Add ResizeObserver for responsive updates
+                if (window.ResizeObserver) {
+                    const resizeObserver = new ResizeObserver(() => {
+                        const newWidth = host.clientWidth || 744;
+                        const newHeight = host.clientHeight || 420;
+                        const newInnerW = Math.max(0, newWidth - margin.left - margin.right);
+                        const newInnerH = Math.max(0, newHeight - margin.top - margin.bottom);
+                        
+                        svg.attr('width', newWidth).attr('height', newHeight)
+                           .attr('viewBox', `0 0 ${newWidth} ${newHeight}`);
+                        
+                        this.barRaceData.xScale.range([0, newInnerW]);
+                        this.barRaceData.yScale.range([0, newInnerH]);
+                        this.barRaceData.innerW = newInnerW;
+                        this.barRaceData.innerH = newInnerH;
+                    });
+                    resizeObserver.observe(host);
+                }
 
                 console.log('📊 [Bar Race] Container W×H:', width, '×', height, 'inner:', innerW, '×', innerH);
             }
 
             updateBarRaceFrame(frameIndex) {
                 const d = this.barRaceData || {};
-                const { g, xScale, yScale, innerH } = d;
+                const { g, xScale, yScale, colorScale } = d;
                 const frame = d.frames?.[frameIndex];
                 if (!g || !xScale || !yScale || !frame) return;              // <- guard
 
@@ -3081,8 +3109,19 @@
                     yScale.domain(rows.map(r => r.id));
                 }
 
-                console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex, 
-                    'top names:', rows.slice(0, 3).map(r => r.name));
+                // Update color scale domain to include all current IDs
+                if (colorScale && typeof colorScale.domain === 'function') {
+                    const currentDomain = colorScale.domain();
+                    const newIds = rows.map(r => r.id).filter(id => !currentDomain.includes(id));
+                    if (newIds.length > 0) {
+                        colorScale.domain([...currentDomain, ...newIds]);
+                    }
+                }
+
+                if (new URLSearchParams(window.location.search).get('debug') === '1') {
+                    console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex, 
+                        'top names:', rows.slice(0, 3).map(r => r.name));
+                }
 
                 // DATA JOIN keyed by id
                 const bars = g.selectAll('.bar').data(rows, r => r.id);
@@ -3098,24 +3137,28 @@
 
                 // UPDATE + ENTER
                 const merged = barsEnter.merge(bars);
+                
+                // Horizontal bars: x=0, width=xScale(value), height=yScale.bandwidth()
                 merged.select('rect')
-                    .attr('x', xScale(0))
+                    .attr('x', 0)
                     .attr('y', r => yScale(r.id))
                     .attr('height', yScale.bandwidth())
-                    .attr('width', r => Math.max(0, xScale(r.value) - xScale(0)))
-                    .attr('fill', r => this.hashColor ? this.hashColor(r.id) : '#3b82f6');
+                    .attr('width', r => xScale(r.value))
+                    .attr('fill', r => colorScale ? colorScale(r.id) : '#3b82f6');
 
-                // left labels (outside bars)
+                // Left name labels (outside bars, white text)
                 merged.select('text.label')
-                    .text(r => r.name || `Unknown · ${String(r.id).slice(-4)}`)
-                    .attr('x', xScale(0) - 8)
-                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2));
+                    .text(r => this.resolveName(r.id, r.name))
+                    .attr('x', -8)
+                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2))
+                    .attr('fill', '#fff');
 
-                // value labels (end of bar)
+                // Right value labels (end of bar, grey text)
                 merged.select('text.value')
                     .text(r => String(r.value))
-                    .attr('x', r => xScale(r.value) + 6)
-                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2));
+                    .attr('x', r => xScale(r.value) + 8)
+                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2))
+                    .attr('fill', '#bbb');
 
                 this._barRaceIndex = frameIndex;
             }
@@ -3150,26 +3193,28 @@
                 document.getElementById('rbr-play').style.display = 'none';
                 document.getElementById('rbr-pause').style.display = 'inline-block';
                 
-                // Use adaptive stride for ~10s total duration
-                const fps = 12;
-                const stepMs = Math.floor(1000 / fps); // ~83ms per frame
+                // Use ~60 FPS for smooth animation
+                const fps = 60;
+                const stepMs = Math.floor(1000 / fps); // ~16ms per frame
                 
                 this.barRaceData.animationTimer = setInterval(() => {
-                    let nextFrame = (this.barRaceData.currentFrame + this._stride) % frames.length;
+                    let nextFrame = this.barRaceData.currentFrame + 1;
                     
                     // Skip empty frames
-                    while (nextFrame !== this.barRaceData.currentFrame && 
+                    while (nextFrame < frames.length && 
                            frames[nextFrame] && 
                            (frames[nextFrame].rows || []).length === 0) {
-                        nextFrame = (nextFrame + this._stride) % frames.length;
+                        nextFrame++;
+                    }
+                    
+                    // Stop at last frame
+                    if (nextFrame >= frames.length) {
+                        this.pauseBarRace();
+                        return;
                     }
                     
                     this.barRaceData.currentFrame = nextFrame;
                     this.updateBarRaceFrame(nextFrame);
-                    
-                    if (nextFrame === 0) {
-                        this.pauseBarRace();
-                    }
                 }, stepMs);
             }
 
@@ -3186,13 +3231,18 @@
 
             stepBarRace() {
                 const { frames } = this.barRaceData;
-                let nextFrame = (this.barRaceData.currentFrame + this._stride) % frames.length;
+                let nextFrame = this.barRaceData.currentFrame + 1;
                 
                 // Skip empty frames
-                while (nextFrame !== this.barRaceData.currentFrame && 
+                while (nextFrame < frames.length && 
                        frames[nextFrame] && 
                        (frames[nextFrame].rows || []).length === 0) {
-                    nextFrame = (nextFrame + this._stride) % frames.length;
+                    nextFrame++;
+                }
+                
+                // Stop at last frame
+                if (nextFrame >= frames.length) {
+                    return;
                 }
                 
                 this.barRaceData.currentFrame = nextFrame;
@@ -3214,11 +3264,6 @@
                     }
                     
                     const data = await response.json();
-                    
-                    // Store radar data for name resolution
-                    this.data = this.data || {};
-                    this.data.radar = data;
-                    
                     this.renderRadarBarRace(data);
                     
                 } catch (error) {
