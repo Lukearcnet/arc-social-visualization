@@ -2474,38 +2474,17 @@
             }
 
             async getUserConnections(userId) {
-                // For Top Connectors, use the SAME logic as the weekly API
-                // Don't try to recreate it - use the actual data that generated the count
+                // For Top Connectors, use raw tap data with the SAME logic as the weekly API
+                // This ensures we get the exact connections that generated the count
                 
                 const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId);
                 if (!userData) {
                     return [];
                 }
                 
-                // The weekly API already calculated the connections - use that data directly
-                // Check if the weekly API provides the actual connection list
-                const weeklyConnections = this.data.weekly?.recap?.first_degree_new || [];
-                const userConnections = weeklyConnections.filter(conn => {
-                    // Find connections where this user is involved
-                    // The weekly API should have the actual list of new connections
-                    return conn.user_id === userId || conn.connected_via === userId;
-                });
-                
-                console.log(`[Connections] Using weekly API data for user ${userId}`);
+                console.log(`[Connections] Getting connections for user ${userId}`);
                 console.log(`[Connections] Weekly API userData:`, userData);
-                console.log(`[Connections] Weekly connections found:`, userConnections);
-                
-                if (userConnections.length > 0) {
-                    // Use the weekly API's actual connection data
-                    return userConnections.map(conn => ({
-                        name: conn.name || 'Unknown',
-                        user_id: conn.user_id
-                    }));
-                }
-                
-                // Fallback: If weekly API doesn't have the connection list, 
-                // we need to match the exact same logic the weekly API uses
-                console.log(`[Connections] Weekly API doesn't provide connection list, need to match its logic`);
+                console.log(`[Connections] Expected count: ${userData.tap_count || userData.new_first_degree || 0}`);
                 
                 try {
                     // Fetch raw tap data from the same source as map/graph
@@ -2519,7 +2498,7 @@
                     const taps = rawData.taps || rawData.tap_data || [];
                     const users = rawData.users || rawData.user_profiles || [];
                     
-                    // Use the SAME time window as the weekly API
+                    // Use the SAME time window as the weekly API (7 days)
                     const timeWindow = this.data.weekly?.week?.time_window || '7d';
                     const timeWindowMs = this.getTimeWindowMs(timeWindow);
                     const now = new Date();
@@ -2527,7 +2506,6 @@
                     
                     console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
                     console.log(`[Connections] Total taps available: ${taps.length}`);
-                    console.log(`[Connections] Weekly API says user has ${userData.tap_count || userData.new_first_degree || 0} new connections`);
                     
                     // Filter taps involving this user within the time window
                     const userTaps = taps.filter(tap => {
@@ -2586,29 +2564,14 @@
                     console.log(`[Connections] Final connections for ${userId}:`, result);
                     console.log(`[Connections] Expected: ${expectedCount}, Found: ${result.length}`);
                     
-                    // If we have more connections than expected, limit to the expected count
-                    // This handles the case where we're getting more connections than the weekly API counts
-                    const limitedResult = result.slice(0, expectedCount);
-                    console.log(`[Connections] Limited to ${expectedCount} connections:`, limitedResult);
-                    
-                    // If we're missing connections, let's see what other taps exist for this user
-                    if (result.length < (userData.tap_count || userData.new_first_degree || 0)) {
-                        console.log(`[Connections] Missing connections! Let's check all taps for this user:`);
-                        const allUserTaps = taps.filter(tap => {
-                            const id1 = tap.user1_id || tap.id1;
-                            const id2 = tap.user2_id || tap.id2;
-                            return (id1 === userId || id2 === userId);
-                        });
-                        console.log(`[Connections] All taps for user (${allUserTaps.length} total):`, allUserTaps.map(tap => ({
-                            time: tap.time,
-                            user1: tap.user1_name,
-                            user2: tap.user2_name,
-                            id1: tap.user1_id || tap.id1,
-                            id2: tap.user2_id || tap.id2
-                        })));
+                    // Return the actual connections found (don't limit artificially)
+                    // If there's a mismatch, we need to debug the time window or logic
+                    if (result.length !== expectedCount) {
+                        console.log(`[Connections] Mismatch! Expected ${expectedCount}, found ${result.length}`);
+                        console.log(`[Connections] This suggests the weekly API uses different logic or time window`);
                     }
                     
-                    return limitedResult;
+                    return result;
                     
                 } catch (error) {
                     console.warn('Error fetching connection data:', error);
