@@ -3513,7 +3513,7 @@
                 const entityTotals = new Map(); // Track cumulative totals (never reset)
                 
                 // Calculate stride for ~10s playback with fewer intermediate steps
-                const targetFrames = 200; // Reduced from 600 for more direct movement
+                const targetFrames = 600; // Back to 600 for ~10s playback
                 const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
                 
                 console.log(`📊 [Bar Race] Processing ${buckets.length} buckets with stride ${stride} for ~10s playback`);
@@ -3612,7 +3612,7 @@
                 });
                 
                 // Calculate stride for ~10s playback with fewer intermediate steps
-                const targetFrames = 200; // Reduced from 600 for more direct movement
+                const targetFrames = 600; // Back to 600 for ~10s playback
                 const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
                 
                 console.log('🔗 [Network Connections] Processing', buckets.length, 'buckets with stride', stride);
@@ -3929,7 +3929,7 @@
                 
                 // Adaptive speed for ~10s total playback with larger steps
                 const interval = Math.max(16, Math.floor(10000 / frames.length));
-                const stepSize = Math.max(1, Math.floor(frames.length / 50)); // Larger steps for more direct movement
+                const stepSize = Math.max(1, Math.floor(frames.length / 100)); // Smaller steps for ~10s playback
                 
                 this.barRaceData.animationTimer = setInterval(() => {
                     let nextFrame = this._barRaceIndex + stepSize; // Use larger steps
