@@ -2343,10 +2343,18 @@
                         ? mutuals.slice(0, 3).join(', ') + (mutuals.length > 3 ? ` +${mutuals.length - 3} more` : '')
                         : 'No mutuals';
                     
+                    // Extract the actual mutual count from the explain text
+                    // The explain text contains the real count: "Connected through 5 mutual friends"
+                    const explainText = rec.explain || '';
+                    const mutualCountMatch = explainText.match(/Connected through (\d+) mutual friends/);
+                    const actualMutualCount = mutualCountMatch ? parseInt(mutualCountMatch[1]) : mutuals.length;
+                    
                     // Debug: Log the actual recommendation data
                     console.log(`[Recommendations] ${name}:`, {
                         mutuals: mutuals,
                         mutualCount: mutuals.length,
+                        actualMutualCount: actualMutualCount,
+                        explainText: explainText,
                         rec: rec
                     });
                     
@@ -2357,7 +2365,7 @@
                     
                     div.innerHTML = `
                         <h4>${name}</h4>
-                        <div class="connected-through">Connected through ${mutuals.length} mutual friends</div>
+                        <div class="connected-through">Connected through ${actualMutualCount} mutual friends</div>
                         <div class="mutual-names">
                             ${mutualNamesDisplay}
                         </div>
