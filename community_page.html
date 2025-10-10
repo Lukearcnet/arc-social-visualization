@@ -2343,6 +2343,13 @@
                         ? mutuals.slice(0, 3).join(', ') + (mutuals.length > 3 ? ` +${mutuals.length - 3} more` : '')
                         : 'No mutuals';
                     
+                    // Debug: Log the actual recommendation data
+                    console.log(`[Recommendations] ${name}:`, {
+                        mutuals: mutuals,
+                        mutualCount: mutuals.length,
+                        rec: rec
+                    });
+                    
                     // Format mutual names display
                     const mutualNamesDisplay = mutuals.length > 0 
                         ? mutuals.slice(0, 3).map(name => `<span class="mutual-name">${name}</span>`).join('')
