@@ -43,46 +43,31 @@ const handler = async (req, res) => {
     const buckets = new Map();
     const hourMs = 60 * 60 * 1000;
     
-    // Find actual time range of userTaps to create proper buckets
-    const tapTimes = userTaps.map(tap => new Date(tap.time));
-    const minTime = new Date(Math.min(...tapTimes));
-    const maxTime = new Date(Math.max(...tapTimes));
+    // Create buckets for the full requested time window (not just data range)
+    // This ensures we don't miss taps that fall outside the actual data time range
+    const currentHour = new Date(now);
+    currentHour.setUTCHours(currentHour.getUTCHours(), 0, 0, 0); // Round down to current hour
     
-    // Create buckets for the actual data range, not just going backwards from now
-    const startHour = new Date(Date.UTC(
-      minTime.getUTCFullYear(),
-      minTime.getUTCMonth(),
-      minTime.getUTCDate(),
-      minTime.getUTCHours()
-    ));
-    
-    const endHour = new Date(Date.UTC(
-      maxTime.getUTCFullYear(),
-      maxTime.getUTCMonth(),
-      maxTime.getUTCDate(),
-      maxTime.getUTCHours()
-    ));
-    
-    // Generate buckets for every hour in the data range
-    const currentHour = new Date(startHour);
-    while (currentHour <= endHour) {
-      const bucketKey = currentHour.toISOString();
+    // Create buckets going backwards from now for the full time window
+    for (let i = 0; i < hoursBack; i++) {
+      const bucketTime = new Date(currentHour.getTime() - (i * hourMs));
+      const bucketKey = bucketTime.toISOString();
       buckets.set(bucketKey, {
         ts: bucketKey,
         activity_count: 0,
         unique_people: new Set()
       });
-      
-      // Move to next hour
-      currentHour.setUTCHours(currentHour.getUTCHours() + 1);
     }
     
     if (isDebug) {
       console.log('📡 [radar] Created buckets for time range:', {
-        startHour: startHour.toISOString(),
-        endHour: endHour.toISOString(),
+        requestedHours: hoursBack,
         totalBuckets: buckets.size,
-        userTapsCount: userTaps.length
+        userTapsCount: userTaps.length,
+        timeWindow: {
+          start: new Date(currentHour.getTime() - (hoursBack * hourMs)).toISOString(),
+          end: currentHour.toISOString()
+        }
       });
     }
     
@@ -216,9 +201,9 @@ const handler = async (req, res) => {
           return id1 === user_id ? id2 : id1;
         }).filter(Boolean)).size,
         time_range: {
-          start: startHour.toISOString(),
-          end: endHour.toISOString(),
-          hours_covered: buckets.size
+          requested_hours: hoursBack,
+          buckets_created: buckets.size,
+          coverage: `${Math.round((buckets.size / hoursBack) * 100)}%`
         }
       };
     }
