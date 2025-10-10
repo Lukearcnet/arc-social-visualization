@@ -3764,7 +3764,7 @@
                 
                 // Determine transition duration based on playback speed
                 const isPlaying = this.barRaceData?.isPlaying || false;
-                const transitionDuration = isPlaying ? 100 : 200; // Much faster transitions // Faster during playback
+                const transitionDuration = isPlaying ? 150 : 300; // Slightly slower transitions for better feel
 
                 // Get top 10 rows for this frame
                 const rows = (frame.rows || []).slice(0, 10);
