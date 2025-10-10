@@ -264,6 +264,27 @@
             margin-bottom: var(--space-8);
         }
 
+        .recommendations-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .city-filter {
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--stroke);
+            background: var(--bg-secondary);
+            color: var(--fg-primary);
+            font-size: 0.9rem;
+        }
+
+        .city-filter:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
         .recommendations-carousel {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1348,7 +1369,21 @@
 
                         <!-- Recommendations -->
                         <div class="recommendations-section">
-                            <h3 style="margin-bottom: 1.5rem;">People You Should Meet</h3>
+                            <div class="recommendations-header">
+                                <h3 style="margin-bottom: 1.5rem;">People You Should Meet</h3>
+                                <select id="city-filter" class="city-filter">
+                                    <option value="">All Cities</option>
+                                    <option value="NY">New York</option>
+                                    <option value="London">London</option>
+                                    <option value="LA">Los Angeles</option>
+                                    <option value="SF">San Francisco</option>
+                                    <option value="Dallas">Dallas</option>
+                                    <option value="Chicago">Chicago</option>
+                                    <option value="Jackson Hole">Jackson Hole</option>
+                                    <option value="Austin">Austin</option>
+                                    <option value="Nashville">Nashville</option>
+                                </select>
+                            </div>
                             <div class="recommendations-carousel" id="recommendations-list"></div>
                         </div>
                             </div>
@@ -1464,7 +1499,38 @@
 
             // Helper function for safe array access
             safeArr(v) { 
-                return Array.isArray(v) ? v : []; 
+                return Array.isArray(v) ? v : [];
+            }
+
+            // City coordinates for filtering
+            getMajorCities() {
+                return {
+                    'NY': { lat: 40.7128, lng: -74.0060, name: 'New York' },
+                    'London': { lat: 51.5074, lng: -0.1278, name: 'London' },
+                    'LA': { lat: 34.0522, lng: -118.2437, name: 'Los Angeles' },
+                    'SF': { lat: 37.7749, lng: -122.4194, name: 'San Francisco' },
+                    'Dallas': { lat: 32.7767, lng: -96.7970, name: 'Dallas' },
+                    'Chicago': { lat: 41.8781, lng: -87.6298, name: 'Chicago' },
+                    'Jackson Hole': { lat: 43.4799, lng: -110.7624, name: 'Jackson Hole' },
+                    'Austin': { lat: 30.2672, lng: -97.7431, name: 'Austin' },
+                    'Nashville': { lat: 36.1627, lng: -86.7816, name: 'Nashville' }
+                };
+            }
+
+            // Distance calculation using Haversine formula
+            getDistanceFromLatLonInMiles(lat1, lon1, lat2, lon2) {
+                const R = 3959; // Radius of the earth in miles
+                const dLat = this.deg2rad(lat2 - lat1);
+                const dLon = this.deg2rad(lon2 - lon1);
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+                    Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            deg2rad(deg) {
+                return deg * (Math.PI/180);
             }
 
             // Validation helper for weekly payload
@@ -1880,6 +1946,15 @@
                 // Update dropdown position on scroll/resize
                 window.addEventListener('scroll', () => this.updateDropdownPosition());
                 window.addEventListener('resize', () => this.updateDropdownPosition());
+
+                // City filter for recommendations
+                const cityFilter = document.getElementById('city-filter');
+                if (cityFilter) {
+                    cityFilter.addEventListener('change', () => {
+                        console.log('🏙️ City filter changed to:', cityFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
             }
 
             // Portal utility
@@ -2294,23 +2369,47 @@
                 // Use safe array access
                 const recs = this.safeArr(data.recommendations);
                 
+                // Get city filter value
+                const cityFilter = document.getElementById('city-filter')?.value;
+                
+                // Filter recommendations by city if selected
+                const filteredRecs = recs.filter(rec => {
+                    if (!cityFilter) return true;
+                    if (!rec.last_tap_coordinates) return false;
+                    
+                    const cities = this.getMajorCities();
+                    const city = cities[cityFilter];
+                    if (!city) return true;
+                    
+                    const distance = this.getDistanceFromLatLonInMiles(
+                        rec.last_tap_coordinates.lat,
+                        rec.last_tap_coordinates.lng,
+                        city.lat,
+                        city.lng
+                    );
+                    return distance <= 50; // 50 mile radius
+                });
+                
                 const container = document.getElementById('recommendations-list');
                 container.innerHTML = '';
 
-                if (recs.length === 0) {
-                    console.log(`COMMUNITY: Recommendations empty because length=${recs.length}`);
+                if (filteredRecs.length === 0) {
+                    console.log(`COMMUNITY: Recommendations empty because length=${filteredRecs.length}`);
                     const emptyDiv = document.createElement('div');
                     emptyDiv.className = 'empty-state';
                     emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
+                    const message = cityFilter 
+                        ? `No recommendations found near ${this.getMajorCities()[cityFilter]?.name || cityFilter}.`
+                        : 'No recommendations yet. Check back soon as your network grows.';
                     emptyDiv.innerHTML = `
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤝</div>
-                        <div>No recommendations yet. Check back soon as your network grows.</div>
+                        <div>${message}</div>
                     `;
                     container.appendChild(emptyDiv);
                     return;
                 }
 
-                recs.forEach(rec => {
+                filteredRecs.forEach(rec => {
                     const div = document.createElement('div');
                     div.className = 'recommendation-card';
                     
