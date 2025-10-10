@@ -2892,6 +2892,13 @@
                 // Compute adaptive stride for ~10s playback
                 this._stride = this.computeStride(frames.length);
                 
+                this.initializeBarRace();
+                
+                // Compute a global max for x domain
+                const maxVal = Math.max(1, ...frames.map(f => Math.max(0, ...(f.rows||[]).map(r => r.value||0))));
+                const { xScale } = this.barRaceData || {};
+                if (xScale && typeof xScale.domain === 'function') xScale.domain([0, maxVal]);
+                
                 // Debug logging
                 console.log('📊 [Bar Race] Debug info:', {
                     framesCount: frames.length,
@@ -2900,7 +2907,8 @@
                     firstFrameRows: frames[this.barRaceData.firstFrameIndex]?.rows?.slice(0, 3) || []
                 });
                 
-                this.initializeBarRace();
+                // draw first frame safely
+                this._barRaceIndex = 0;
                 this.updateBarRaceFrame(this.barRaceData.firstFrameIndex);
                 
                 // Setup controls
@@ -3014,142 +3022,102 @@
             }
 
             initializeBarRace() {
-                const NS = 'http://www.w3.org/2000/svg';
-                
-                // Ensure host exists
-                let host = document.getElementById('rbr-chart');
-                if (!host) {
-                    host = document.createElement('div');
-                    host.id = 'rbr-chart';
-                    host.className = 'bar-race-host';
-                    const radarContent = document.getElementById('radar-content');
-                    if (radarContent) {
-                        radarContent.appendChild(host);
-                    }
-                }
-                
-                // Clear and create SVG
-                host.innerHTML = '';
-                const svg = document.createElementNS(NS, 'svg');
-                svg.id = 'rbr-svg';
-                svg.setAttribute('role', 'img');
-                svg.setAttribute('aria-label', 'Activity bar race');
-                host.appendChild(svg);
-                
-                // Responsive sizing with proper margins (increased left for labels)
-                const margin = { top: 24, right: 24, bottom: 40, left: 180 };
+                const host = document.getElementById('rbr-chart');
+                if (!host) return;
+
+                const margin = this.barRaceData?.margin || { top: 24, right: 24, bottom: 40, left: 180 };
                 const width = host.clientWidth || 744;
                 const height = host.clientHeight || 420;
                 const innerW = Math.max(0, width - margin.left - margin.right);
                 const innerH = Math.max(0, height - margin.top - margin.bottom);
-                
-                svg.setAttribute('width', width);
-                svg.setAttribute('height', height);
-                svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-                svg.style.display = 'block';
-                
-                // Create chart group with proper transform
-                const g = document.createElementNS(NS, 'g');
-                g.setAttribute('class', 'chart');
-                g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-                svg.appendChild(g);
-                
-                // Calculate scales
-                const frames = this.barRaceData.frames;
-                const maxVal = Math.max(1, ...frames.flatMap(f => f.rows.map(r => r.value)));
-                const xScale = v => (v / maxVal) * innerW;
-                
-                const ROWS = 10;
-                const band = innerH / ROWS;
-                const yFor = i => i * band;
-                
-                // Store references
+
+                // Create container <svg> + <g> once
+                let svg = this.barRaceData?.svg;
+                if (!svg || !svg.tagName || svg.tagName.toLowerCase() !== 'svg') {
+                    svg = d3.select(host).html('').append('svg')
+                        .attr('width', width).attr('height', height)
+                        .attr('viewBox', `0 0 ${width} ${height}`);
+                } else {
+                    svg = d3.select(svg);
+                    svg.attr('width', width).attr('height', height)
+                       .attr('viewBox', `0 0 ${width} ${height}`);
+                    svg.selectAll('*').remove();
+                }
+                const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+                // Always (re)create empty scales here
+                const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerW]);
+                const yScale = d3.scaleBand().domain([]).range([0, innerH]).padding(0.15);
+
+                // Persist state for updateBarRaceFrame
                 this.barRaceData = {
                     ...this.barRaceData,
-                    host,
-                    svg,
+                    svg: svg.node(),
                     g,
-                    margin,
-                    width: innerW,
-                    height: innerH,
-                    xScale,
-                    yFor,
-                    band,
-                    maxVal,
-                    currentFrame: this.barRaceData.firstFrameIndex || 0,
-                    isPlaying: false,
-                    animationTimer: null
+                    margin, width, height, innerW, innerH,
+                    xScale, yScale,
                 };
-                
+
                 console.log('📊 [Bar Race] Container W×H:', width, '×', height, 'inner:', innerW, '×', innerH);
             }
 
             updateBarRaceFrame(frameIndex) {
-                const NS = 'http://www.w3.org/2000/svg';
-                const { svg, g, xScale, yScale, frames, margin } = this.barRaceData;
-                const frame = frames[frameIndex];
-                
-                if (!frame) return;
-                
+                const d = this.barRaceData || {};
+                const { g, xScale, yScale, innerH } = d;
+                const frame = d.frames?.[frameIndex];
+                if (!g || !xScale || !yScale || !frame) return;              // <- guard
+
+                const rows = (frame.rows || []).slice(0, 10);                 // top 10
+                if (!rows.length) { g.selectAll('*').remove(); return; }
+
                 // Update timestamp
                 const timestamp = document.getElementById('rbr-timestamp');
                 if (timestamp) {
                     timestamp.textContent = frame.time.toLocaleString();
                 }
-                
-                // Sort rows by value descending, take top 10
-                const rows = frame.rows
-                    .sort((a, b) => b.value - a.value)
-                    .slice(0, 10);
-                
+
+                // y domain is the row ids for this frame
+                if (yScale && typeof yScale.domain === 'function') {
+                    yScale.domain(rows.map(r => r.id));
+                }
+
                 console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex, 
                     'top names:', rows.slice(0, 3).map(r => r.name));
-                
-                // Skip empty frames
-                if (rows.length === 0) return;
-                
-                // Update yScale domain for current rows
-                yScale.domain(rows.map(r => r.id));
-                
-                // Clear previous content in chart group
-                g.querySelectorAll('*').forEach(n => n.remove());
-                
-                // Draw bars and labels
-                rows.forEach((row) => {
-                    const y = yScale(row.id);
-                    const barWidth = xScale(row.value) - xScale(0);
-                    
-                    // Create bar with stable color
-                    const rect = document.createElementNS(NS, 'rect');
-                    rect.setAttribute('class', 'rbr-bar bar');
-                    rect.setAttribute('data-key', row.id);
-                    rect.setAttribute('x', 0);
-                    rect.setAttribute('y', y);
-                    rect.setAttribute('width', barWidth);
-                    rect.setAttribute('height', yScale.bandwidth() * 0.7);
-                    rect.setAttribute('rx', '6');
-                    rect.setAttribute('ry', '6');
-                    rect.setAttribute('fill', this.hashColor(row.id));
-                    g.appendChild(rect);
-                    
-                    // Create name label (left side, properly positioned)
-                    const nameLabel = document.createElementNS(NS, 'text');
-                    nameLabel.setAttribute('class', 'rbr-label-name label');
-                    nameLabel.setAttribute('x', xScale(0) - 8);
-                    nameLabel.setAttribute('y', y + yScale.bandwidth() / 2);
-                    nameLabel.setAttribute('text-anchor', 'end');
-                    nameLabel.textContent = row.name;
-                    g.appendChild(nameLabel);
-                    
-                    // Create value label (right side, at end of bar)
-                    const valueLabel = document.createElementNS(NS, 'text');
-                    valueLabel.setAttribute('class', 'rbr-label-val label');
-                    valueLabel.setAttribute('x', xScale(row.value) + 6);
-                    valueLabel.setAttribute('y', y + yScale.bandwidth() / 2);
-                    valueLabel.setAttribute('text-anchor', 'start');
-                    valueLabel.textContent = Math.round(row.value);
-                    g.appendChild(valueLabel);
-                });
+
+                // DATA JOIN keyed by id
+                const bars = g.selectAll('.bar').data(rows, r => r.id);
+
+                // EXIT
+                bars.exit().remove();
+
+                // ENTER
+                const barsEnter = bars.enter().append('g').attr('class', 'bar');
+                barsEnter.append('rect');
+                barsEnter.append('text').attr('class', 'label').attr('text-anchor', 'end').attr('dy', '0.35em');
+                barsEnter.append('text').attr('class', 'value').attr('text-anchor', 'start').attr('dy', '0.35em');
+
+                // UPDATE + ENTER
+                const merged = barsEnter.merge(bars);
+                merged.select('rect')
+                    .attr('x', xScale(0))
+                    .attr('y', r => yScale(r.id))
+                    .attr('height', yScale.bandwidth())
+                    .attr('width', r => Math.max(0, xScale(r.value) - xScale(0)))
+                    .attr('fill', r => this.hashColor ? this.hashColor(r.id) : '#3b82f6');
+
+                // left labels (outside bars)
+                merged.select('text.label')
+                    .text(r => r.name || `Unknown · ${String(r.id).slice(-4)}`)
+                    .attr('x', xScale(0) - 8)
+                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2));
+
+                // value labels (end of bar)
+                merged.select('text.value')
+                    .text(r => String(r.value))
+                    .attr('x', r => xScale(r.value) + 6)
+                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2));
+
+                this._barRaceIndex = frameIndex;
             }
 
             setupBarRaceControls() {
