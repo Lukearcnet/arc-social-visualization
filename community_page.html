@@ -3239,7 +3239,7 @@
                     frames = this.buildBarRaceFrames(data.buckets);
                 } else if (viewMode === 'network-connections') {
                     // Use distinct frame builder for network-connections
-                    frames = await this.buildNetworkConnectionsFrames(data);
+                    frames = await this.buildNetworkConnectionsFrames(data.buckets, data.networkMembers, data.meta?.hours);
                 } else {
                     // For network-taps mode, use the network data
                     frames = await this.buildBarRaceFramesFromNetwork(data, viewMode);
@@ -3475,42 +3475,33 @@
                 return this.buildBarRaceFrames(data.buckets);
             }
 
-            async buildNetworkConnectionsFrames(data) {
+            async buildNetworkConnectionsFrames(buckets, networkMembers, hours) {
                 // Distinct frame builder for network-connections mode
                 // Input: raw taps within time window, network members
                 // Logic: count unique counterparts per network member cumulatively
                 
-                const { buckets, meta } = data;
-                const networkMembers = meta?.network_members || [];
+                // Normalize input at top
+                const members = Array.isArray(networkMembers) ? networkMembers
+                               : Array.from(networkMembers || []);
                 
-                console.log('🔗 [Network Connections] Building frames for', networkMembers.length, 'network members');
+                // Add guard logs
+                console.log('[Network Connections] members type:', typeof networkMembers,
+                            'isArray:', Array.isArray(networkMembers),
+                            'len:', (networkMembers && networkMembers.length));
                 
-                // Get network members from weekly API if not provided
-                if (networkMembers.length === 0) {
-                    const userId = this.currentUser?.user_id || this.currentUser?.id;
-                    const weeklyResponse = await fetch(`/api/community/weekly?user_id=${userId}&time_window=7d`);
-                    if (weeklyResponse.ok) {
-                        const weeklyData = await weeklyResponse.json();
-                        const members = new Set([userId]);
-                        if (weeklyData.recap?.first_degree_new) {
-                            weeklyData.recap.first_degree_new.forEach(conn => members.add(conn.user_id));
-                        }
-                        if (weeklyData.recap?.second_degree_new) {
-                            weeklyData.recap.second_degree_new.forEach(conn => members.add(conn.user_id));
-                        }
-                        if (weeklyData.recap?.third_degree_new) {
-                            weeklyData.recap.third_degree_new.forEach(conn => members.add(conn.user_id));
-                        }
-                        networkMembers.push(...Array.from(members));
-                    }
+                if (!members.length) { 
+                    console.warn('[Network Connections] empty member list'); 
+                    return []; 
                 }
+                
+                console.log('🔗 [Network Connections] Building frames for', members.length, 'network members');
                 
                 const frames = [];
                 const seen = new Map(); // userId -> Set of counterpart IDs
                 const entityTotals = new Map(); // userId -> cumulative count
                 
                 // Initialize seen sets for network members
-                networkMembers.forEach(id => {
+                members.forEach(id => {
                     seen.set(id, new Set());
                     entityTotals.set(id, 0);
                 });
@@ -3531,7 +3522,7 @@
                         if (bucket && bucket.participants) {
                             bucket.participants.forEach(participant => {
                                 const userId = participant.user_id;
-                                if (networkMembers.includes(userId)) {
+                                if (members.includes(userId)) {
                                     // Count new unique counterparts for this user in this bucket
                                     const newCounterparts = participant.count || 0;
                                     const current = entityTotals.get(userId) || 0;
@@ -3819,6 +3810,45 @@
             async fetchNetworkData(hours, viewMode) {
                 const userId = this.currentUser?.user_id || this.currentUser?.id;
                 
+                // Build network members from weekly recap (1st/2nd/3rd) + logged-in user
+                const timeWindowMap = { 24: '1d', 168: '7d', 720: '30d', 4320: '180d', 8760: '365d' };
+                const timeWindow = timeWindowMap[hours] || '7d';
+                
+                const weeklyResponse = await fetch(`/api/community/weekly?user_id=${userId}&time_window=${timeWindow}`);
+                if (!weeklyResponse.ok) {
+                    throw new Error(`Weekly API failed: ${weeklyResponse.status}`);
+                }
+                const weeklyData = await weeklyResponse.json();
+                
+                // Build network members array
+                const networkMembersSet = new Set([userId]); // Include logged-in user
+                
+                // Add 1st degree connections
+                if (weeklyData.recap?.first_degree_new) {
+                    weeklyData.recap.first_degree_new.forEach(conn => {
+                        const id = conn.user_id || conn.id;
+                        if (id) networkMembersSet.add(id);
+                    });
+                }
+                
+                // Add 2nd degree connections
+                if (weeklyData.recap?.second_degree_new) {
+                    weeklyData.recap.second_degree_new.forEach(conn => {
+                        const id = conn.user_id || conn.id;
+                        if (id) networkMembersSet.add(id);
+                    });
+                }
+                
+                // Add 3rd degree connections
+                if (weeklyData.recap?.third_degree_new) {
+                    weeklyData.recap.third_degree_new.forEach(conn => {
+                        const id = conn.user_id || conn.id;
+                        if (id) networkMembersSet.add(id);
+                    });
+                }
+                
+                const networkMembers = Array.from(networkMembersSet);
+                
                 // Determine mode for network API
                 const mode = viewMode === 'network-taps' ? 'taps' : 'connections';
                 
@@ -3841,9 +3871,8 @@
                 
                 return {
                     buckets: networkData.buckets,
-                    meta: { ...networkData.meta, mode: viewMode },
-                    hours: hours,
-                    viewMode: viewMode
+                    networkMembers: networkMembers,
+                    meta: { ...networkData.meta, mode: viewMode, hours: hours }
                 };
             }
 
