@@ -3338,7 +3338,7 @@
 
             buildBarRaceFrames(buckets) {
                 const frames = [];
-                const entityTotals = new Map(); // Track cumulative totals
+                const entityTotals = new Map(); // Track cumulative totals (never reset)
                 
                 // Calculate stride for ~10s playback at ~60 FPS (targetFrames ≈ 600)
                 const targetFrames = 600;
@@ -3346,18 +3346,31 @@
                 
                 console.log(`📊 [Bar Race] Processing ${buckets.length} buckets with stride ${stride} for ~10s playback`);
                 
-                // Sample buckets with stride and build frames
-                for (let i = 0; i < buckets.length; i += stride) {
-                    const bucket = buckets[i];
-                    if (!bucket) continue;
-                    
-                    // Update cumulative totals for this bucket
-                    if (bucket.participants) {
+                // Debug: Calculate server-side total for verification
+                let serverSum = 0;
+                buckets.forEach(bucket => {
+                    if (bucket && bucket.participants) {
                         bucket.participants.forEach(participant => {
-                            const current = entityTotals.get(participant.user_id) || 0;
-                            entityTotals.set(participant.user_id, current + participant.count);
+                            serverSum += participant.count;
                         });
                     }
+                });
+                console.log(`📊 [Bar Race] Server-side total count: ${serverSum}`);
+                
+                // Process buckets in stride windows, aggregating all buckets in each window
+                for (let i = 0; i < buckets.length; i += stride) {
+                    const windowEnd = Math.min(i + stride, buckets.length);
+                    const windowBuckets = buckets.slice(i, windowEnd);
+                    
+                    // Aggregate all buckets in this stride window
+                    windowBuckets.forEach(bucket => {
+                        if (bucket && bucket.participants) {
+                            bucket.participants.forEach(participant => {
+                                const current = entityTotals.get(participant.user_id) || 0;
+                                entityTotals.set(participant.user_id, current + participant.count);
+                            });
+                        }
+                    });
                     
                     // Create frame with top 10 participants (sorted desc by value)
                     const topParticipants = Array.from(entityTotals.entries())
@@ -3371,11 +3384,23 @@
                     // Skip empty frames
                     if (topParticipants.length === 0) continue;
                     
+                    // Use the last bucket in the window for timestamp
+                    const lastBucket = windowBuckets[windowBuckets.length - 1];
                     frames.push({
-                        time: new Date(bucket.ts),
+                        time: new Date(lastBucket.ts),
                         rows: topParticipants
                     });
                 }
+                
+                // Debug: Verify final totals match server-side
+                const frameSum = Array.from(entityTotals.values()).reduce((sum, count) => sum + count, 0);
+                console.log(`📊 [Bar Race] Final frame total: ${frameSum}, Server total: ${serverSum}, Match: ${Math.abs(frameSum - serverSum) <= 1}`);
+                
+                // Debug: Show per-ID deltas for top participants
+                const topParticipants = Array.from(entityTotals.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                console.log('📊 [Bar Race] Top participants final counts:', topParticipants.map(([id, count]) => ({ id, count })));
                 
                 return frames;
             }
