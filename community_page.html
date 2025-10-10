@@ -194,6 +194,71 @@
             border-bottom: none;
         }
 
+        .leaderboard-value.clickable {
+            cursor: pointer;
+            color: var(--accent);
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .leaderboard-value.clickable:hover {
+            color: var(--accent-hover, #0066cc);
+            text-decoration: underline;
+        }
+
+        .leaderboard-dropdown {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 99999;
+            max-height: 200px;
+            overflow-y: auto;
+            min-width: 200px;
+        }
+
+        .dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3);
+            border-bottom: 1px solid var(--stroke);
+            font-weight: 500;
+        }
+
+        .dropdown-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--fg-muted);
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dropdown-close:hover {
+            color: var(--fg-primary);
+        }
+
+        .dropdown-content {
+            padding: var(--space-2);
+        }
+
+        .dropdown-item {
+            padding: var(--space-2);
+            border-radius: 4px;
+            margin-bottom: 2px;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-hover);
+        }
+
         /* Recommendations */
         .recommendations-section {
             margin-bottom: var(--space-8);
@@ -1258,7 +1323,7 @@
                         <div class="leaderboard-section">
                             <div class="leaderboard-nav">
                                 <button class="leaderboard-tab active" data-leaderboard="connectors">Top Connectors</button>
-                                <button class="leaderboard-tab" data-leaderboard="reach">Expanding Reach</button>
+                                <button class="leaderboard-tab" data-leaderboard="reach">Top Tappers</button>
                             </div>
                             <div class="leaderboard-content" id="leaderboard-list"></div>
                         </div>
@@ -2199,7 +2264,7 @@
                     // Check for new connectors field first, fallback to community_builders
                     const connectors = this.safeArr(data.leaderboard?.connectors);
                     leaderboardData = connectors.length > 0 ? connectors : communityBuilders;
-                    emptyMessage = 'No expanding reach data yet this week.';
+                    emptyMessage = 'No top tappers data yet this week.';
                 }
                 
                 const container = document.getElementById('leaderboard-list');
@@ -2221,20 +2286,113 @@
                 leaderboardData.forEach((item, index) => {
                     const div = document.createElement('div');
                     div.className = 'leaderboard-item';
+                    
+                    const value = type === 'connectors' ? 
+                        (item.tap_count || item.new_first_degree || 0) + ' new connections' :
+                        type === 'reach' ? 
+                        (item.new_connections || item.delta_second_degree || 0) + ' new taps' :
+                        (item.streak_days || 0) + ' days';
+                    
                     div.innerHTML = `
                         <div>
                             <strong>${index + 1}. ${item.name || 'Unknown'}</strong>
                         </div>
-                        <div>
-                            ${type === 'connectors' ? 
-                                (item.tap_count || item.new_first_degree || 0) + ' new connections' :
-                              type === 'reach' ? 
-                                '+' + (item.new_connections || item.delta_second_degree || 0) + ' new taps' :
-                              (item.streak_days || 0) + ' days'}
+                        <div class="leaderboard-value clickable" data-user-id="${item.user_id}" data-type="${type}">
+                            ${value}
                         </div>
                     `;
                     container.appendChild(div);
                 });
+                
+                // Add click handlers for leaderboard values
+                this.setupLeaderboardValueClicks();
+            }
+
+            setupLeaderboardValueClicks() {
+                const clickableValues = document.querySelectorAll('.leaderboard-value.clickable');
+                clickableValues.forEach(element => {
+                    element.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const userId = element.dataset.userId;
+                        const type = element.dataset.type;
+                        this.toggleLeaderboardDropdown(userId, type, element);
+                    });
+                });
+            }
+
+            toggleLeaderboardDropdown(userId, type, triggerElement) {
+                // Remove any existing dropdowns
+                this.closeAllLeaderboardDropdowns();
+                
+                // Create dropdown content based on type
+                let dropdownContent = '';
+                
+                if (type === 'connectors') {
+                    // For Top Connectors, show the connections this user made
+                    const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId);
+                    if (userData && userData.connections) {
+                        dropdownContent = userData.connections.map(conn => 
+                            `<div class="dropdown-item">${conn.name || 'Unknown'}</div>`
+                        ).join('');
+                    } else {
+                        dropdownContent = '<div class="dropdown-item">No connection details available</div>';
+                    }
+                } else if (type === 'reach') {
+                    // For Top Tappers, show the taps this user made
+                    const userData = this.data.weekly?.leaderboard?.connectors?.find(u => u.user_id === userId) ||
+                                   this.data.weekly?.leaderboard?.community_builders?.find(u => u.user_id === userId);
+                    if (userData && userData.taps) {
+                        dropdownContent = userData.taps.map(tap => 
+                            `<div class="dropdown-item">${tap.name || 'Unknown'}</div>`
+                        ).join('');
+                    } else {
+                        dropdownContent = '<div class="dropdown-item">No tap details available</div>';
+                    }
+                }
+                
+                // Create dropdown element
+                const dropdown = document.createElement('div');
+                dropdown.className = 'leaderboard-dropdown';
+                dropdown.innerHTML = `
+                    <div class="dropdown-header">
+                        <span>Details for ${triggerElement.textContent}</span>
+                        <button class="dropdown-close" onclick="this.closest('.leaderboard-dropdown').remove()">×</button>
+                    </div>
+                    <div class="dropdown-content">
+                        ${dropdownContent}
+                    </div>
+                `;
+                
+                // Position dropdown
+                const rect = triggerElement.getBoundingClientRect();
+                dropdown.style.position = 'absolute';
+                dropdown.style.top = `${rect.bottom + 5}px`;
+                dropdown.style.left = `${rect.left}px`;
+                dropdown.style.zIndex = '99999';
+                dropdown.style.backgroundColor = 'var(--bg-secondary)';
+                dropdown.style.border = '1px solid var(--stroke)';
+                dropdown.style.borderRadius = '8px';
+                dropdown.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                dropdown.style.maxHeight = '200px';
+                dropdown.style.overflowY = 'auto';
+                dropdown.style.minWidth = '200px';
+                
+                // Add to DOM
+                document.body.appendChild(dropdown);
+                
+                // Close on outside click
+                setTimeout(() => {
+                    document.addEventListener('click', (e) => {
+                        if (!dropdown.contains(e.target) && !triggerElement.contains(e.target)) {
+                            dropdown.remove();
+                        }
+                    }, { once: true });
+                }, 0);
+            }
+
+            closeAllLeaderboardDropdowns() {
+                const existingDropdowns = document.querySelectorAll('.leaderboard-dropdown');
+                existingDropdowns.forEach(dropdown => dropdown.remove());
             }
 
             renderRecommendations() {
