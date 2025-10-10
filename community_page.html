@@ -1519,6 +1519,9 @@
             // Runtime sanity check: verify DOM structure
             this.validateDOMStructure();
             
+            // Load user indexes for name resolution
+            await this.loadUserIndexes();
+            
             // Ensure the initial section is displayed
             this.switchSection('pulse');
             
@@ -2751,6 +2754,121 @@
                 }
             }
 
+            // Load user indexes for name resolution
+            async loadUserIndexes() {
+                try {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    
+                    // Fetch from multiple sources in parallel
+                    const [dataResponse, weeklyResponse, healthResponse] = await Promise.all([
+                        fetch('/api/data'),
+                        fetch(`/api/community/weekly?user_id=${userId}&debug=1`),
+                        fetch(`/api/community/health?user_id=${userId}&debug=1`)
+                    ]);
+                    
+                    // Build searchIndex from /api/data
+                    if (dataResponse.ok) {
+                        const dataResult = await dataResponse.json();
+                        if (dataResult.users) {
+                            this.searchIndex = dataResult.users.map(user => ({
+                                user_id: user.id || user.user_id,
+                                name: user.name || user.first_name + ' ' + user.last_name || user.username,
+                                user_name: user.username,
+                                displayName: user.name || user.first_name + ' ' + user.last_name
+                            }));
+                        }
+                    }
+                    
+                    // Build userIndex from all sources
+                    this.userIndex = {};
+                    
+                    // Add from searchIndex
+                    (this.searchIndex || []).forEach(u => {
+                        if (u.user_id) {
+                            this.userIndex[u.user_id] = {
+                                name: u.name,
+                                user_name: u.user_name,
+                                displayName: u.displayName
+                            };
+                        }
+                    });
+                    
+                    // Add from weekly response
+                    if (weeklyResponse.ok) {
+                        const weeklyData = await weeklyResponse.json();
+                        this.addUsersFromWeekly(weeklyData);
+                    }
+                    
+                    // Add from health response
+                    if (healthResponse.ok) {
+                        const healthData = await healthResponse.json();
+                        this.addUsersFromHealth(healthData);
+                    }
+                    
+                    console.log('📊 [Community] Loaded user indexes:', {
+                        searchIndex: this.searchIndex?.length || 0,
+                        userIndex: Object.keys(this.userIndex).length
+                    });
+                    
+                    // Trigger redraw if bar race is active
+                    if (this.barRaceData && this._barRaceIndex !== undefined) {
+                        this.updateBarRaceFrame(this._barRaceIndex);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ [Community] Failed to load user indexes:', error);
+                }
+            }
+
+            addUsersFromWeekly(weeklyData) {
+                // Add users from recap sections
+                const sections = ['first_degree_new', 'second_degree_new', 'third_degree_new'];
+                sections.forEach(section => {
+                    if (weeklyData.recap && weeklyData.recap[section]) {
+                        weeklyData.recap[section].forEach(user => {
+                            if (user.user_id && !this.userIndex[user.user_id]) {
+                                this.userIndex[user.user_id] = {
+                                    name: user.name,
+                                    user_name: user.name,
+                                    displayName: user.name
+                                };
+                            }
+                        });
+                    }
+                });
+                
+                // Add users from leaderboard sections
+                const leaderboardSections = ['new_connections', 'community_builders', 'expanded_reach'];
+                leaderboardSections.forEach(section => {
+                    if (weeklyData.leaderboard && weeklyData.leaderboard[section]) {
+                        weeklyData.leaderboard[section].forEach(user => {
+                            if (user.user_id && !this.userIndex[user.user_id]) {
+                                this.userIndex[user.user_id] = {
+                                    name: user.name,
+                                    user_name: user.name,
+                                    displayName: user.name
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+
+            addUsersFromHealth(healthData) {
+                // Add users from health connections
+                if (healthData.connections) {
+                    healthData.connections.forEach(conn => {
+                        if (conn.other_user_id && !this.userIndex[conn.other_user_id]) {
+                            this.userIndex[conn.other_user_id] = {
+                                name: conn.name,
+                                user_name: conn.name,
+                                displayName: conn.name
+                            };
+                        }
+                    });
+                }
+            }
+
             renderRadar(data) {
                 console.log('📡 [Radar] Rendering radar:', data);
                 const content = document.getElementById('radar-content');
@@ -2912,30 +3030,25 @@
             }
 
             // Name resolution helper
-            resolveName(id) {
-                if (!id) return 'Unknown';
+            resolveName(id, fallback) {
+                if (!id) return fallback || 'Unknown';
                 
                 // 1) Check searchIndex first
                 if (this.searchIndex) {
                     const user = this.searchIndex.find(u => (u.user_id || u.id) === id);
                     if (user) {
-                        return user.name || user.user_name || user.displayName || 'Unknown';
+                        return user.name || user.user_name || user.displayName || fallback || 'Unknown';
                     }
                 }
                 
-                // 2) Build userIndex from available sources
-                if (!this.userIndex) {
-                    this.buildUserIndex();
+                // 2) Check userIndex
+                if (this.userIndex && this.userIndex[id]) {
+                    const user = this.userIndex[id];
+                    return user.name || user.user_name || user.displayName || fallback || 'Unknown';
                 }
                 
-                // 3) Check userIndex
-                const user = this.userIndex[id];
-                if (user) {
-                    return user.name || user.user_name || user.displayName || 'Unknown';
-                }
-                
-                // 4) Fallback with ID tail
-                return `Unknown · ${String(id).slice(-4)}`;
+                // 3) Fallback with ID tail
+                return fallback || `Unknown · ${String(id).slice(-4)}`;
             }
 
             buildUserIndex() {
@@ -3008,7 +3121,7 @@
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 10)
                         .map(([userId, total]) => ({
-                            id: userId,
+                            id: userId, // Keep stable user_id as id
                             name: this.resolveName(userId),
                             value: total
                         }));
@@ -3299,3 +3412,4 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </body>
 </html>
+
