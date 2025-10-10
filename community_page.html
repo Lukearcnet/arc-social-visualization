@@ -1418,8 +1418,7 @@
                         <div class="radar-container">
                             <div class="radar-header">
                                 <h2>Leaderboards</h2>
-                                <div class="radar-subtitle">Live network activity and connection opportunities</div>
-                                <div class="timezone-info" id="radar-timezone-info">Loading timezone...</div>
+                                <div class="radar-subtitle">Race to the top!</div>
                             </div>
 
                             <button class="refresh-button" id="radar-refresh-button" title="Refresh radar">
@@ -1437,15 +1436,15 @@
                                     <div class="rbr-header">
                                         <div class="rbr-controls">
                                             <select id="rbr-view-mode">
-                                                <option value="connections" selected>Your top connections</option>
+                                                <option value="connections">Your top connections</option>
                                                 <option value="network-taps">Network Taps</option>
-                                                <option value="network-connections">Network Connections</option>
+                                                <option value="network-connections" selected>Network Connections</option>
                                             </select>
                                             <select id="rbr-window">
                                                 <option value="24">Last 24h</option>
-                                                <option value="168" selected>Last 7d</option>
+                                                <option value="168">Last 7d</option>
                                                 <option value="720">Last 30d</option>
-                                                <option value="4320">Last 6mo</option>
+                                                <option value="4320" selected>Last 6mo</option>
                                                 <option value="8760">Last 1y</option>
                                             </select>
                                             <button id="rbr-play">▶️ Play</button>
@@ -3324,6 +3323,11 @@
                 const maxVal = Math.max(1, ...frames.map(f => Math.max(0, ...(f.rows||[]).map(r => r.value||0))));
                 const { xScale } = this.barRaceData || {};
                 if (xScale && typeof xScale.domain === 'function') xScale.domain([0, maxVal]);
+                
+                // Auto-play on load
+                setTimeout(() => {
+                    this.playBarRace();
+                }, 500);
                 
                 // Debug logging with validation
                 if (new URLSearchParams(window.location.search).get('debug') === '1') {
