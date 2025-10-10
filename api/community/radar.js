@@ -39,6 +39,37 @@ const handler = async (req, res) => {
       return (id1 === user_id || id2 === user_id) && tapTime >= windowStart;
     });
     
+    if (isDebug) {
+      console.log('📡 [radar] Initial filtering results:', {
+        totalTaps: taps.length,
+        userTaps: userTaps.length,
+        timeWindow: {
+          start: windowStart.toISOString(),
+          end: now.toISOString(),
+          hours: hoursBack
+        }
+      });
+      
+      // Count taps with specific users for debugging
+      const marshallId = '7f3a4b8c-9d2e-4f1a-8b5c-3e6d7f8a9b0c'; // Assuming this is Marshall's ID
+      const lukeId = user_id; // Assuming this is Luke's ID
+      
+      const marshallTaps = userTaps.filter(tap => {
+        const id1 = tap.user1_id || tap.id1;
+        const id2 = tap.user2_id || tap.id2;
+        return (id1 === marshallId && id2 === lukeId) || (id1 === lukeId && id2 === marshallId);
+      });
+      
+      console.log('📡 [radar] Marshall-Luke tap analysis:', {
+        marshallLukeTaps: marshallTaps.length,
+        sampleTaps: marshallTaps.slice(0, 3).map(tap => ({
+          time: tap.time,
+          id1: tap.user1_id || tap.id1,
+          id2: tap.user2_id || tap.id2
+        }))
+      });
+    }
+    
     // Bucket by hour
     const buckets = new Map();
     const hourMs = 60 * 60 * 1000;
@@ -74,6 +105,8 @@ const handler = async (req, res) => {
     // Process taps into buckets
     let processedTaps = 0;
     let ignoredTaps = 0;
+    let marshallLukeProcessed = 0;
+    let marshallLukeIgnored = 0;
     
     userTaps.forEach(tap => {
       const tapTime = new Date(tap.time);
@@ -98,9 +131,24 @@ const handler = async (req, res) => {
           // Track participant counts for bar race
           bucket.participants = bucket.participants || new Map();
           bucket.participants.set(otherId, (bucket.participants.get(otherId) || 0) + 1);
+          
+          // Track Marshall-Luke specifically
+          const marshallId = '7f3a4b8c-9d2e-4f1a-8b5c-3e6d7f8a9b0c';
+          if (otherId === marshallId) {
+            marshallLukeProcessed++;
+          }
         }
       } else {
         ignoredTaps++;
+        
+        // Track Marshall-Luke specifically
+        const id1 = tap.user1_id || tap.id1;
+        const id2 = tap.user2_id || tap.id2;
+        const marshallId = '7f3a4b8c-9d2e-4f1a-8b5c-3e6d7f8a9b0c';
+        if ((id1 === marshallId && id2 === user_id) || (id1 === user_id && id2 === marshallId)) {
+          marshallLukeIgnored++;
+        }
+        
         if (isDebug && ignoredTaps <= 5) {
           console.log('📡 [radar] Ignored tap - no matching bucket:', {
             tapTime: tap.time,
@@ -116,7 +164,12 @@ const handler = async (req, res) => {
         totalUserTaps: userTaps.length,
         processedTaps: processedTaps,
         ignoredTaps: ignoredTaps,
-        processingRate: `${Math.round((processedTaps / userTaps.length) * 100)}%`
+        processingRate: `${Math.round((processedTaps / userTaps.length) * 100)}%`,
+        marshallLuke: {
+          processed: marshallLukeProcessed,
+          ignored: marshallLukeIgnored,
+          total: marshallLukeProcessed + marshallLukeIgnored
+        }
       });
     }
     
@@ -204,6 +257,15 @@ const handler = async (req, res) => {
           requested_hours: hoursBack,
           buckets_created: buckets.size,
           coverage: `${Math.round((buckets.size / hoursBack) * 100)}%`
+        },
+        marshall_luke_final: {
+          total_buckets_with_marshall: bucketsArray.filter(b => 
+            b.participants && b.participants.some(p => p.user_id === '7f3a4b8c-9d2e-4f1a-8b5c-3e6d7f8a9b0c')
+          ).length,
+          marshall_total_count: bucketsArray.reduce((sum, b) => {
+            const marshall = b.participants?.find(p => p.user_id === '7f3a4b8c-9d2e-4f1a-8b5c-3e6d7f8a9b0c');
+            return sum + (marshall?.count || 0);
+          }, 0)
         }
       };
     }
