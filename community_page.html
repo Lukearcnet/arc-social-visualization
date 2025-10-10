@@ -2474,6 +2474,7 @@
                     
                     console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
                     console.log(`[Connections] Total taps available: ${taps.length}`);
+                    console.log(`[Connections] Weekly API says user has ${userData.tap_count || userData.new_first_degree || 0} new connections`);
                     
                     // Filter taps involving this user within the time window
                     const userTaps = taps.filter(tap => {
@@ -2528,6 +2529,25 @@
                     
                     const result = Array.from(connections.values());
                     console.log(`[Connections] Final connections for ${userId}:`, result);
+                    console.log(`[Connections] Expected: ${userData.tap_count || userData.new_first_degree || 0}, Found: ${result.length}`);
+                    
+                    // If we're missing connections, let's see what other taps exist for this user
+                    if (result.length < (userData.tap_count || userData.new_first_degree || 0)) {
+                        console.log(`[Connections] Missing connections! Let's check all taps for this user:`);
+                        const allUserTaps = taps.filter(tap => {
+                            const id1 = tap.user1_id || tap.id1;
+                            const id2 = tap.user2_id || tap.id2;
+                            return (id1 === userId || id2 === userId);
+                        });
+                        console.log(`[Connections] All taps for user (${allUserTaps.length} total):`, allUserTaps.map(tap => ({
+                            time: tap.time,
+                            user1: tap.user1_name,
+                            user2: tap.user2_name,
+                            id1: tap.user1_id || tap.id1,
+                            id2: tap.user2_id || tap.id2
+                        })));
+                    }
+                    
                     return result;
                     
                 } catch (error) {
