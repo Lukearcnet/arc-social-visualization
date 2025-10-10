@@ -3851,23 +3851,16 @@
                 // UPDATE + ENTER
                 const merged = barsEnter.merge(bars);
                 
-                // Add smooth transitions for bars - Y position first (faster)
+                // Add smooth transitions for bars - combined transition
                 merged.select('rect')
                     .transition()
-                    .duration(transitionDuration * 0.4) // Faster Y movement
+                    .duration(transitionDuration)
                     .ease(d3.easeCubicInOut)
                     .attr('x', 0)
                     .attr('y', d => yScale(d.id))
                     .attr('height', yScale.bandwidth())
+                    .attr('width', d => xScale(d.value))
                     .attr('fill', d => colorScale ? colorScale(d.id) : '#3b82f6');
-                
-                // Then animate width (smoother)
-                merged.select('rect')
-                    .transition()
-                    .delay(transitionDuration * 0.2) // Start width animation after Y is mostly done
-                    .duration(transitionDuration * 0.8)
-                    .ease(d3.easeCubicInOut)
-                    .attr('width', d => xScale(d.value));
                 
                 // Fade in new bars
                 barsEnter
@@ -3876,21 +3869,21 @@
                     .ease(d3.easeCubicInOut)
                     .style('opacity', 1);
 
-                // Add smooth transitions for name labels (faster Y movement)
+                // Add smooth transitions for name labels
                 merged.select('text.label')
                     .text(d => this.safeName(d.id))
                     .transition()
-                    .duration(transitionDuration * 0.4) // Faster Y movement
+                    .duration(transitionDuration)
                     .ease(d3.easeCubicInOut)
                     .attr('x', -8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
 
-                // Add smooth transitions for value labels (faster Y movement)
+                // Add smooth transitions for value labels
                 merged.select('text.value')
                     .text(d => String(d.value))
                     .transition()
-                    .duration(transitionDuration * 0.4) // Faster Y movement
+                    .duration(transitionDuration)
                     .ease(d3.easeCubicInOut)
                     .attr('x', d => xScale(d.value) + 8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
