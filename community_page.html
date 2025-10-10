@@ -2788,16 +2788,29 @@
                         throw new Error('No user ID available');
                     }
 
-                    const response = await fetch(`/api/community/radar?user_id=${userId}&hours=120&debug=1`);
+                    // Get the selected values from dropdowns
+                    const viewMode = document.getElementById('rbr-view-mode')?.value || 'network-connections';
+                    const hours = document.getElementById('rbr-window')?.value || '4320'; // 6 months default
                     
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    console.log('📡 [Radar] Using viewMode:', viewMode, 'hours:', hours);
+
+                    // Use the appropriate API based on view mode
+                    if (viewMode === 'connections') {
+                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log('📡 [Radar] Loaded:', data);
+                        
+                        this.renderRadar(data);
+                    } else {
+                        // For network modes, use the network data
+                        const networkData = await this.fetchNetworkData(hours, viewMode);
+                        this.renderRadar(networkData);
                     }
-                    
-                    const data = await response.json();
-                    console.log('📡 [Radar] Loaded:', data);
-                    
-                    this.renderRadar(data);
                     
                 } catch (error) {
                     console.error('❌ [Radar] Failed to load:', error);
@@ -3159,7 +3172,9 @@
                 const barRace = content.querySelector('.radar-bar-race');
                 if (barRace) {
                     barRace.style.display = 'block';
-                    this.renderRadarBarRace(data).catch(error => {
+                    // Get the current view mode from the dropdown
+                    const viewMode = document.getElementById('rbr-view-mode')?.value || 'network-connections';
+                    this.renderRadarBarRace(data, viewMode).catch(error => {
                         console.error('❌ [Bar Race] Failed to render:', error);
                     });
                 }
