@@ -2111,10 +2111,12 @@
                 
                 if (type === 'connectors') {
                     leaderboardData = newConnections;
-                    emptyMessage = 'No new connections ranked yet this week.';
+                    emptyMessage = 'No connections ranked yet this week.';
                 } else if (type === 'reach') {
-                    leaderboardData = communityBuilders;
-                    emptyMessage = 'No high-activity builders yet this week.';
+                    // Check for new connectors field first, fallback to community_builders
+                    const connectors = this.safeArr(data.leaderboard?.connectors);
+                    leaderboardData = connectors.length > 0 ? connectors : communityBuilders;
+                    emptyMessage = 'No expanding reach data yet this week.';
                 } else {
                     leaderboardData = streakMasters;
                     emptyMessage = 'No active streaks to show yet.';
@@ -2144,8 +2146,10 @@
                             <strong>${index + 1}. ${item.name || 'Unknown'}</strong>
                         </div>
                         <div>
-                            ${type === 'connectors' ? (item.new_first_degree || 0) + ' new' :
-                              type === 'reach' ? '+' + (item.delta_second_degree || 0) + ' reach' :
+                            ${type === 'connectors' ? 
+                                (item.tap_count || item.new_first_degree || 0) + ' taps' :
+                              type === 'reach' ? 
+                                '+' + (item.new_connections || item.delta_second_degree || 0) + ' new connections' :
                               (item.streak_days || 0) + ' days'}
                         </div>
                     `;
