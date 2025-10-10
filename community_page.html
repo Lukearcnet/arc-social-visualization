@@ -2912,22 +2912,30 @@
             }
 
             // Name resolution helper
-            resolveName(id, fallback) {
-                if (!id) return fallback || 'Unknown';
+            resolveName(id) {
+                if (!id) return 'Unknown';
                 
-                // Build userIndex once from available sources
+                // 1) Check searchIndex first
+                if (this.searchIndex) {
+                    const user = this.searchIndex.find(u => (u.user_id || u.id) === id);
+                    if (user) {
+                        return user.name || user.user_name || user.displayName || 'Unknown';
+                    }
+                }
+                
+                // 2) Build userIndex from available sources
                 if (!this.userIndex) {
                     this.buildUserIndex();
                 }
                 
-                // Check userIndex first
+                // 3) Check userIndex
                 const user = this.userIndex[id];
                 if (user) {
-                    return user.name || user.user_name || user.displayName || fallback || 'Unknown';
+                    return user.name || user.user_name || user.displayName || 'Unknown';
                 }
                 
-                // Fallback with ID tail
-                return fallback || `Unknown · ${String(id).slice(-4)}`;
+                // 4) Fallback with ID tail
+                return `Unknown · ${String(id).slice(-4)}`;
             }
 
             buildUserIndex() {
@@ -3056,7 +3064,7 @@
                 // Create scales
                 const xScale = d3.scaleLinear().range([0, innerW]);
                 const yScale = d3.scaleBand().range([0, innerH]).padding(0.15);
-                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
                 // Persist state for updateBarRaceFrame
                 this.barRaceData = {
@@ -3093,10 +3101,14 @@
                 const d = this.barRaceData || {};
                 const { g, xScale, yScale, colorScale } = d;
                 const frame = d.frames?.[frameIndex];
-                if (!g || !xScale || !yScale || !frame) return;              // <- guard
+                if (!g || !xScale || !yScale || !frame) return;
 
-                const rows = (frame.rows || []).slice(0, 10);                 // top 10
-                if (!rows.length) { g.selectAll('*').remove(); return; }
+                // Get top 10 rows for this frame
+                const rows = (frame.rows || []).slice(0, 10);
+                if (!rows.length) { 
+                    g.selectAll('*').remove(); 
+                    return; 
+                }
 
                 // Update timestamp
                 const timestamp = document.getElementById('rbr-timestamp');
@@ -3104,27 +3116,16 @@
                     timestamp.textContent = frame.time.toLocaleString();
                 }
 
-                // y domain is the row ids for this frame
-                if (yScale && typeof yScale.domain === 'function') {
-                    yScale.domain(rows.map(r => r.id));
-                }
-
-                // Update color scale domain to include all current IDs
-                if (colorScale && typeof colorScale.domain === 'function') {
-                    const currentDomain = colorScale.domain();
-                    const newIds = rows.map(r => r.id).filter(id => !currentDomain.includes(id));
-                    if (newIds.length > 0) {
-                        colorScale.domain([...currentDomain, ...newIds]);
-                    }
-                }
+                // Set yScale domain for current rows
+                yScale.domain(rows.map(r => r.id));
 
                 if (new URLSearchParams(window.location.search).get('debug') === '1') {
                     console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex, 
                         'top names:', rows.slice(0, 3).map(r => r.name));
                 }
 
-                // DATA JOIN keyed by id
-                const bars = g.selectAll('.bar').data(rows, r => r.id);
+                // D3 data join keyed by id
+                const bars = g.selectAll('.bar').data(rows, d => d.id);
 
                 // EXIT
                 bars.exit().remove();
@@ -3138,26 +3139,26 @@
                 // UPDATE + ENTER
                 const merged = barsEnter.merge(bars);
                 
-                // Horizontal bars: x=0, width=xScale(value), height=yScale.bandwidth()
+                // Horizontal bars: x=0, y=yScale(id), width=xScale(value), height=yScale.bandwidth()
                 merged.select('rect')
                     .attr('x', 0)
-                    .attr('y', r => yScale(r.id))
+                    .attr('y', d => yScale(d.id))
                     .attr('height', yScale.bandwidth())
-                    .attr('width', r => xScale(r.value))
-                    .attr('fill', r => colorScale ? colorScale(r.id) : '#3b82f6');
+                    .attr('width', d => xScale(d.value))
+                    .attr('fill', d => colorScale ? colorScale(d.id) : '#3b82f6');
 
-                // Left name labels (outside bars, white text)
+                // Left name labels (white text, positioned left of bars)
                 merged.select('text.label')
-                    .text(r => this.resolveName(r.id, r.name))
+                    .text(d => this.resolveName(d.id))
                     .attr('x', -8)
-                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2))
+                    .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
 
-                // Right value labels (end of bar, grey text)
+                // Right value labels (muted gray, positioned at end of bars)
                 merged.select('text.value')
-                    .text(r => String(r.value))
-                    .attr('x', r => xScale(r.value) + 8)
-                    .attr('y', r => (yScale(r.id) + yScale.bandwidth() / 2))
+                    .text(d => String(d.value))
+                    .attr('x', d => xScale(d.value) + 8)
+                    .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#bbb');
 
                 this._barRaceIndex = frameIndex;
@@ -3193,12 +3194,11 @@
                 document.getElementById('rbr-play').style.display = 'none';
                 document.getElementById('rbr-pause').style.display = 'inline-block';
                 
-                // Use ~60 FPS for smooth animation
-                const fps = 60;
-                const stepMs = Math.floor(1000 / fps); // ~16ms per frame
+                // Adaptive speed for ~10s total playback
+                const interval = Math.max(16, Math.floor(10000 / frames.length));
                 
                 this.barRaceData.animationTimer = setInterval(() => {
-                    let nextFrame = this.barRaceData.currentFrame + 1;
+                    let nextFrame = this._barRaceIndex + 1;
                     
                     // Skip empty frames
                     while (nextFrame < frames.length && 
@@ -3213,9 +3213,9 @@
                         return;
                     }
                     
-                    this.barRaceData.currentFrame = nextFrame;
+                    this._barRaceIndex = nextFrame;
                     this.updateBarRaceFrame(nextFrame);
-                }, stepMs);
+                }, interval);
             }
 
             pauseBarRace() {
@@ -3231,7 +3231,7 @@
 
             stepBarRace() {
                 const { frames } = this.barRaceData;
-                let nextFrame = this.barRaceData.currentFrame + 1;
+                let nextFrame = this._barRaceIndex + 1;
                 
                 // Skip empty frames
                 while (nextFrame < frames.length && 
@@ -3245,7 +3245,7 @@
                     return;
                 }
                 
-                this.barRaceData.currentFrame = nextFrame;
+                this._barRaceIndex = nextFrame;
                 this.updateBarRaceFrame(nextFrame);
             }
 
