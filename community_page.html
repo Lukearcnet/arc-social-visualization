@@ -3231,6 +3231,16 @@
                 
                 let frames;
                 
+                // Pre-seed names from meta.name_map for network modes
+                if ((viewMode === 'network-taps' || viewMode === 'network-connections') && data.meta?.name_map) {
+                    Object.entries(data.meta.name_map).forEach(([id, name]) => {
+                        if (name && name.trim() && !this.isBadName(name)) {
+                            this.userIndex = this.userIndex || {};
+                            this.userIndex[id] = name;
+                        }
+                    });
+                }
+                
                 if (viewMode === 'connections') {
                     // Pre-seed names from radar buckets participants
                     this.preseedNamesFromRadar(data.buckets);
@@ -3239,7 +3249,7 @@
                     frames = this.buildBarRaceFrames(data.buckets);
                 } else if (viewMode === 'network-connections') {
                     // Use distinct frame builder for network-connections
-                    frames = await this.buildNetworkConnectionsFrames(data.buckets, data.networkMembers, data.meta?.hours);
+                    frames = await this.buildNetworkConnectionsFrames(data.buckets, data.networkMembers, data.meta?.hours, data.meta);
                 } else {
                     // For network-taps mode, use the network data
                     frames = await this.buildBarRaceFramesFromNetwork(data, viewMode);
@@ -3475,9 +3485,9 @@
                 return this.buildBarRaceFrames(data.buckets);
             }
 
-            async buildNetworkConnectionsFrames(buckets, networkMembers, hours) {
+            async buildNetworkConnectionsFrames(buckets, networkMembers, hours, meta) {
                 // Distinct frame builder for network-connections mode
-                // Input: raw taps within time window, network members
+                // Input: buckets with pair data, network members
                 // Logic: count unique counterparts per network member cumulatively
                 
                 // Normalize input at top
@@ -3497,13 +3507,11 @@
                 console.log('🔗 [Network Connections] Building frames for', members.length, 'network members');
                 
                 const frames = [];
-                const seen = new Map(); // userId -> Set of counterpart IDs
-                const entityTotals = new Map(); // userId -> cumulative count
+                const globalSeen = new Map(); // memberId -> Set of counterpartId
                 
                 // Initialize seen sets for network members
                 members.forEach(id => {
-                    seen.set(id, new Set());
-                    entityTotals.set(id, 0);
+                    globalSeen.set(id, new Set());
                 });
                 
                 // Calculate stride for ~10s playback
@@ -3517,29 +3525,33 @@
                     const windowEnd = Math.min(i + stride, buckets.length);
                     const windowBuckets = buckets.slice(i, windowEnd);
                     
-                    // Process each bucket in the window
+                    // Process each bucket in the window using pair data
                     windowBuckets.forEach(bucket => {
-                        if (bucket && bucket.participants) {
-                            bucket.participants.forEach(participant => {
-                                const userId = participant.user_id;
-                                if (members.includes(userId)) {
-                                    // Count new unique counterparts for this user in this bucket
-                                    const newCounterparts = participant.count || 0;
-                                    const current = entityTotals.get(userId) || 0;
-                                    entityTotals.set(userId, current + newCounterparts);
+                        if (bucket && bucket.pairs) {
+                            bucket.pairs.forEach(pair => {
+                                const { src, dst } = pair;
+                                
+                                // If src is in network members, add dst to their seen set
+                                if (members.includes(src)) {
+                                    globalSeen.get(src).add(dst);
+                                }
+                                
+                                // If dst is in network members, add src to their seen set
+                                if (members.includes(dst)) {
+                                    globalSeen.get(dst).add(src);
                                 }
                             });
                         }
                     });
                     
-                    // Create frame with top 10 participants
-                    const topParticipants = Array.from(entityTotals.entries())
-                        .filter(([userId, count]) => count > 0)
-                        .sort((a, b) => b[1] - a[1])
+                    // Create frame with top 10 participants based on unique connections
+                    const topParticipants = Array.from(globalSeen.entries())
+                        .filter(([userId, counterpartSet]) => counterpartSet.size > 0)
+                        .sort((a, b) => b[1].size - a[1].size)
                         .slice(0, 10)
-                        .map(([userId, total]) => ({
+                        .map(([userId, counterpartSet]) => ({
                             id: userId,
-                            value: total
+                            value: counterpartSet.size // Number of unique counterparts
                         }));
                     
                     // Skip empty frames
@@ -3553,7 +3565,21 @@
                     });
                 }
                 
-                console.log('🔗 [Network Connections] Built', frames.length, 'frames with unique counterpart logic');
+                // Debug logs for validation
+                const frameCount = frames.length;
+                const lastFrameSum = frames.length > 0 ? 
+                    frames[frames.length - 1].rows.reduce((sum, row) => sum + row.value, 0) : 0;
+                const totalUniqueConnections = Array.from(globalSeen.values())
+                    .reduce((sum, set) => sum + set.size, 0);
+                const serverTotal = meta?.total_unique_connections || 0;
+                const match = Math.abs(totalUniqueConnections - serverTotal) <= 1;
+                
+                console.log('🔗 [Network Connections] Built', frameCount, 'frames');
+                console.log('🔗 [Network Connections] Last frame sum of uniques:', lastFrameSum);
+                console.log('🔗 [Network Connections] Total unique connections:', totalUniqueConnections);
+                console.log('🔗 [Network Connections] Server total unique connections:', serverTotal);
+                console.log('🔗 [Network Connections] Match:', match);
+                
                 return frames;
             }
 

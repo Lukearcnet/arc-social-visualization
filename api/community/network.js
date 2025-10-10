@@ -131,7 +131,7 @@ const handler = async (req, res) => {
       }
     });
     
-    // For connections mode, convert counterpart sets to counts
+    // For connections mode, convert counterpart sets to counts and add pair data
     let totalUniqueConnections = 0;
     if (mode === 'connections') {
       // Convert counterpart sets to participant counts for each bucket
@@ -161,6 +161,22 @@ const handler = async (req, res) => {
       
       totalUniqueConnections = Array.from(globalCounterparts.values())
         .reduce((sum, set) => sum + set.size, 0);
+      
+      // Add pair-level data for network-connections
+      buckets.forEach(bucket => {
+        bucket.pairs = [];
+        if (bucket.counterparts) {
+          bucket.counterparts.forEach((counterpartSet, userId) => {
+            counterpartSet.forEach(counterpartId => {
+              bucket.pairs.push({
+                src: userId,
+                dst: counterpartId,
+                ts: bucket.ts
+              });
+            });
+          });
+        }
+      });
     }
     
     if (isDebug) {
@@ -190,12 +206,19 @@ const handler = async (req, res) => {
           }))
           .sort((a, b) => b.count - a.count);
         
-        return {
+        const bucketData = {
           ts: bucket.ts,
           activity_count: bucket.activity_count,
           unique_people: bucket.unique_people.size,
           participants: participants
         };
+        
+        // Include pairs data for connections mode
+        if (mode === 'connections' && bucket.pairs) {
+          bucketData.pairs = bucket.pairs;
+        }
+        
+        return bucketData;
       })
       .sort((a, b) => new Date(a.ts) - new Date(b.ts));
     
