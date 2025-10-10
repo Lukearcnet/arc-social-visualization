@@ -521,8 +521,8 @@
             max-width: 600px;
             margin: 0 auto;
             min-height: 400px; /* Ensure minimum height */
-            background: var(--bg-secondary); /* Temporary background for debugging */
-            border: 2px solid var(--accent); /* Temporary border for debugging */
+            background: var(--bg-primary);
+            border: none;
         }
 
         /* Radar Section Styles */
@@ -896,9 +896,10 @@
         /* Bar Race Chart Styles */
         .radar-bar-race { 
             padding: 12px; 
-            background: var(--bg-secondary);
+            background: var(--bg-primary);
             border-radius: 8px;
             margin-top: 1rem;
+            border: none;
         }
         
         .rbr-header { 
@@ -1032,6 +1033,8 @@
             min-width: 800px;
             height: 420px;
             overflow: visible;
+            background: var(--bg-primary);
+            border: none;
         }
         
         @media (max-width: 768px) {
