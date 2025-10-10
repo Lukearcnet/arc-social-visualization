@@ -1165,6 +1165,8 @@
             pointer-events: auto;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            min-width: 300px;
+            max-width: 500px;
         }
 
         /* Mobile responsive dropdown */
@@ -2470,15 +2472,25 @@
                     const now = new Date();
                     const startTime = new Date(now.getTime() - timeWindowMs);
                     
+                    console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
+                    console.log(`[Connections] Total taps available: ${taps.length}`);
+                    
                     // Filter taps involving this user within the time window
                     const userTaps = taps.filter(tap => {
                         const tapTime = new Date(tap.time);
                         const id1 = tap.user1_id || tap.id1;
                         const id2 = tap.user2_id || tap.id2;
-                        return (id1 === userId || id2 === userId) && 
-                               tapTime >= startTime && 
-                               tapTime <= now;
+                        const isInvolved = (id1 === userId || id2 === userId);
+                        const isInTimeWindow = tapTime >= startTime && tapTime <= now;
+                        
+                        if (isInvolved && isInTimeWindow) {
+                            console.log(`[Connections] Found tap: ${tap.user1_name || 'Unknown'} <-> ${tap.user2_name || 'Unknown'} at ${tap.time}`);
+                        }
+                        
+                        return isInvolved && isInTimeWindow;
                     });
+                    
+                    console.log(`[Connections] Found ${userTaps.length} taps for user ${userId}`);
                     
                     // Extract unique connections
                     const connections = new Map();
@@ -2503,15 +2515,20 @@
                             }
                             
                             if (name && name.trim() && name !== 'Unknown') {
+                                console.log(`[Connections] Adding connection: ${name} (${otherId})`);
                                 connections.set(otherId, {
                                     name: name.trim(),
                                     user_id: otherId
                                 });
+                            } else {
+                                console.log(`[Connections] Skipping connection with bad name: "${name}" for ${otherId}`);
                             }
                         }
                     });
                     
-                    return Array.from(connections.values());
+                    const result = Array.from(connections.values());
+                    console.log(`[Connections] Final connections for ${userId}:`, result);
+                    return result;
                     
                 } catch (error) {
                     console.warn('Error fetching connection data:', error);
