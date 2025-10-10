@@ -1656,7 +1656,7 @@
                 this.loadSectionData(section);
             }
 
-            async switchLeaderboard(leaderboard) {
+            switchLeaderboard(leaderboard) {
                 // Update leaderboard tabs
                 document.querySelectorAll('.leaderboard-tab').forEach(tab => {
                     tab.classList.remove('active');
@@ -1664,7 +1664,7 @@
                 document.querySelector(`[data-leaderboard="${leaderboard}"]`).classList.add('active');
 
                 // Update leaderboard content
-                await this.renderLeaderboard(leaderboard);
+                this.renderLeaderboard(leaderboard);
             }
 
             async loadSectionData(section) {
@@ -2266,7 +2266,7 @@
 
 
                 // Render leaderboard
-                await this.renderLeaderboard('connectors');
+                this.renderLeaderboard('connectors');
 
                 // Render recommendations
                 this.renderRecommendations();
@@ -2275,7 +2275,7 @@
                 this.renderWarnings();
             }
 
-            async renderLeaderboard(type) {
+            renderLeaderboard(type) {
                 const data = this.data.weekly;
                 if (!data) return;
 
@@ -2313,24 +2313,15 @@
                     return;
                 }
 
-                // For Top Connectors, get actual connection counts from dropdown data
-                for (let index = 0; index < leaderboardData.length; index++) {
-                    const item = leaderboardData[index];
+                leaderboardData.forEach((item, index) => {
                     const div = document.createElement('div');
                     div.className = 'leaderboard-item';
                     
-                    let value = '';
-                    if (type === 'connectors') {
-                        // Get the actual connection count from the dropdown data
-                        const connections = await this.getUserConnections(item.user_id);
-                        const actualCount = connections.length;
-                        value = actualCount + ' new connections';
-                        console.log(`[Leaderboard] ${item.name}: Expected ${item.tap_count || item.new_first_degree || 0}, Actual ${actualCount}`);
-                    } else if (type === 'reach') {
-                        value = (item.new_connections || item.delta_second_degree || 0) + ' new taps';
-                    } else {
-                        value = (item.streak_days || 0) + ' days';
-                    }
+                    const value = type === 'connectors' ? 
+                        (item.tap_count || item.new_first_degree || 0) + ' new connections' :
+                        type === 'reach' ? 
+                        (item.new_connections || item.delta_second_degree || 0) + ' new taps' :
+                        (item.streak_days || 0) + ' days';
                     
                     div.innerHTML = `
                         <div>
@@ -2341,7 +2332,7 @@
                         </div>
                     `;
                     container.appendChild(div);
-                }
+                });
                 
                 // Add click handlers for leaderboard values
                 this.setupLeaderboardValueClicks();
