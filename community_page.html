@@ -2779,17 +2779,23 @@
                         }
                     }
                     
-                    // Build userIndex from all sources
+                    // Build userIndex from all sources - store strings only
                     this.userIndex = {};
+                    
+                    // Normalize user data to plain name strings
+                    const normalizeUser = (user) => {
+                        if (typeof user === 'string') return user;
+                        if (typeof user === 'object' && user) {
+                            return user.name || user.user_name || user.display_name || user.full_name || 
+                                   ([user.first_name, user.last_name].filter(Boolean).join(' ')) || 'Unknown';
+                        }
+                        return 'Unknown';
+                    };
                     
                     // Add from searchIndex
                     (this.searchIndex || []).forEach(u => {
                         if (u.user_id) {
-                            this.userIndex[u.user_id] = {
-                                name: u.name,
-                                user_name: u.user_name,
-                                displayName: u.displayName
-                            };
+                            this.userIndex[u.user_id] = normalizeUser(u);
                         }
                     });
                     
@@ -2827,11 +2833,7 @@
                     if (weeklyData.recap && weeklyData.recap[section]) {
                         weeklyData.recap[section].forEach(user => {
                             if (user.user_id && !this.userIndex[user.user_id]) {
-                                this.userIndex[user.user_id] = {
-                                    name: user.name,
-                                    user_name: user.name,
-                                    displayName: user.name
-                                };
+                                this.userIndex[user.user_id] = user.name || 'Unknown';
                             }
                         });
                     }
@@ -2843,11 +2845,7 @@
                     if (weeklyData.leaderboard && weeklyData.leaderboard[section]) {
                         weeklyData.leaderboard[section].forEach(user => {
                             if (user.user_id && !this.userIndex[user.user_id]) {
-                                this.userIndex[user.user_id] = {
-                                    name: user.name,
-                                    user_name: user.name,
-                                    displayName: user.name
-                                };
+                                this.userIndex[user.user_id] = user.name || 'Unknown';
                             }
                         });
                     }
@@ -2859,11 +2857,7 @@
                 if (healthData.connections) {
                     healthData.connections.forEach(conn => {
                         if (conn.other_user_id && !this.userIndex[conn.other_user_id]) {
-                            this.userIndex[conn.other_user_id] = {
-                                name: conn.name,
-                                user_name: conn.name,
-                                displayName: conn.name
-                            };
+                            this.userIndex[conn.other_user_id] = conn.name || 'Unknown';
                         }
                     });
                 }
@@ -3029,26 +3023,22 @@
                 this.setupBarRaceControls();
             }
 
-            // Name resolution helper
-            resolveName(id, fallback) {
-                if (!id) return fallback || 'Unknown';
+            // Safe name resolution helper
+            safeName(id, fallback) {
+                if (!id) return 'Unknown';
                 
-                // 1) Check searchIndex first
-                if (this.searchIndex) {
-                    const user = this.searchIndex.find(u => (u.user_id || u.id) === id);
-                    if (user) {
-                        return user.name || user.user_name || user.displayName || fallback || 'Unknown';
-                    }
-                }
-                
-                // 2) Check userIndex
-                if (this.userIndex && this.userIndex[id]) {
-                    const user = this.userIndex[id];
-                    return user.name || user.user_name || user.displayName || fallback || 'Unknown';
-                }
-                
-                // 3) Fallback with ID tail
-                return fallback || `Unknown · ${String(id).slice(-4)}`;
+                // normalize userIndex: allow string or object entries
+                const pick = u => u?.name || u?.user_name || u?.display_name || u?.full_name ||
+                             [u?.first_name, u?.last_name].filter(Boolean).join(' ') || null;
+
+                // userIndex may be Map, object, or string
+                let v = this.userIndex?.get?.(id) ?? this.userIndex?.[id];
+                const fromIndex = typeof v === 'string' ? v : pick(v);
+
+                // searchIndex is an array
+                const fromSearch = pick((this.searchIndex || []).find(u => u.id === id || u.user_id === id));
+
+                return fromIndex || fromSearch || fallback || `Unknown · ${String(id).slice(-4)}`;
             }
 
             buildUserIndex() {
@@ -3122,7 +3112,6 @@
                         .slice(0, 10)
                         .map(([userId, total]) => ({
                             id: userId, // Keep stable user_id as id
-                            name: this.resolveName(userId),
                             value: total
                         }));
                     
@@ -3262,7 +3251,7 @@
 
                 // Left name labels (white text, positioned left of bars)
                 merged.select('text.label')
-                    .text(d => this.resolveName(d.id))
+                    .text(d => this.safeName(d.id, d.label))
                     .attr('x', -8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
