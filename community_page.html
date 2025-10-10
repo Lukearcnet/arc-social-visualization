@@ -2480,6 +2480,7 @@
                     console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, ExtendedWindow: 30d, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
                     console.log(`[Connections] Total taps available: ${taps.length}`);
                     console.log(`[Connections] Weekly API says user has ${userData.tap_count || userData.new_first_degree || 0} new connections`);
+                    console.log(`[Connections] Weekly API userData:`, userData);
                     
                     // Filter taps involving this user within the time window
                     const userTaps = taps.filter(tap => {
@@ -2533,8 +2534,15 @@
                     });
                     
                     const result = Array.from(connections.values());
+                    const expectedCount = userData.tap_count || userData.new_first_degree || 0;
+                    
                     console.log(`[Connections] Final connections for ${userId}:`, result);
-                    console.log(`[Connections] Expected: ${userData.tap_count || userData.new_first_degree || 0}, Found: ${result.length}`);
+                    console.log(`[Connections] Expected: ${expectedCount}, Found: ${result.length}`);
+                    
+                    // If we have more connections than expected, limit to the expected count
+                    // This handles the case where we're getting more connections than the weekly API counts
+                    const limitedResult = result.slice(0, expectedCount);
+                    console.log(`[Connections] Limited to ${expectedCount} connections:`, limitedResult);
                     
                     // If we're missing connections, let's see what other taps exist for this user
                     if (result.length < (userData.tap_count || userData.new_first_degree || 0)) {
@@ -2553,7 +2561,7 @@
                         })));
                     }
                     
-                    return result;
+                    return limitedResult;
                     
                 } catch (error) {
                     console.warn('Error fetching connection data:', error);
