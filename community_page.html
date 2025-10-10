@@ -304,54 +304,6 @@
                     margin-bottom: 0.25rem;
                 }
         
-        .view-profile-btn {
-            background: var(--accent-primary);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.2s;
-        }
-        
-        .view-profile-btn:hover {
-            background: var(--accent-primary-hover);
-        }
-
-        /* User popup styles (same as graph view) */
-        .custom-popup {
-            background: rgba(0, 0, 0, 0.95);
-            border: 1.5px solid rgba(255, 255, 255, 0.3);
-            border-radius: 9px;
-            color: #ffffff;
-            padding: 15px;
-            font-size: 13.5px;
-            max-width: 300px;
-            min-width: 225px;
-            line-height: 1.4;
-            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        
-        .popup-title {
-            font-weight: 600;
-            margin-bottom: 7.5px;
-            color: #ffffff;
-            font-size: 15px;
-            line-height: 1.3;
-            white-space: nowrap;
-        }
-        
-        .popup-info {
-            color: #cccccc;
-            font-size: 12px;
-            margin-bottom: 3.75px;
-            line-height: 1.3;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
 
         .recommendation-scores {
             display: flex;
@@ -2400,23 +2352,8 @@
                         <div class="mutual-names">
                             ${mutualNamesDisplay}
                         </div>
-                        <div class="recommendation-actions">
-                            <button class="view-profile-btn" data-user-id="${rec.user_id}">View Profile</button>
-                        </div>
                     `;
                     
-                    // Add click handler for View Profile button
-                    const viewProfileBtn = div.querySelector('.view-profile-btn');
-                    if (viewProfileBtn) {
-                        viewProfileBtn.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            const userId = viewProfileBtn.dataset.userId;
-                            if (userId) {
-                                // Show user popup instead of navigating away
-                                this.showUserPopup(userId, name);
-                            }
-                        });
-                    }
                     container.appendChild(div);
                 });
             }
@@ -2472,108 +2409,6 @@
                 document.body.appendChild(warningBanner);
             }
 
-            // Show user popup (same as graph view)
-            showUserPopup(userId, userName) {
-                // Get user data from the weekly data
-                const userData = this.data.weekly?.users?.find(u => u.user_id === userId) || 
-                                this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId) ||
-                                this.data.weekly?.leaderboard?.community_builders?.find(u => u.user_id === userId);
-                
-                // Create popup content (same structure as graph view)
-                let popupContent = `
-                    <div class="popup-title">${userName || 'Unknown User'}</div>
-                    <div class="popup-info"><strong>User ID:</strong> ${userId}</div>
-                `;
-                
-                // Add user details if available
-                if (userData) {
-                    if (userData.home_location) {
-                        popupContent += `<div class="popup-info"><strong>Home Location:</strong> ${userData.home_location}</div>`;
-                    }
-                    if (userData.bio) {
-                        popupContent += `<div class="popup-info"><strong>Bio:</strong> ${userData.bio}</div>`;
-                    }
-                    if (userData.linkedin) {
-                        popupContent += `<div class="popup-info"><strong>LinkedIn:</strong> <a href="${userData.linkedin}" target="_blank" style="color: #03DAEE;">${userData.linkedin}</a></div>`;
-                    }
-                    if (userData.taps) {
-                        popupContent += `<div class="popup-info"><strong>Taps:</strong> ${userData.taps}</div>`;
-                    }
-                    if (userData.connections) {
-                        popupContent += `<div class="popup-info"><strong>Connections:</strong> ${userData.connections}</div>`;
-                    }
-                } else {
-                    popupContent += `<div class="popup-info">No additional details available</div>`;
-                }
-                
-                // Create and show popup
-                const popup = document.createElement('div');
-                popup.className = 'custom-popup';
-                popup.innerHTML = popupContent;
-                popup.style.position = 'fixed';
-                
-                // Mobile-friendly positioning: 75% down the screen, left side
-                const isMobile = window.innerWidth <= 768;
-                if (isMobile) {
-                    popup.style.top = '75%';
-                    popup.style.left = '20px';
-                    popup.style.bottom = 'auto';
-                    popup.style.right = 'auto';
-                    popup.style.transform = 'translateY(-50%)';
-                    popup.style.maxWidth = '300px';
-                    popup.style.maxHeight = '70vh';
-                    popup.style.overflowY = 'auto';
-                } else {
-                    // Desktop: keep centered
-                    popup.style.top = '50%';
-                    popup.style.left = '50%';
-                    popup.style.transform = 'translate(-50%, -50%)';
-                }
-                
-                popup.style.zIndex = '10000';
-                
-                // Add close button
-                const closeButton = document.createElement('button');
-                closeButton.innerHTML = '×';
-                closeButton.style.position = 'absolute';
-                closeButton.style.top = '10px';
-                closeButton.style.right = '10px';
-                closeButton.style.background = 'none';
-                closeButton.style.border = 'none';
-                closeButton.style.color = '#ffffff';
-                closeButton.style.fontSize = '18px';
-                closeButton.style.cursor = 'pointer';
-                closeButton.style.padding = '0';
-                closeButton.style.width = '24px';
-                closeButton.style.height = '24px';
-                closeButton.style.borderRadius = '50%';
-                closeButton.style.display = 'flex';
-                closeButton.style.alignItems = 'center';
-                closeButton.style.justifyContent = 'center';
-                
-                closeButton.addEventListener('click', () => {
-                    document.body.removeChild(popup);
-                });
-                
-                popup.appendChild(closeButton);
-                document.body.appendChild(popup);
-                
-                // Close on outside click
-                popup.addEventListener('click', (e) => {
-                    if (e.target === popup) {
-                        document.body.removeChild(popup);
-                    }
-                });
-                
-                // Close on escape key
-                const escapeHandler = (e) => {
-                    if (e.key === 'Escape') {
-                        document.body.removeChild(popup);
-                        document.removeEventListener('keydown', escapeHandler);
-                    }
-                };
-                document.addEventListener('keydown', escapeHandler);
-            }
 
             updateLastUpdatedTime() {
                 const now = new Date();
