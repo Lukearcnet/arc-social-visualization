@@ -2331,26 +2331,15 @@
                     // For Top Connectors, find the actual connections this user made
                     const connections = this.getUserConnections(userId);
                     if (connections.length > 0) {
-                        dropdownContent = `
-                            <div class="dropdown-item">
-                                <strong>${this.getUserName(userId)}</strong>
+                        dropdownContent = connections.map(conn => `
+                            <div class="degree-user-item">
+                                <div class="user-name">${conn.name}</div>
                             </div>
-                            <div class="dropdown-item" style="color: var(--fg-muted); margin-bottom: 8px;">
-                                Connected with ${connections.length} people:
-                            </div>
-                            ${connections.map(conn => `
-                                <div class="dropdown-item" style="padding-left: 16px; border-left: 2px solid var(--accent);">
-                                    ${conn.name}
-                                </div>
-                            `).join('')}
-                        `;
+                        `).join('');
                     } else {
                         dropdownContent = `
-                            <div class="dropdown-item">
-                                <strong>${this.getUserName(userId)}</strong>
-                            </div>
-                            <div class="dropdown-item" style="color: var(--fg-muted);">
-                                No connection details available
+                            <div class="degree-user-item">
+                                <div class="user-name">No connection details available</div>
                             </div>
                         `;
                     }
@@ -2358,85 +2347,42 @@
                     // For Top Tappers, find the actual people this user tapped with
                     const tappedWith = this.getUserTappedWith(userId);
                     if (tappedWith.length > 0) {
-                        dropdownContent = `
-                            <div class="dropdown-item">
-                                <strong>${this.getUserName(userId)}</strong>
+                        dropdownContent = tappedWith.map(person => `
+                            <div class="degree-user-item">
+                                <div class="user-name">${person.name}</div>
+                                ${person.count > 0 ? `<div class="user-meta">${person.count} taps</div>` : ''}
                             </div>
-                            <div class="dropdown-item" style="color: var(--fg-muted); margin-bottom: 8px;">
-                                Tapped with ${tappedWith.length} people:
-                            </div>
-                            ${tappedWith.map(person => `
-                                <div class="dropdown-item" style="padding-left: 16px; border-left: 2px solid var(--accent);">
-                                    ${person.name} (${person.count} taps)
-                                </div>
-                            `).join('')}
-                        `;
+                        `).join('');
                     } else {
                         dropdownContent = `
-                            <div class="dropdown-item">
-                                <strong>${this.getUserName(userId)}</strong>
-                            </div>
-                            <div class="dropdown-item" style="color: var(--fg-muted);">
-                                No tap details available
+                            <div class="degree-user-item">
+                                <div class="user-name">No tap details available</div>
                             </div>
                         `;
                     }
                 }
                 
-                // Create dropdown element
+                // Create dropdown element using portal system like degree dropdowns
+                const portalRoot = this.getPortalRoot();
                 const dropdown = document.createElement('div');
-                dropdown.className = 'leaderboard-dropdown';
-                dropdown.innerHTML = `
-                    <div class="dropdown-header">
-                        <span>Details for ${triggerElement.textContent}</span>
-                        <button class="dropdown-close" onclick="this.closest('.leaderboard-dropdown').remove()">×</button>
-                    </div>
-                    <div class="dropdown-content">
-                        ${dropdownContent}
-                    </div>
-                `;
+                dropdown.className = 'portal-dropdown';
+                dropdown.innerHTML = dropdownContent;
                 
-                // Position dropdown with viewport bounds checking
-                const rect = triggerElement.getBoundingClientRect();
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
+                // Add to portal first
+                portalRoot.appendChild(dropdown);
                 
-                // Calculate optimal position
-                let left = rect.left;
-                let top = rect.bottom + 5;
+                // Store reference to trigger element for positioning
+                this.currentTriggerCard = triggerElement;
                 
-                // Ensure dropdown stays within viewport
-                const dropdownWidth = 200; // min-width from CSS
-                const dropdownHeight = 200; // max-height from CSS
+                // Position dropdown after it's in the DOM
+                this.updateDropdownPosition();
                 
-                // Adjust horizontal position if too far right
-                if (left + dropdownWidth > viewportWidth) {
-                    left = viewportWidth - dropdownWidth - 10; // 10px margin from edge
-                }
+                // Focus management
+                dropdown.setAttribute('tabindex', '0');
+                dropdown.focus();
                 
-                // Adjust vertical position if too far down
-                if (top + dropdownHeight > viewportHeight) {
-                    top = rect.top - dropdownHeight - 5; // Show above instead
-                }
-                
-                // Ensure minimum margins
-                left = Math.max(10, left);
-                top = Math.max(10, top);
-                
-                dropdown.style.position = 'fixed';
-                dropdown.style.top = `${top}px`;
-                dropdown.style.left = `${left}px`;
-                dropdown.style.zIndex = '99999';
-                dropdown.style.backgroundColor = 'var(--bg-secondary)';
-                dropdown.style.border = '1px solid var(--stroke)';
-                dropdown.style.borderRadius = '8px';
-                dropdown.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                dropdown.style.maxHeight = '200px';
-                dropdown.style.overflowY = 'auto';
-                dropdown.style.minWidth = '200px';
-                
-                // Add to DOM
-                document.body.appendChild(dropdown);
+                // Store reference for cleanup
+                this.currentDropdown = dropdown;
                 
                 // Close on outside click
                 setTimeout(() => {
@@ -2466,23 +2412,45 @@
             }
 
             getUserConnections(userId) {
-                // For Top Connectors, this user made connections with the main user
-                // The main user is the one who appears in first_degree_new from this user's perspective
-                const currentUserId = this.currentUser?.user_id;
+                // For Top Connectors, we need to show the actual connections this user made
+                // The current API doesn't provide individual connections for leaderboard users
+                // We need to work with the available data
                 
-                if (!currentUserId) {
+                const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId);
+                if (!userData) {
                     return [];
                 }
-
-                // Since this user is in the Top Connectors leaderboard, they connected with the main user
-                // We can show that this user connected with the main user
-                const mainUserName = this.getUserName(currentUserId);
                 
-                return [{
-                    name: mainUserName,
-                    user_id: currentUserId,
-                    last_tap_at: new Date().toISOString()
-                }];
+                // Get the connection count
+                const connectionCount = userData.tap_count || userData.new_first_degree || 0;
+                
+                if (connectionCount === 0) {
+                    return [];
+                }
+                
+                // Since we don't have the individual connections, we'll show what we can
+                // For now, show the main user as their primary connection
+                const currentUserId = this.currentUser?.user_id;
+                if (currentUserId) {
+                    const mainUserName = this.getUserName(currentUserId);
+                    const connections = [{
+                        name: mainUserName,
+                        user_id: currentUserId
+                    }];
+                    
+                    // Add placeholders for additional connections
+                    // In a real implementation, we'd need backend changes to provide this data
+                    for (let i = 1; i < connectionCount; i++) {
+                        connections.push({
+                            name: `Additional connection ${i}`,
+                            user_id: `placeholder-${i}`
+                        });
+                    }
+                    
+                    return connections;
+                }
+                
+                return [];
             }
 
             getUserTappedWith(userId) {
