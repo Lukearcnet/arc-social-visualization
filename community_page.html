@@ -3512,8 +3512,8 @@
                 const frames = [];
                 const entityTotals = new Map(); // Track cumulative totals (never reset)
                 
-                // Calculate stride for ~10s playback at ~60 FPS (targetFrames ≈ 600)
-                const targetFrames = 600;
+                // Calculate stride for ~10s playback with fewer intermediate steps
+                const targetFrames = 200; // Reduced from 600 for more direct movement
                 const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
                 
                 console.log(`📊 [Bar Race] Processing ${buckets.length} buckets with stride ${stride} for ~10s playback`);
@@ -3611,8 +3611,8 @@
                     globalSeen.set(id, new Set());
                 });
                 
-                // Calculate stride for ~10s playback
-                const targetFrames = 600;
+                // Calculate stride for ~10s playback with fewer intermediate steps
+                const targetFrames = 200; // Reduced from 600 for more direct movement
                 const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
                 
                 console.log('🔗 [Network Connections] Processing', buckets.length, 'buckets with stride', stride);
@@ -3764,7 +3764,7 @@
                 
                 // Determine transition duration based on playback speed
                 const isPlaying = this.barRaceData?.isPlaying || false;
-                const transitionDuration = isPlaying ? 200 : 400; // Faster during playback
+                const transitionDuration = isPlaying ? 100 : 200; // Much faster transitions // Faster during playback
 
                 // Get top 10 rows for this frame
                 const rows = (frame.rows || []).slice(0, 10);
@@ -3927,17 +3927,18 @@
                 document.getElementById('rbr-play').style.display = 'none';
                 document.getElementById('rbr-pause').style.display = 'inline-block';
                 
-                // Adaptive speed for ~10s total playback
+                // Adaptive speed for ~10s total playback with larger steps
                 const interval = Math.max(16, Math.floor(10000 / frames.length));
+                const stepSize = Math.max(1, Math.floor(frames.length / 50)); // Larger steps for more direct movement
                 
                 this.barRaceData.animationTimer = setInterval(() => {
-                    let nextFrame = this._barRaceIndex + 1;
+                    let nextFrame = this._barRaceIndex + stepSize; // Use larger steps
                     
                     // Skip empty frames
                     while (nextFrame < frames.length && 
                            frames[nextFrame] && 
                            (frames[nextFrame].rows || []).length === 0) {
-                        nextFrame++;
+                        nextFrame += stepSize;
                     }
                     
                     // Stop at last frame
