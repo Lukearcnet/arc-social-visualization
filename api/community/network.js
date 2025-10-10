@@ -106,9 +106,21 @@ const handler = async (req, res) => {
             bucket.participants.set(id1, (bucket.participants.get(id1) || 0) + 1);
             bucket.participants.set(id2, (bucket.participants.get(id2) || 0) + 1);
           } else if (mode === 'connections') {
-            // Count unique connections per participant
-            bucket.participants.set(id1, (bucket.participants.get(id1) || 0) + 1);
-            bucket.participants.set(id2, (bucket.participants.get(id2) || 0) + 1);
+            // Track unique counterparts per user for this bucket
+            if (!bucket.counterparts) {
+              bucket.counterparts = new Map(); // user_id -> Set of counterpart IDs for this bucket
+            }
+            
+            // Add counterpart to each user's set for this bucket
+            if (!bucket.counterparts.has(id1)) {
+              bucket.counterparts.set(id1, new Set());
+            }
+            if (!bucket.counterparts.has(id2)) {
+              bucket.counterparts.set(id2, new Set());
+            }
+            
+            bucket.counterparts.get(id1).add(id2);
+            bucket.counterparts.get(id2).add(id1);
           }
           
           bucket.unique_people.add(id1);
@@ -119,8 +131,43 @@ const handler = async (req, res) => {
       }
     });
     
+    // For connections mode, convert counterpart sets to counts
+    let totalUniqueConnections = 0;
+    if (mode === 'connections') {
+      // Convert counterpart sets to participant counts for each bucket
+      buckets.forEach(bucket => {
+        if (bucket.counterparts) {
+          bucket.participants = new Map();
+          bucket.counterparts.forEach((counterpartSet, userId) => {
+            bucket.participants.set(userId, counterpartSet.size);
+          });
+        }
+      });
+      
+      // Calculate total unique connections across all buckets
+      const globalCounterparts = new Map();
+      buckets.forEach(bucket => {
+        if (bucket.counterparts) {
+          bucket.counterparts.forEach((counterpartSet, userId) => {
+            if (!globalCounterparts.has(userId)) {
+              globalCounterparts.set(userId, new Set());
+            }
+            counterpartSet.forEach(counterpartId => {
+              globalCounterparts.get(userId).add(counterpartId);
+            });
+          });
+        }
+      });
+      
+      totalUniqueConnections = Array.from(globalCounterparts.values())
+        .reduce((sum, set) => sum + set.size, 0);
+    }
+    
     if (isDebug) {
       console.log(`🌐 [network] Processed ${processedTaps} taps, ${networkTaps} network taps`);
+      if (mode === 'connections') {
+        console.log(`🌐 [Network Connections] bucketCount: ${buckets.size}, uniqueConnections: ${totalUniqueConnections}`);
+      }
     }
     
     // Build name map from available sources
@@ -159,7 +206,8 @@ const handler = async (req, res) => {
         duration_ms: Date.now() - startTime,
         name_map: nameMap,
         network_members: networkMembers.length,
-        total_network_taps: networkTaps
+        total_network_taps: networkTaps,
+        total_unique_connections: totalUniqueConnections
       }
     };
     
