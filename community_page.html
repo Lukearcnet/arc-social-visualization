@@ -2889,6 +2889,17 @@
                 const firstNonEmpty = frames.findIndex(f => (f.rows || []).length > 0);
                 this.barRaceData.firstFrameIndex = Math.max(0, firstNonEmpty);
                 
+                // Compute adaptive stride for ~10s playback
+                this._stride = this.computeStride(frames.length);
+                
+                // Debug logging
+                console.log('📊 [Bar Race] Debug info:', {
+                    framesCount: frames.length,
+                    stride: this._stride,
+                    firstNonEmptyFrame: this.barRaceData.firstFrameIndex,
+                    firstFrameRows: frames[this.barRaceData.firstFrameIndex]?.rows?.slice(0, 3) || []
+                });
+                
                 this.initializeBarRace();
                 this.updateBarRaceFrame(this.barRaceData.firstFrameIndex);
                 
@@ -2899,21 +2910,55 @@
             // Name resolution helper
             resolveName(id) {
                 if (!id) return 'Unknown';
-                // 1) direct cache
-                this._nameCache = this._nameCache || new Map();
-                if (this._nameCache.has(id)) return this._nameCache.get(id);
-
-                // 2) try searchIndex/userIndex built elsewhere on the page
-                const hit = (this.searchIndex || []).find(u => u.user_id === id || u.id === id);
-                const name = hit?.name || hit?.user_name ||
-                             this.userIndex?.[id]?.name ||
-                             this.userIndex?.[id]?.user_name ||
-                             'Unknown';
                 
-                // If still unknown, add ID tail for distinction
-                const finalName = name === 'Unknown' ? `Unknown · ${id.slice(-4)}` : name;
-                this._nameCache.set(id, finalName);
-                return finalName;
+                // 1) Check radar meta names first
+                const radarName = this.data?.radar?.meta?.names?.[id];
+                if (radarName) return radarName;
+                
+                // 2) Build name map once from existing user data
+                const nameMap = this.buildNameMapOnce();
+                const mappedName = nameMap.get(id);
+                if (mappedName) return mappedName;
+                
+                // 3) Fallback with ID tail
+                return 'Unknown · ' + String(id).slice(-4);
+            }
+
+            buildNameMapOnce() {
+                if (this._nameMap) return this._nameMap;
+                const m = new Map();
+                
+                // searchIndex: [{user_id,name}] if present
+                (this.searchIndex || []).forEach(u => 
+                    m.set(u.user_id || u.id, u.name || u.user_name || u.displayName)
+                );
+                
+                // userIndex: {id:{name}} if present
+                if (this.userIndex) {
+                    Object.entries(this.userIndex).forEach(([id, u]) => 
+                        m.set(id, u?.name || u?.user_name || u?.displayName)
+                    );
+                }
+                
+                this._nameMap = m;
+                return m;
+            }
+
+            // Stable color generation
+            hashColor(id) {
+                // simple stable hash -> hue
+                let h = 0;
+                for (let i = 0; i < String(id).length; i++) {
+                    h = (h * 31 + String(id).charCodeAt(i)) >>> 0;
+                }
+                const hue = h % 360;
+                return `hsl(${hue}, 70%, 50%)`;
+            }
+
+            // Adaptive stride computation
+            computeStride(framesLen, desiredSec = 10, fps = 12) {
+                const targetFrames = Math.max(1, Math.round(desiredSec * fps)); // ~120 frames
+                return Math.max(1, Math.ceil(framesLen / targetFrames));
             }
 
             buildBarRaceFrames(buckets, opts = {}) {
@@ -2991,8 +3036,8 @@
                 svg.setAttribute('aria-label', 'Activity bar race');
                 host.appendChild(svg);
                 
-                // Responsive sizing with proper margins
-                const margin = { top: 24, right: 24, bottom: 40, left: 140 };
+                // Responsive sizing with proper margins (increased left for labels)
+                const margin = { top: 24, right: 24, bottom: 40, left: 180 };
                 const width = host.clientWidth || 744;
                 const height = host.clientHeight || 420;
                 const innerW = Math.max(0, width - margin.left - margin.right);
@@ -3041,7 +3086,7 @@
 
             updateBarRaceFrame(frameIndex) {
                 const NS = 'http://www.w3.org/2000/svg';
-                const { svg, g, xScale, yFor, band, frames, width: innerW } = this.barRaceData;
+                const { svg, g, xScale, yScale, frames, margin } = this.barRaceData;
                 const frame = frames[frameIndex];
                 
                 if (!frame) return;
@@ -3052,47 +3097,56 @@
                     timestamp.textContent = frame.time.toLocaleString();
                 }
                 
-                // Get top N rows
-                const rows = frame.rows.slice(0, 10);
-                console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex);
+                // Sort rows by value descending, take top 10
+                const rows = frame.rows
+                    .sort((a, b) => b.value - a.value)
+                    .slice(0, 10);
+                
+                console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex, 
+                    'top names:', rows.slice(0, 3).map(r => r.name));
                 
                 // Skip empty frames
                 if (rows.length === 0) return;
+                
+                // Update yScale domain for current rows
+                yScale.domain(rows.map(r => r.id));
                 
                 // Clear previous content in chart group
                 g.querySelectorAll('*').forEach(n => n.remove());
                 
                 // Draw bars and labels
-                rows.forEach((row, i) => {
-                    const y = yFor(i);
-                    const barWidth = xScale(row.value);
+                rows.forEach((row) => {
+                    const y = yScale(row.id);
+                    const barWidth = xScale(row.value) - xScale(0);
                     
-                    // Create bar
+                    // Create bar with stable color
                     const rect = document.createElementNS(NS, 'rect');
                     rect.setAttribute('class', 'rbr-bar bar');
-                    rect.setAttribute('data-key', row.name);
+                    rect.setAttribute('data-key', row.id);
                     rect.setAttribute('x', 0);
                     rect.setAttribute('y', y);
                     rect.setAttribute('width', barWidth);
-                    rect.setAttribute('height', band * 0.7);
+                    rect.setAttribute('height', yScale.bandwidth() * 0.7);
                     rect.setAttribute('rx', '6');
                     rect.setAttribute('ry', '6');
+                    rect.setAttribute('fill', this.hashColor(row.id));
                     g.appendChild(rect);
                     
-                    // Create name label (left side)
+                    // Create name label (left side, properly positioned)
                     const nameLabel = document.createElementNS(NS, 'text');
                     nameLabel.setAttribute('class', 'rbr-label-name label');
-                    nameLabel.setAttribute('x', -10);
-                    nameLabel.setAttribute('y', y + band * 0.35);
-                    nameLabel.textContent = row.name; // Always update text content
+                    nameLabel.setAttribute('x', xScale(0) - 8);
+                    nameLabel.setAttribute('y', y + yScale.bandwidth() / 2);
+                    nameLabel.setAttribute('text-anchor', 'end');
+                    nameLabel.textContent = row.name;
                     g.appendChild(nameLabel);
                     
-                    // Create value label (right side, inside chart bounds)
+                    // Create value label (right side, at end of bar)
                     const valueLabel = document.createElementNS(NS, 'text');
                     valueLabel.setAttribute('class', 'rbr-label-val label');
-                    const valueX = Math.min(innerW - 6, barWidth + 6);
-                    valueLabel.setAttribute('x', valueX);
-                    valueLabel.setAttribute('y', y + band * 0.35);
+                    valueLabel.setAttribute('x', xScale(row.value) + 6);
+                    valueLabel.setAttribute('y', y + yScale.bandwidth() / 2);
+                    valueLabel.setAttribute('text-anchor', 'start');
                     valueLabel.textContent = Math.round(row.value);
                     g.appendChild(valueLabel);
                 });
@@ -3128,19 +3182,18 @@
                 document.getElementById('rbr-play').style.display = 'none';
                 document.getElementById('rbr-pause').style.display = 'inline-block';
                 
-                // Adaptive timing: ~10s total duration
-                const total = frames.length || 1;
-                const durationMs = 10000; // 10s target
-                const stepMs = Math.max(60, Math.floor(durationMs / total)); // cap at ~16-60ms
+                // Use adaptive stride for ~10s total duration
+                const fps = 12;
+                const stepMs = Math.floor(1000 / fps); // ~83ms per frame
                 
                 this.barRaceData.animationTimer = setInterval(() => {
-                    let nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                    let nextFrame = (this.barRaceData.currentFrame + this._stride) % frames.length;
                     
                     // Skip empty frames
                     while (nextFrame !== this.barRaceData.currentFrame && 
                            frames[nextFrame] && 
                            (frames[nextFrame].rows || []).length === 0) {
-                        nextFrame = (nextFrame + 1) % frames.length;
+                        nextFrame = (nextFrame + this._stride) % frames.length;
                     }
                     
                     this.barRaceData.currentFrame = nextFrame;
@@ -3165,13 +3218,13 @@
 
             stepBarRace() {
                 const { frames } = this.barRaceData;
-                let nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                let nextFrame = (this.barRaceData.currentFrame + this._stride) % frames.length;
                 
                 // Skip empty frames
                 while (nextFrame !== this.barRaceData.currentFrame && 
                        frames[nextFrame] && 
                        (frames[nextFrame].rows || []).length === 0) {
-                    nextFrame = (nextFrame + 1) % frames.length;
+                    nextFrame = (nextFrame + this._stride) % frames.length;
                 }
                 
                 this.barRaceData.currentFrame = nextFrame;
@@ -3193,6 +3246,11 @@
                     }
                     
                     const data = await response.json();
+                    
+                    // Store radar data for name resolution
+                    this.data = this.data || {};
+                    this.data.radar = data;
+                    
                     this.renderRadarBarRace(data);
                     
                 } catch (error) {
