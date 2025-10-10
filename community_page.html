@@ -885,10 +885,27 @@
             font-weight: 500;
         }
         
-        #rbr-chart svg { 
+        #rbr-chart { 
+            min-height: 420px; 
+            position: relative; 
+            outline: 1px dashed #aaa; /* Temporary debug outline */
+        }
+        
+        #rbr-svg { 
+            display: block; 
             width: 100%; 
-            height: auto; 
-            min-height: 320px; 
+            height: 100%; 
+            overflow: visible; 
+        }
+        
+        .rbr-bar { 
+            fill: var(--accent, #4f46e5); 
+        }
+        
+        .rbr-label-name, 
+        .rbr-label-val { 
+            font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
+            fill: var(--text, #111); 
         }
         
         .bar-race-bar {
@@ -2837,8 +2854,11 @@
                     return;
                 }
                 
-                // Initialize bar race chart
-                this.initializeBarRace(frames);
+                // Store frames and initialize
+                this.barRaceData = this.barRaceData || {};
+                this.barRaceData.frames = frames;
+                this.initializeBarRace();
+                this.updateBarRaceFrame(0);
                 
                 // Setup controls
                 this.setupBarRaceControls();
@@ -2874,70 +2894,87 @@
                     
                     frames.push({
                         time: time,
-                        values: frameData
+                        rows: frameData
                     });
                 });
                 
                 return frames;
             }
 
-            initializeBarRace(frames) {
-                const container = document.getElementById('rbr-chart');
-                container.innerHTML = '';
+            initializeBarRace() {
+                // Ensure host exists
+                let host = document.getElementById('rbr-chart');
+                if (!host) {
+                    host = document.createElement('div');
+                    host.id = 'rbr-chart';
+                    host.className = 'bar-race-host';
+                    const radarContent = document.getElementById('radar-content');
+                    if (radarContent) {
+                        radarContent.appendChild(host);
+                    }
+                }
                 
-                // Chart dimensions
-                const margin = { top: 20, right: 100, bottom: 20, left: 100 };
-                const width = 800;
-                const height = 400;
-                const barHeight = 30;
+                // Clear and create SVG
+                host.innerHTML = '';
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.id = 'rbr-svg';
+                svg.setAttribute('role', 'img');
+                svg.setAttribute('aria-label', 'Activity bar race');
+                host.appendChild(svg);
                 
-                // Create SVG
-                const svg = d3.select(container)
-                    .append('svg')
-                    .attr('width', width)
-                    .attr('height', height)
-                    .attr('viewBox', `0 0 ${width} ${height}`)
-                    .attr('role', 'img');
+                // Responsive sizing
+                const W = host.clientWidth || 960;
+                const H = host.clientHeight || 420;
+                const margin = { top: 24, right: 24, bottom: 40, left: 140 };
+                const innerW = Math.max(0, W - margin.left - margin.right);
+                const innerH = Math.max(0, H - margin.top - margin.bottom);
                 
-                // Scales
-                const xScale = d3.scaleLinear()
-                    .domain([0, 1])
-                    .range([margin.left, width - margin.right]);
+                svg.setAttribute('width', W);
+                svg.setAttribute('height', H);
+                svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+                svg.style.display = 'block';
                 
-                const yScale = d3.scaleBand()
-                    .domain([])
-                    .range([margin.top, height - margin.bottom])
-                    .padding(0.1);
+                // Create content group
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.id = 'rbr-g';
+                g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+                svg.appendChild(g);
                 
-                // Color scale
-                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                // Calculate scales
+                const frames = this.barRaceData.frames;
+                const maxVal = Math.max(1, ...frames.flatMap(f => f.rows.map(r => r.value)));
+                const xScale = v => (v / maxVal) * innerW;
                 
-                // Store references for animation
+                const ROWS = 10;
+                const band = innerH / ROWS;
+                const yFor = i => i * band;
+                
+                // Store references
                 this.barRaceData = {
+                    ...this.barRaceData,
+                    host,
                     svg,
+                    g,
+                    margin,
+                    width: innerW,
+                    height: innerH,
                     xScale,
-                    yScale,
-                    colorScale,
-                    frames,
+                    yFor,
+                    band,
+                    maxVal,
                     currentFrame: 0,
                     isPlaying: false,
                     animationTimer: null
                 };
                 
-                // Render initial frame
-                this.updateBarRaceFrame(0);
+                console.log('📊 [Bar Race] Container W×H:', W, '×', H, 'inner:', innerW, '×', innerH);
             }
 
             updateBarRaceFrame(frameIndex) {
-                const { svg, xScale, yScale, colorScale, frames } = this.barRaceData;
+                const { g, xScale, yFor, band, frames } = this.barRaceData;
                 const frame = frames[frameIndex];
                 
                 if (!frame) return;
-                
-                // Update scales
-                const maxValue = Math.max(...frame.values.map(d => d.value), 1);
-                xScale.domain([0, maxValue]);
-                yScale.domain(frame.values.map(d => d.id));
                 
                 // Update timestamp
                 const timestamp = document.getElementById('rbr-timestamp');
@@ -2945,72 +2982,46 @@
                     timestamp.textContent = frame.time.toLocaleString();
                 }
                 
-                // Update title
-                svg.select('title').remove();
-                svg.append('title')
-                    .text(`Opportunity Radar - ${frame.time.toLocaleString()}`);
+                // Get top N rows
+                const rows = frame.rows.slice(0, 10);
+                console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex);
                 
-                // Bind data
-                const bars = svg.selectAll('.bar-race-bar')
-                    .data(frame.values, d => d.id);
+                // Clear existing content
+                g.innerHTML = '';
                 
-                const labels = svg.selectAll('.bar-race-label')
-                    .data(frame.values, d => d.id);
-                
-                const values = svg.selectAll('.bar-race-value')
-                    .data(frame.values, d => d.id);
-                
-                // Enter
-                const barsEnter = bars.enter()
-                    .append('rect')
-                    .attr('class', 'bar-race-bar')
-                    .attr('fill', d => colorScale(d.id))
-                    .attr('y', d => yScale(d.id))
-                    .attr('height', yScale.bandwidth())
-                    .attr('x', margin.left)
-                    .attr('width', 0);
-                
-                const labelsEnter = labels.enter()
-                    .append('text')
-                    .attr('class', 'bar-race-label')
-                    .attr('x', margin.left - 10)
-                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2)
-                    .text(d => d.name);
-                
-                const valuesEnter = values.enter()
-                    .append('text')
-                    .attr('class', 'bar-race-value')
-                    .attr('x', d => xScale(d.value) + 10)
-                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2)
-                    .text(d => d.value);
-                
-                // Update
-                bars.merge(barsEnter)
-                    .transition()
-                    .duration(600)
-                    .ease(d3.easeCubic)
-                    .attr('x', margin.left)
-                    .attr('width', d => xScale(d.value) - margin.left)
-                    .attr('y', d => yScale(d.id));
-                
-                labels.merge(labelsEnter)
-                    .transition()
-                    .duration(600)
-                    .ease(d3.easeCubic)
-                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2);
-                
-                values.merge(valuesEnter)
-                    .transition()
-                    .duration(600)
-                    .ease(d3.easeCubic)
-                    .attr('x', d => xScale(d.value) + 10)
-                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2)
-                    .text(d => d.value);
-                
-                // Exit
-                bars.exit().remove();
-                labels.exit().remove();
-                values.exit().remove();
+                // Draw bars and labels
+                rows.forEach((row, i) => {
+                    const y = yFor(i);
+                    const width = xScale(row.value);
+                    
+                    // Create bar
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.className = 'rbr-bar';
+                    rect.setAttribute('data-key', row.name);
+                    rect.setAttribute('x', 0);
+                    rect.setAttribute('y', y);
+                    rect.setAttribute('width', width);
+                    rect.setAttribute('height', band * 0.7);
+                    rect.style.rx = '6';
+                    rect.style.ry = '6';
+                    g.appendChild(rect);
+                    
+                    // Create name label
+                    const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    nameLabel.className = 'rbr-label-name';
+                    nameLabel.setAttribute('x', -10);
+                    nameLabel.setAttribute('y', y + band * 0.35);
+                    nameLabel.textContent = row.name;
+                    g.appendChild(nameLabel);
+                    
+                    // Create value label
+                    const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    valueLabel.className = 'rbr-label-val';
+                    valueLabel.setAttribute('x', width + 10);
+                    valueLabel.setAttribute('y', y + band * 0.35);
+                    valueLabel.textContent = row.value;
+                    g.appendChild(valueLabel);
+                });
             }
 
             setupBarRaceControls() {
