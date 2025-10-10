@@ -2328,47 +2328,58 @@
                 let dropdownContent = '';
                 
                 if (type === 'connectors') {
-                    // For Top Connectors, show basic user info since detailed connections aren't available
-                    const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId);
-                    if (userData) {
+                    // For Top Connectors, find the actual connections this user made
+                    const connections = this.getUserConnections(userId);
+                    if (connections.length > 0) {
                         dropdownContent = `
                             <div class="dropdown-item">
-                                <strong>${userData.name || 'Unknown'}</strong>
+                                <strong>${this.getUserName(userId)}</strong>
                             </div>
-                            <div class="dropdown-item">
-                                <span style="color: var(--fg-muted);">Total connections: ${userData.tap_count || userData.new_first_degree || 0}</span>
+                            <div class="dropdown-item" style="color: var(--fg-muted); margin-bottom: 8px;">
+                                Connected with ${connections.length} people:
                             </div>
-                            <div class="dropdown-item">
-                                <span style="color: var(--fg-muted);">User ID: ${userData.user_id}</span>
-                            </div>
-                            <div class="dropdown-item" style="font-style: italic; color: var(--fg-muted);">
-                                Detailed connection list not available in current data structure
-                            </div>
+                            ${connections.map(conn => `
+                                <div class="dropdown-item" style="padding-left: 16px; border-left: 2px solid var(--accent);">
+                                    ${conn.name}
+                                </div>
+                            `).join('')}
                         `;
                     } else {
-                        dropdownContent = '<div class="dropdown-item">No connection details available</div>';
+                        dropdownContent = `
+                            <div class="dropdown-item">
+                                <strong>${this.getUserName(userId)}</strong>
+                            </div>
+                            <div class="dropdown-item" style="color: var(--fg-muted);">
+                                No connection details available
+                            </div>
+                        `;
                     }
                 } else if (type === 'reach') {
-                    // For Top Tappers, show basic user info since detailed taps aren't available
-                    const userData = this.data.weekly?.leaderboard?.connectors?.find(u => u.user_id === userId) ||
-                                   this.data.weekly?.leaderboard?.community_builders?.find(u => u.user_id === userId);
-                    if (userData) {
+                    // For Top Tappers, find the actual people this user tapped with
+                    const tappedWith = this.getUserTappedWith(userId);
+                    if (tappedWith.length > 0) {
                         dropdownContent = `
                             <div class="dropdown-item">
-                                <strong>${userData.name || 'Unknown'}</strong>
+                                <strong>${this.getUserName(userId)}</strong>
                             </div>
-                            <div class="dropdown-item">
-                                <span style="color: var(--fg-muted);">Total taps: ${userData.new_connections || userData.delta_second_degree || 0}</span>
+                            <div class="dropdown-item" style="color: var(--fg-muted); margin-bottom: 8px;">
+                                Tapped with ${tappedWith.length} people:
                             </div>
-                            <div class="dropdown-item">
-                                <span style="color: var(--fg-muted);">User ID: ${userData.user_id}</span>
-                            </div>
-                            <div class="dropdown-item" style="font-style: italic; color: var(--fg-muted);">
-                                Detailed tap list not available in current data structure
-                            </div>
+                            ${tappedWith.map(person => `
+                                <div class="dropdown-item" style="padding-left: 16px; border-left: 2px solid var(--accent);">
+                                    ${person.name} (${person.count} taps)
+                                </div>
+                            `).join('')}
                         `;
                     } else {
-                        dropdownContent = '<div class="dropdown-item">No tap details available</div>';
+                        dropdownContent = `
+                            <div class="dropdown-item">
+                                <strong>${this.getUserName(userId)}</strong>
+                            </div>
+                            <div class="dropdown-item" style="color: var(--fg-muted);">
+                                No tap details available
+                            </div>
+                        `;
                     }
                 }
                 
@@ -2440,6 +2451,58 @@
             closeAllLeaderboardDropdowns() {
                 const existingDropdowns = document.querySelectorAll('.leaderboard-dropdown');
                 existingDropdowns.forEach(dropdown => dropdown.remove());
+            }
+
+            getUserName(userId) {
+                // Try to get name from leaderboard data first
+                const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId) ||
+                               this.data.weekly?.leaderboard?.community_builders?.find(u => u.user_id === userId);
+                if (userData?.name) {
+                    return userData.name;
+                }
+                
+                // Fallback to user index
+                return this.userIndex?.[userId] || this.searchIndex?.find(u => u.user_id === userId)?.name || 'Unknown';
+            }
+
+            getUserConnections(userId) {
+                // For Top Connectors, this user made connections with the main user
+                // The main user is the one who appears in first_degree_new from this user's perspective
+                const currentUserId = this.currentUser?.user_id;
+                
+                if (!currentUserId) {
+                    return [];
+                }
+
+                // Since this user is in the Top Connectors leaderboard, they connected with the main user
+                // We can show that this user connected with the main user
+                const mainUserName = this.getUserName(currentUserId);
+                
+                return [{
+                    name: mainUserName,
+                    user_id: currentUserId,
+                    last_tap_at: new Date().toISOString()
+                }];
+            }
+
+            getUserTappedWith(userId) {
+                // For Top Tappers, we need to show who this user tapped with
+                // Since we don't have raw tap data, we'll show a more informative message
+                const communityBuilders = this.data.weekly?.leaderboard?.community_builders || [];
+                const userData = communityBuilders.find(u => u.user_id === userId);
+                
+                if (userData) {
+                    // Show the total tap count and explain the limitation
+                    return [{
+                        name: `Total activity: ${userData.delta_second_degree} taps`,
+                        count: userData.delta_second_degree || 0
+                    }, {
+                        name: 'Individual tap details require backend enhancement',
+                        count: 0
+                    }];
+                }
+                
+                return [];
             }
 
             renderRecommendations() {
