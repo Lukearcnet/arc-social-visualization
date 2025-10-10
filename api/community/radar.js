@@ -43,24 +43,53 @@ const handler = async (req, res) => {
     const buckets = new Map();
     const hourMs = 60 * 60 * 1000;
     
-    // Initialize buckets for the requested time window (even if zero)
-    for (let i = 0; i < hoursBack; i++) {
-      const bucketTime = new Date(now.getTime() - (i * hourMs));
-      const bucketKey = new Date(Date.UTC(
-        bucketTime.getUTCFullYear(),
-        bucketTime.getUTCMonth(),
-        bucketTime.getUTCDate(),
-        bucketTime.getUTCHours()
-      ));
-      
-      buckets.set(bucketKey.toISOString(), {
-        ts: bucketKey.toISOString(),
+    // Find actual time range of userTaps to create proper buckets
+    const tapTimes = userTaps.map(tap => new Date(tap.time));
+    const minTime = new Date(Math.min(...tapTimes));
+    const maxTime = new Date(Math.max(...tapTimes));
+    
+    // Create buckets for the actual data range, not just going backwards from now
+    const startHour = new Date(Date.UTC(
+      minTime.getUTCFullYear(),
+      minTime.getUTCMonth(),
+      minTime.getUTCDate(),
+      minTime.getUTCHours()
+    ));
+    
+    const endHour = new Date(Date.UTC(
+      maxTime.getUTCFullYear(),
+      maxTime.getUTCMonth(),
+      maxTime.getUTCDate(),
+      maxTime.getUTCHours()
+    ));
+    
+    // Generate buckets for every hour in the data range
+    const currentHour = new Date(startHour);
+    while (currentHour <= endHour) {
+      const bucketKey = currentHour.toISOString();
+      buckets.set(bucketKey, {
+        ts: bucketKey,
         activity_count: 0,
         unique_people: new Set()
+      });
+      
+      // Move to next hour
+      currentHour.setUTCHours(currentHour.getUTCHours() + 1);
+    }
+    
+    if (isDebug) {
+      console.log('📡 [radar] Created buckets for time range:', {
+        startHour: startHour.toISOString(),
+        endHour: endHour.toISOString(),
+        totalBuckets: buckets.size,
+        userTapsCount: userTaps.length
       });
     }
     
     // Process taps into buckets
+    let processedTaps = 0;
+    let ignoredTaps = 0;
+    
     userTaps.forEach(tap => {
       const tapTime = new Date(tap.time);
       const bucketTime = new Date(Date.UTC(
@@ -74,6 +103,7 @@ const handler = async (req, res) => {
       if (buckets.has(bucketKey)) {
         const bucket = buckets.get(bucketKey);
         bucket.activity_count++;
+        processedTaps++;
         
         const id1 = tap.user1_id || tap.id1;
         const id2 = tap.user2_id || tap.id2;
@@ -84,8 +114,26 @@ const handler = async (req, res) => {
           bucket.participants = bucket.participants || new Map();
           bucket.participants.set(otherId, (bucket.participants.get(otherId) || 0) + 1);
         }
+      } else {
+        ignoredTaps++;
+        if (isDebug && ignoredTaps <= 5) {
+          console.log('📡 [radar] Ignored tap - no matching bucket:', {
+            tapTime: tap.time,
+            bucketKey: bucketKey,
+            availableBuckets: Array.from(buckets.keys()).slice(0, 3)
+          });
+        }
       }
     });
+    
+    if (isDebug) {
+      console.log('📡 [radar] Tap processing results:', {
+        totalUserTaps: userTaps.length,
+        processedTaps: processedTaps,
+        ignoredTaps: ignoredTaps,
+        processingRate: `${Math.round((processedTaps / userTaps.length) * 100)}%`
+      });
+    }
     
     // Convert buckets to array and sort by timestamp
     const bucketsArray = Array.from(buckets.values())
@@ -157,13 +205,21 @@ const handler = async (req, res) => {
     if (isDebug) {
       response.meta.debug = {
         total_taps: userTaps.length,
+        processed_taps: processedTaps,
+        ignored_taps: ignoredTaps,
+        processing_rate: `${Math.round((processedTaps / userTaps.length) * 100)}%`,
         buckets_processed: bucketsArray.length,
         current_window_taps: currentWindowTaps.length,
         unique_people_total: new Set(userTaps.map(tap => {
           const id1 = tap.user1_id || tap.id1;
           const id2 = tap.user2_id || tap.id2;
           return id1 === user_id ? id2 : id1;
-        }).filter(Boolean)).size
+        }).filter(Boolean)).size,
+        time_range: {
+          start: startHour.toISOString(),
+          end: endHour.toISOString(),
+          hours_covered: buckets.size
+        }
       };
     }
     
