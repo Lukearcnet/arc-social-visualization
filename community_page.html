@@ -1892,9 +1892,37 @@
                     dropdown.style.top = `${rect.bottom + 8}px`;
                     dropdown.style.width = 'auto';
                 } else {
-                    dropdown.style.left = `${rect.left}px`;
-                    dropdown.style.top = `${rect.bottom + 8}px`;
-                    dropdown.style.width = `${rect.width}px`;
+                    // Desktop positioning - move left to avoid cutoff
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    const dropdownWidth = 400; // increased width
+                    const dropdownHeight = 200; // max-height from CSS
+                    
+                    // Position to the left of the trigger element to avoid right edge cutoff
+                    let left = rect.left - dropdownWidth + rect.width;
+                    let top = rect.bottom + 8;
+                    
+                    // If that would put it off the left edge, position it to the right instead
+                    if (left < 10) {
+                        left = rect.left;
+                    }
+                    
+                    // Adjust horizontal position to keep dropdown in viewport
+                    if (left + dropdownWidth > viewportWidth - 10) {
+                        left = viewportWidth - dropdownWidth - 10;
+                    }
+                    if (left < 10) {
+                        left = 10;
+                    }
+                    
+                    // Adjust vertical position if needed
+                    if (top + dropdownHeight > viewportHeight - 10) {
+                        top = rect.top - dropdownHeight - 8;
+                    }
+                    
+                    dropdown.style.left = `${left}px`;
+                    dropdown.style.top = `${top}px`;
+                    dropdown.style.width = `${dropdownWidth}px`;
                 }
             }
 
@@ -2446,13 +2474,38 @@
             }
 
             async getUserConnections(userId) {
-                // For Top Connectors, fetch real connection data from /api/data
-                // This gives us the same data quality as the degree dropdowns
+                // For Top Connectors, use the SAME logic as the weekly API
+                // Don't try to recreate it - use the actual data that generated the count
                 
                 const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId);
                 if (!userData) {
                     return [];
                 }
+                
+                // The weekly API already calculated the connections - use that data directly
+                // Check if the weekly API provides the actual connection list
+                const weeklyConnections = this.data.weekly?.recap?.first_degree_new || [];
+                const userConnections = weeklyConnections.filter(conn => {
+                    // Find connections where this user is involved
+                    // The weekly API should have the actual list of new connections
+                    return conn.user_id === userId || conn.connected_via === userId;
+                });
+                
+                console.log(`[Connections] Using weekly API data for user ${userId}`);
+                console.log(`[Connections] Weekly API userData:`, userData);
+                console.log(`[Connections] Weekly connections found:`, userConnections);
+                
+                if (userConnections.length > 0) {
+                    // Use the weekly API's actual connection data
+                    return userConnections.map(conn => ({
+                        name: conn.name || 'Unknown',
+                        user_id: conn.user_id
+                    }));
+                }
+                
+                // Fallback: If weekly API doesn't have the connection list, 
+                // we need to match the exact same logic the weekly API uses
+                console.log(`[Connections] Weekly API doesn't provide connection list, need to match its logic`);
                 
                 try {
                     // Fetch raw tap data from the same source as map/graph
@@ -2466,21 +2519,15 @@
                     const taps = rawData.taps || rawData.tap_data || [];
                     const users = rawData.users || rawData.user_profiles || [];
                     
-                    // Get time window from weekly data - but use a longer window to match weekly API logic
-                    // The weekly API seems to use a longer window than just 7 days
+                    // Use the SAME time window as the weekly API
                     const timeWindow = this.data.weekly?.week?.time_window || '7d';
                     const timeWindowMs = this.getTimeWindowMs(timeWindow);
-                    
-                    // Use a longer window to match what the weekly API is actually counting
-                    // Try 30 days instead of 7 days to see if that matches
-                    const extendedTimeWindowMs = 30 * 24 * 60 * 60 * 1000; // 30 days
                     const now = new Date();
-                    const startTime = new Date(now.getTime() - extendedTimeWindowMs);
+                    const startTime = new Date(now.getTime() - timeWindowMs);
                     
-                    console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, ExtendedWindow: 30d, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
+                    console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
                     console.log(`[Connections] Total taps available: ${taps.length}`);
                     console.log(`[Connections] Weekly API says user has ${userData.tap_count || userData.new_first_degree || 0} new connections`);
-                    console.log(`[Connections] Weekly API userData:`, userData);
                     
                     // Filter taps involving this user within the time window
                     const userTaps = taps.filter(tap => {
