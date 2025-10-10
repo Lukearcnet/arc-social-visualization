@@ -1161,11 +1161,6 @@
             box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
         }
 
-        .time-period-display {
-            font-size: var(--text-sm);
-            color: var(--fg-muted);
-            font-style: italic;
-        }
 
         /* Clickable Recap Cards */
         .recap-card.clickable {
@@ -1348,7 +1343,6 @@
                                         <option value="6months">Last 6 Months</option>
                                         <option value="1year">Last Year</option>
                                     </select>
-                                    <div class="time-period-display" id="time-period-display">Last 7 Days</div>
                                 </div>
 
                                 <!-- Recap Cards -->
@@ -1874,16 +1868,6 @@
                 contentState.appendChild(errorDiv);
             }
 
-            getTimePeriodText(timeWindow) {
-                const periodMap = {
-                    '1day': 'Last 24 Hours',
-                    '1week': 'Last 7 Days',
-                    '1month': 'Last 30 Days',
-                    '6months': 'Last 6 Months',
-                    '1year': 'Last Year'
-                };
-                return periodMap[timeWindow] || 'Last 7 Days';
-            }
 
             setupTimeWindowSelector() {
                 const timeWindowSelect = document.getElementById('time-window');
@@ -2337,10 +2321,6 @@
                 document.getElementById('second-degree-count').textContent = secondDegreeCount;
                 document.getElementById('third-degree-count').textContent = thirdDegreeCount;
 
-                // Update time period display
-                const timeWindow = data.week?.time_window || '1week';
-                const timePeriodText = this.getTimePeriodText(timeWindow);
-                document.getElementById('time-period-display').textContent = timePeriodText;
 
                 // Store degree data for dropdowns
                 this.degreeData = {
