@@ -1037,6 +1037,22 @@
             border: none;
         }
         
+        .bar-race-host svg {
+            border: none !important;
+            outline: none !important;
+            stroke: none !important;
+        }
+        
+        .bar-race-host * {
+            border: none !important;
+            outline: none !important;
+        }
+        
+        #rbr-chart {
+            border: none !important;
+            outline: none !important;
+        }
+        
         @media (max-width: 768px) {
             .rbr-header {
                 flex-direction: column;
@@ -3691,11 +3707,15 @@
                 if (!svg || !svg.tagName || svg.tagName.toLowerCase() !== 'svg') {
                     svg = d3.select(host).html('').append('svg')
                         .attr('width', width).attr('height', height)
-                        .attr('viewBox', `0 0 ${width} ${height}`);
+                        .attr('viewBox', `0 0 ${width} ${height}`)
+                        .style('border', 'none')
+                        .style('outline', 'none');
                 } else {
                     svg = d3.select(svg);
                     svg.attr('width', width).attr('height', height)
-                       .attr('viewBox', `0 0 ${width} ${height}`);
+                       .attr('viewBox', `0 0 ${width} ${height}`)
+                       .style('border', 'none')
+                       .style('outline', 'none');
                     svg.selectAll('*').remove();
                 }
                 const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
