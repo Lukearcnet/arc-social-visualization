@@ -826,6 +826,114 @@
             color: white;
         }
 
+        /* Bar Race Chart Styles */
+        .radar-bar-race { 
+            padding: 12px; 
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .rbr-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            flex-wrap: wrap; 
+            margin-bottom: 1rem;
+            justify-content: space-between;
+        }
+        
+        .rbr-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+        
+        .rbr-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .rbr-controls select,
+        .rbr-controls button {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg-primary);
+            color: var(--fg-primary);
+            font-size: 0.9rem;
+        }
+        
+        .rbr-controls button {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .rbr-controls button:hover {
+            background: var(--bg-hover);
+        }
+        
+        .rbr-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .rbr-timestamp {
+            font-size: 0.9rem;
+            color: var(--fg-muted);
+            font-weight: 500;
+        }
+        
+        #rbr-chart svg { 
+            width: 100%; 
+            height: auto; 
+            min-height: 320px; 
+        }
+        
+        .bar-race-bar {
+            fill: var(--accent);
+            stroke: var(--accent-dark);
+            stroke-width: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .bar-race-bar:hover {
+            fill: var(--accent-dark);
+        }
+        
+        .bar-race-label {
+            font-size: 12px;
+            font-weight: 600;
+            fill: var(--fg-primary);
+            text-anchor: end;
+            dominant-baseline: middle;
+        }
+        
+        .bar-race-value {
+            font-size: 11px;
+            font-weight: 500;
+            fill: var(--fg-muted);
+            text-anchor: start;
+            dominant-baseline: middle;
+        }
+        
+        @media (max-width: 768px) {
+            .rbr-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .rbr-controls {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .rbr-timestamp {
+                text-align: center;
+            }
+        }
+
         .strength-section {
             margin-bottom: var(--space-3);
         }
@@ -1221,6 +1329,27 @@
                                 <div class="loading-state">
                                     <div class="loading-spinner"></div>
                                     <div>Loading activity data...</div>
+                                </div>
+                                
+                                <!-- Bar Race Chart -->
+                                <div class="radar-bar-race" style="display: none;">
+                                    <div class="rbr-header">
+                                        <div class="rbr-title">Opportunity Radar</div>
+                                        <div class="rbr-controls">
+                                            <select id="rbr-window">
+                                                <option value="24">Last 24h</option>
+                                                <option value="168" selected>Last 7d</option>
+                                                <option value="720">Last 30d</option>
+                                                <option value="4320">Last 6mo</option>
+                                                <option value="8760">Last 1y</option>
+                                            </select>
+                                            <button id="rbr-play">▶️ Play</button>
+                                            <button id="rbr-pause" style="display: none;">⏸️ Pause</button>
+                                            <button id="rbr-step">⏭️ Step</button>
+                                        </div>
+                                        <div class="rbr-timestamp" id="rbr-timestamp"></div>
+                                    </div>
+                                    <div id="rbr-chart"></div>
                                 </div>
                             </div>
                         </div>
@@ -2598,30 +2727,18 @@
                 
                 console.log('📡 [Radar] Found', data.buckets.length, 'activity buckets');
                 
-                // Update timezone info
-                this.updateRadarTimezoneInfo(data.meta);
+                // Hide loading state
+                const loadingState = content.querySelector('.loading-state');
+                if (loadingState) {
+                    loadingState.style.display = 'none';
+                }
                 
-                // Generate activity timeline
-                const timelineHTML = this.renderActivityTimeline(data.buckets);
-                
-                // Generate participants section
-                const participantsHTML = this.renderParticipants(data.top_current_window || []);
-                
-                // Check for surge indicators
-                const surgeHTML = this.renderSurgeIndicators(data.buckets);
-                
-                content.innerHTML = `
-                    ${surgeHTML}
-                    <div class="activity-timeline">
-                        ${timelineHTML}
-                    </div>
-                    <div class="participants-section">
-                        <h3>Top Participants</h3>
-                        <div class="participants-grid">
-                            ${participantsHTML}
-                        </div>
-                    </div>
-                `;
+                // Show bar race chart
+                const barRace = content.querySelector('.radar-bar-race');
+                if (barRace) {
+                    barRace.style.display = 'block';
+                    this.renderRadarBarRace(data);
+                }
 
                 console.log('📡 [Radar] Content updated, innerHTML length:', content.innerHTML.length);
             }
@@ -2707,6 +2824,276 @@
                 `;
             }
 
+            // Bar Race Chart Implementation
+            renderRadarBarRace(data) {
+                console.log('📊 [Bar Race] Rendering bar race chart:', data);
+                
+                // Build frames from buckets
+                const frames = this.buildBarRaceFrames(data.buckets);
+                console.log('📊 [Bar Race] Built', frames.length, 'frames');
+                
+                if (frames.length === 0) {
+                    this.renderRadarEmpty();
+                    return;
+                }
+                
+                // Initialize bar race chart
+                this.initializeBarRace(frames);
+                
+                // Setup controls
+                this.setupBarRaceControls();
+            }
+
+            buildBarRaceFrames(buckets) {
+                const frames = [];
+                const entityTotals = new Map(); // Track cumulative totals
+                
+                buckets.forEach((bucket, index) => {
+                    const time = new Date(bucket.ts);
+                    
+                    // Update cumulative totals for each participant
+                    if (bucket.participants) {
+                        bucket.participants.forEach(participant => {
+                            const currentTotal = entityTotals.get(participant.user_id) || 0;
+                            entityTotals.set(participant.user_id, currentTotal + participant.count);
+                        });
+                    }
+                    
+                    // Create frame with current totals
+                    const frameData = Array.from(entityTotals.entries())
+                        .map(([userId, total]) => {
+                            const participant = bucket.participants?.find(p => p.user_id === userId);
+                            return {
+                                id: userId,
+                                name: participant?.name || 'Unknown',
+                                value: total
+                            };
+                        })
+                        .sort((a, b) => b.value - a.value)
+                        .slice(0, 10); // Top 10
+                    
+                    frames.push({
+                        time: time,
+                        values: frameData
+                    });
+                });
+                
+                return frames;
+            }
+
+            initializeBarRace(frames) {
+                const container = document.getElementById('rbr-chart');
+                container.innerHTML = '';
+                
+                // Chart dimensions
+                const margin = { top: 20, right: 100, bottom: 20, left: 100 };
+                const width = 800;
+                const height = 400;
+                const barHeight = 30;
+                
+                // Create SVG
+                const svg = d3.select(container)
+                    .append('svg')
+                    .attr('width', width)
+                    .attr('height', height)
+                    .attr('viewBox', `0 0 ${width} ${height}`)
+                    .attr('role', 'img');
+                
+                // Scales
+                const xScale = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([margin.left, width - margin.right]);
+                
+                const yScale = d3.scaleBand()
+                    .domain([])
+                    .range([margin.top, height - margin.bottom])
+                    .padding(0.1);
+                
+                // Color scale
+                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                
+                // Store references for animation
+                this.barRaceData = {
+                    svg,
+                    xScale,
+                    yScale,
+                    colorScale,
+                    frames,
+                    currentFrame: 0,
+                    isPlaying: false,
+                    animationTimer: null
+                };
+                
+                // Render initial frame
+                this.updateBarRaceFrame(0);
+            }
+
+            updateBarRaceFrame(frameIndex) {
+                const { svg, xScale, yScale, colorScale, frames } = this.barRaceData;
+                const frame = frames[frameIndex];
+                
+                if (!frame) return;
+                
+                // Update scales
+                const maxValue = Math.max(...frame.values.map(d => d.value), 1);
+                xScale.domain([0, maxValue]);
+                yScale.domain(frame.values.map(d => d.id));
+                
+                // Update timestamp
+                const timestamp = document.getElementById('rbr-timestamp');
+                if (timestamp) {
+                    timestamp.textContent = frame.time.toLocaleString();
+                }
+                
+                // Update title
+                svg.select('title').remove();
+                svg.append('title')
+                    .text(`Opportunity Radar - ${frame.time.toLocaleString()}`);
+                
+                // Bind data
+                const bars = svg.selectAll('.bar-race-bar')
+                    .data(frame.values, d => d.id);
+                
+                const labels = svg.selectAll('.bar-race-label')
+                    .data(frame.values, d => d.id);
+                
+                const values = svg.selectAll('.bar-race-value')
+                    .data(frame.values, d => d.id);
+                
+                // Enter
+                const barsEnter = bars.enter()
+                    .append('rect')
+                    .attr('class', 'bar-race-bar')
+                    .attr('fill', d => colorScale(d.id))
+                    .attr('y', d => yScale(d.id))
+                    .attr('height', yScale.bandwidth())
+                    .attr('x', margin.left)
+                    .attr('width', 0);
+                
+                const labelsEnter = labels.enter()
+                    .append('text')
+                    .attr('class', 'bar-race-label')
+                    .attr('x', margin.left - 10)
+                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2)
+                    .text(d => d.name);
+                
+                const valuesEnter = values.enter()
+                    .append('text')
+                    .attr('class', 'bar-race-value')
+                    .attr('x', d => xScale(d.value) + 10)
+                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2)
+                    .text(d => d.value);
+                
+                // Update
+                bars.merge(barsEnter)
+                    .transition()
+                    .duration(600)
+                    .ease(d3.easeCubic)
+                    .attr('x', margin.left)
+                    .attr('width', d => xScale(d.value) - margin.left)
+                    .attr('y', d => yScale(d.id));
+                
+                labels.merge(labelsEnter)
+                    .transition()
+                    .duration(600)
+                    .ease(d3.easeCubic)
+                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2);
+                
+                values.merge(valuesEnter)
+                    .transition()
+                    .duration(600)
+                    .ease(d3.easeCubic)
+                    .attr('x', d => xScale(d.value) + 10)
+                    .attr('y', d => yScale(d.id) + yScale.bandwidth() / 2)
+                    .text(d => d.value);
+                
+                // Exit
+                bars.exit().remove();
+                labels.exit().remove();
+                values.exit().remove();
+            }
+
+            setupBarRaceControls() {
+                const playBtn = document.getElementById('rbr-play');
+                const pauseBtn = document.getElementById('rbr-pause');
+                const stepBtn = document.getElementById('rbr-step');
+                const windowSelect = document.getElementById('rbr-window');
+                
+                if (playBtn) {
+                    playBtn.onclick = () => this.playBarRace();
+                }
+                
+                if (pauseBtn) {
+                    pauseBtn.onclick = () => this.pauseBarRace();
+                }
+                
+                if (stepBtn) {
+                    stepBtn.onclick = () => this.stepBarRace();
+                }
+                
+                if (windowSelect) {
+                    windowSelect.onchange = () => this.changeBarRaceWindow();
+                }
+            }
+
+            playBarRace() {
+                const { frames, currentFrame } = this.barRaceData;
+                
+                this.barRaceData.isPlaying = true;
+                document.getElementById('rbr-play').style.display = 'none';
+                document.getElementById('rbr-pause').style.display = 'inline-block';
+                
+                this.barRaceData.animationTimer = setInterval(() => {
+                    const nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                    this.barRaceData.currentFrame = nextFrame;
+                    this.updateBarRaceFrame(nextFrame);
+                    
+                    if (nextFrame === 0) {
+                        this.pauseBarRace();
+                    }
+                }, 700);
+            }
+
+            pauseBarRace() {
+                this.barRaceData.isPlaying = false;
+                document.getElementById('rbr-play').style.display = 'inline-block';
+                document.getElementById('rbr-pause').style.display = 'none';
+                
+                if (this.barRaceData.animationTimer) {
+                    clearInterval(this.barRaceData.animationTimer);
+                    this.barRaceData.animationTimer = null;
+                }
+            }
+
+            stepBarRace() {
+                const { frames } = this.barRaceData;
+                const nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                this.barRaceData.currentFrame = nextFrame;
+                this.updateBarRaceFrame(nextFrame);
+            }
+
+            async changeBarRaceWindow() {
+                const windowSelect = document.getElementById('rbr-window');
+                const hours = parseInt(windowSelect.value);
+                
+                this.pauseBarRace();
+                
+                try {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    this.renderRadarBarRace(data);
+                    
+                } catch (error) {
+                    console.error('❌ [Bar Race] Failed to change window:', error);
+                }
+            }
+
             renderRadarError(error) {
                 const content = document.getElementById('radar-content');
                 content.innerHTML = `
@@ -2730,5 +3117,8 @@
             window.communityPage = new CommunityPage();
         });
     </script>
+    
+    <!-- D3.js for bar race chart -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </body>
 </html>

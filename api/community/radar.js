@@ -80,17 +80,35 @@ const handler = async (req, res) => {
         const otherId = id1 === user_id ? id2 : id1;
         if (otherId && otherId !== user_id) {
           bucket.unique_people.add(otherId);
+          // Track participant counts for bar race
+          bucket.participants = bucket.participants || new Map();
+          bucket.participants.set(otherId, (bucket.participants.get(otherId) || 0) + 1);
         }
       }
     });
     
     // Convert buckets to array and sort by timestamp
     const bucketsArray = Array.from(buckets.values())
-      .map(bucket => ({
-        ts: bucket.ts,
-        activity_count: bucket.activity_count,
-        unique_people: bucket.unique_people.size
-      }))
+      .map(bucket => {
+        const participants = bucket.participants ? 
+          Array.from(bucket.participants.entries())
+            .map(([userId, count]) => {
+              const user = userById(users, userId);
+              return {
+                user_id: userId,
+                name: getDisplayName(user),
+                count: count
+              };
+            })
+            .sort((a, b) => b.count - a.count) : [];
+        
+        return {
+          ts: bucket.ts,
+          activity_count: bucket.activity_count,
+          unique_people: bucket.unique_people.size,
+          participants: participants
+        };
+      })
       .sort((a, b) => new Date(a.ts) - new Date(b.ts));
     
     // Get top current window (last hour) counterparties
