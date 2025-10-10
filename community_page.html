@@ -1922,27 +1922,22 @@
                     dropdown.style.top = `${rect.bottom + 8}px`;
                     dropdown.style.width = 'auto';
                 } else {
-                    // Desktop positioning - move left to avoid cutoff
+                    // Desktop positioning - center the dropdown
                     const viewportWidth = window.innerWidth;
                     const viewportHeight = window.innerHeight;
-                    const dropdownWidth = 400; // increased width
+                    const dropdownWidth = 350; // match CSS width
                     const dropdownHeight = 200; // max-height from CSS
                     
-                    // Position to the left of the trigger element to avoid right edge cutoff
-                    let left = rect.left - dropdownWidth + rect.width;
+                    // Center the dropdown horizontally relative to the trigger card
+                    let left = rect.left + (rect.width / 2) - (dropdownWidth / 2);
                     let top = rect.bottom + 8;
                     
-                    // If that would put it off the left edge, position it to the right instead
-                    if (left < 10) {
-                        left = rect.left;
-                    }
-                    
                     // Adjust horizontal position to keep dropdown in viewport
-                    if (left + dropdownWidth > viewportWidth - 10) {
-                        left = viewportWidth - dropdownWidth - 10;
-                    }
                     if (left < 10) {
                         left = 10;
+                    }
+                    if (left + dropdownWidth > viewportWidth - 10) {
+                        left = viewportWidth - dropdownWidth - 10;
                     }
                     
                     // Adjust vertical position if needed
