@@ -2766,59 +2766,53 @@
                         fetch(`/api/community/health?user_id=${userId}&debug=1`)
                     ]);
                     
+                    // Helper to identify bad names
+                    const isBadName = (s) => !s || !String(s).trim() || String(s).trim().toLowerCase() === 'unknown';
+                    
+                    // Safe name concatenation helper
+                    const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
+                    
                     // Build searchIndex from /api/data
                     if (dataResponse.ok) {
                         const dataResult = await dataResponse.json();
                         if (dataResult.users) {
-                            // Safe name concatenation helper
-                            const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
-                            
-                            this.searchIndex = dataResult.users.map(user => {
-                                const userId = user.user_id || user.id;
-                                const name = user.name || user.display_name || user.full_name || 
-                                           safeJoin(user.first_name, user.last_name) || 
-                                           user.username || 'Unknown';
-                                
-                                return {
-                                    user_id: userId,
-                                    name: name
-                                };
-                            });
+                            this.searchIndex = dataResult.users
+                                .map(user => {
+                                    const userId = user.user_id || user.id;
+                                    const name = user.name || user.display_name || user.full_name || 
+                                               safeJoin(user.first_name, user.last_name) || 
+                                               user.username;
+                                    
+                                    return { user_id: userId, name };
+                                })
+                                .filter(u => u.user_id && !isBadName(u.name));
                         }
                     }
                     
                     // Build userIndex from all sources - store strings only
                     this.userIndex = {};
                     
-                    // Normalize user data to plain name strings
-                    const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
-                    const normalizeUser = (user) => {
-                        if (typeof user === 'string') return user;
-                        if (typeof user === 'object' && user) {
-                            return user.name || user.user_name || user.display_name || user.full_name || 
-                                   safeJoin(user.first_name, user.last_name) || 'Unknown';
-                        }
-                        return 'Unknown';
-                    };
-                    
-                    // Add from searchIndex
+                    // Add from searchIndex (only good names)
                     (this.searchIndex || []).forEach(u => {
-                        if (u.user_id) {
-                            this.userIndex[u.user_id] = normalizeUser(u);
+                        if (u.user_id && !isBadName(u.name)) {
+                            this.userIndex[u.user_id] = u.name;
                         }
                     });
                     
                     // Add from weekly response
                     if (weeklyResponse.ok) {
-                        const weeklyData = await weeklyResponse.json();
-                        this.addUsersFromWeekly(weeklyData);
+                        this.weeklyData = await weeklyResponse.json();
+                        this.addUsersFromWeekly(this.weeklyData);
                     }
                     
                     // Add from health response
                     if (healthResponse.ok) {
-                        const healthData = await healthResponse.json();
-                        this.addUsersFromHealth(healthData);
+                        this.healthData = await healthResponse.json();
+                        this.addUsersFromHealth(this.healthData);
                     }
+                    
+                    // Promote better names from weekly/health over /api/data
+                    this.promoteBetterNames();
                     
                     console.log('📊 [Community] Loaded user indexes:', {
                         searchIndex: this.searchIndex?.length || 0,
@@ -2892,6 +2886,71 @@
                         }
                     });
                 }
+            }
+
+            promoteBetterNames() {
+                // Helper to identify bad names
+                const isBadName = (s) => !s || !String(s).trim() || String(s).trim().toLowerCase() === 'unknown';
+                const good = (s) => !isBadName(s);
+                
+                // Safe name concatenation helper
+                const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
+                const normalizeUser = (user) => {
+                    if (typeof user === 'string') return user;
+                    if (typeof user === 'object' && user) {
+                        return user.name || user.user_name || user.display_name || user.full_name || 
+                               safeJoin(user.first_name, user.last_name) || 'Unknown';
+                    }
+                    return 'Unknown';
+                };
+                
+                // Collect all user IDs from weekly and health data
+                const allIds = new Set();
+                
+                // Add IDs from weekly data
+                if (this.weeklyData) {
+                    const sections = ['first_degree_new', 'second_degree_new', 'third_degree_new'];
+                    sections.forEach(section => {
+                        if (this.weeklyData.recap && this.weeklyData.recap[section]) {
+                            this.weeklyData.recap[section].forEach(user => {
+                                if (user.user_id) allIds.add(user.user_id);
+                            });
+                        }
+                    });
+                    
+                    const leaderboardSections = ['new_connections', 'community_builders', 'expanded_reach'];
+                    leaderboardSections.forEach(section => {
+                        if (this.weeklyData.leaderboard && this.weeklyData.leaderboard[section]) {
+                            this.weeklyData.leaderboard[section].forEach(user => {
+                                if (user.user_id) allIds.add(user.user_id);
+                            });
+                        }
+                    });
+                }
+                
+                // Add IDs from health data
+                if (this.healthData && this.healthData.connections) {
+                    this.healthData.connections.forEach(conn => {
+                        if (conn.other_user_id) allIds.add(conn.other_user_id);
+                    });
+                }
+                
+                // Promote better names for each ID
+                allIds.forEach(id => {
+                    const nameNormalized = normalizeUser(
+                        this.weeklyData?.recap?.first_degree_new?.find(u => u.user_id === id) ||
+                        this.weeklyData?.recap?.second_degree_new?.find(u => u.user_id === id) ||
+                        this.weeklyData?.recap?.third_degree_new?.find(u => u.user_id === id) ||
+                        this.weeklyData?.leaderboard?.new_connections?.find(u => u.user_id === id) ||
+                        this.weeklyData?.leaderboard?.community_builders?.find(u => u.user_id === id) ||
+                        this.weeklyData?.leaderboard?.expanded_reach?.find(u => u.user_id === id) ||
+                        this.healthData?.connections?.find(c => c.other_user_id === id)
+                    );
+                    
+                    if (good(nameNormalized) && (!this.userIndex[id] || isBadName(this.userIndex[id]))) {
+                        this.userIndex[id] = nameNormalized;
+                    }
+                });
             }
 
             renderRadar(data) {
@@ -3062,25 +3121,32 @@
                 this.setupBarRaceControls();
             }
 
+            // Helper to identify bad names
+            isBadName(s) {
+                return !s || !String(s).trim() || String(s).trim().toLowerCase() === 'unknown';
+            }
+
             // Safe name resolution helper
             safeName(id, fallback) {
                 if (!id) return 'Unknown';
                 
-                // 1. Check userIndex[id] (string)
-                if (this.userIndex && this.userIndex[id]) {
+                const good = (s) => !this.isBadName(s);
+                
+                // 1. Check userIndex[id] (string) - only if good
+                if (this.userIndex && this.userIndex[id] && good(this.userIndex[id])) {
                     return this.userIndex[id];
                 }
                 
-                // 2. Check searchIndex (by user_id/id) → take .name
+                // 2. Check searchIndex (by user_id/id) → take .name - only if good
                 if (this.searchIndex) {
                     const match = this.searchIndex.find(u => u.id === id || u.user_id === id);
-                    if (match && match.name) {
+                    if (match && match.name && good(match.name)) {
                         return match.name;
                     }
                 }
                 
-                // 3. fallback (if provided)
-                if (fallback) {
+                // 3. fallback (if provided) - only if good
+                if (fallback && good(fallback)) {
                     return fallback;
                 }
                 
@@ -3273,13 +3339,21 @@
                         'top names:', rows.slice(0, 3).map(r => r.name));
                     
                     // Debug: Show first 5 rows and their resolved names
-                    console.log('🔍 [Bar Race Debug] First 5 rows:', rows.slice(0, 5).map(row => ({
-                        id: row.id,
-                        value: row.value,
-                        resolvedName: this.safeName(row.id),
-                        userIndexValue: this.userIndex?.[row.id],
-                        searchIndexMatch: this.searchIndex?.find(u => u.id === row.id || u.user_id === row.id)
-                    })));
+                    console.log('🔍 [Bar Race Debug] First 5 rows:', rows.slice(0, 5).map(row => {
+                        const userIndexValue = this.userIndex?.[row.id];
+                        const searchIndexMatch = this.searchIndex?.find(u => u.id === row.id || u.user_id === row.id);
+                        const resolvedName = this.safeName(row.id);
+                        
+                        return {
+                            id: row.id,
+                            value: row.value,
+                            resolvedName: resolvedName,
+                            userIndexValue: userIndexValue,
+                            searchIndexMatch: searchIndexMatch,
+                            isGoodUserIndex: userIndexValue && !this.isBadName(userIndexValue),
+                            isGoodSearchIndex: searchIndexMatch?.name && !this.isBadName(searchIndexMatch.name)
+                        };
+                    }));
                 }
 
                 // D3 data join keyed by id
