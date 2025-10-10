@@ -908,6 +908,16 @@
             fill: var(--text, #111); 
         }
         
+        #rbr-chart svg { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+        }
+        
+        #rbr-chart .bar { 
+            shape-rendering: crispEdges; 
+        }
+        
         .bar-race-bar {
             fill: var(--accent);
             stroke: var(--accent-dark);
@@ -2857,8 +2867,13 @@
                 // Store frames and initialize
                 this.barRaceData = this.barRaceData || {};
                 this.barRaceData.frames = frames;
+                
+                // Find first non-empty frame
+                const firstNonEmpty = frames.findIndex(f => (f.rows || []).length > 0);
+                this.barRaceData.firstFrameIndex = Math.max(0, firstNonEmpty);
+                
                 this.initializeBarRace();
-                this.updateBarRaceFrame(0);
+                this.updateBarRaceFrame(this.barRaceData.firstFrameIndex);
                 
                 // Setup controls
                 this.setupBarRaceControls();
@@ -2902,6 +2917,8 @@
             }
 
             initializeBarRace() {
+                const NS = 'http://www.w3.org/2000/svg';
+                
                 // Ensure host exists
                 let host = document.getElementById('rbr-chart');
                 if (!host) {
@@ -2916,7 +2933,7 @@
                 
                 // Clear and create SVG
                 host.innerHTML = '';
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                const svg = document.createElementNS(NS, 'svg');
                 svg.id = 'rbr-svg';
                 svg.setAttribute('role', 'img');
                 svg.setAttribute('aria-label', 'Activity bar race');
@@ -2935,7 +2952,7 @@
                 svg.style.display = 'block';
                 
                 // Create content group
-                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const g = document.createElementNS(NS, 'g');
                 g.id = 'rbr-g';
                 g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
                 svg.appendChild(g);
@@ -2962,7 +2979,7 @@
                     yFor,
                     band,
                     maxVal,
-                    currentFrame: 0,
+                    currentFrame: this.barRaceData.firstFrameIndex || 0,
                     isPlaying: false,
                     animationTimer: null
                 };
@@ -2971,7 +2988,8 @@
             }
 
             updateBarRaceFrame(frameIndex) {
-                const { g, xScale, yFor, band, frames } = this.barRaceData;
+                const NS = 'http://www.w3.org/2000/svg';
+                const { svg, g, xScale, yFor, band, frames } = this.barRaceData;
                 const frame = frames[frameIndex];
                 
                 if (!frame) return;
@@ -2986,8 +3004,19 @@
                 const rows = frame.rows.slice(0, 10);
                 console.log('📊 [Bar Race] Bars drawn:', rows.length, 'for frame', frameIndex);
                 
-                // Clear existing content
-                g.innerHTML = '';
+                // Skip empty frames
+                if (rows.length === 0) return;
+                
+                // Find or create bars group
+                let barsGroup = svg.querySelector('g.bars');
+                if (!barsGroup) {
+                    barsGroup = document.createElementNS(NS, 'g');
+                    barsGroup.setAttribute('class', 'bars');
+                    svg.appendChild(barsGroup);
+                }
+                
+                // Clear previous bars
+                barsGroup.querySelectorAll('*').forEach(n => n.remove());
                 
                 // Draw bars and labels
                 rows.forEach((row, i) => {
@@ -2995,32 +3024,32 @@
                     const width = xScale(row.value);
                     
                     // Create bar
-                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    rect.className = 'rbr-bar';
+                    const rect = document.createElementNS(NS, 'rect');
+                    rect.setAttribute('class', 'rbr-bar bar');
                     rect.setAttribute('data-key', row.name);
                     rect.setAttribute('x', 0);
                     rect.setAttribute('y', y);
                     rect.setAttribute('width', width);
                     rect.setAttribute('height', band * 0.7);
-                    rect.style.rx = '6';
-                    rect.style.ry = '6';
-                    g.appendChild(rect);
+                    rect.setAttribute('rx', '6');
+                    rect.setAttribute('ry', '6');
+                    barsGroup.appendChild(rect);
                     
                     // Create name label
-                    const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    nameLabel.className = 'rbr-label-name';
+                    const nameLabel = document.createElementNS(NS, 'text');
+                    nameLabel.setAttribute('class', 'rbr-label-name');
                     nameLabel.setAttribute('x', -10);
                     nameLabel.setAttribute('y', y + band * 0.35);
                     nameLabel.textContent = row.name;
-                    g.appendChild(nameLabel);
+                    barsGroup.appendChild(nameLabel);
                     
                     // Create value label
-                    const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    valueLabel.className = 'rbr-label-val';
+                    const valueLabel = document.createElementNS(NS, 'text');
+                    valueLabel.setAttribute('class', 'rbr-label-val');
                     valueLabel.setAttribute('x', width + 10);
                     valueLabel.setAttribute('y', y + band * 0.35);
                     valueLabel.textContent = row.value;
-                    g.appendChild(valueLabel);
+                    barsGroup.appendChild(valueLabel);
                 });
             }
 
@@ -3048,14 +3077,22 @@
             }
 
             playBarRace() {
-                const { frames, currentFrame } = this.barRaceData;
+                const { frames } = this.barRaceData;
                 
                 this.barRaceData.isPlaying = true;
                 document.getElementById('rbr-play').style.display = 'none';
                 document.getElementById('rbr-pause').style.display = 'inline-block';
                 
                 this.barRaceData.animationTimer = setInterval(() => {
-                    const nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                    let nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                    
+                    // Skip empty frames
+                    while (nextFrame !== this.barRaceData.currentFrame && 
+                           frames[nextFrame] && 
+                           (frames[nextFrame].rows || []).length === 0) {
+                        nextFrame = (nextFrame + 1) % frames.length;
+                    }
+                    
                     this.barRaceData.currentFrame = nextFrame;
                     this.updateBarRaceFrame(nextFrame);
                     
@@ -3078,7 +3115,15 @@
 
             stepBarRace() {
                 const { frames } = this.barRaceData;
-                const nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                let nextFrame = (this.barRaceData.currentFrame + 1) % frames.length;
+                
+                // Skip empty frames
+                while (nextFrame !== this.barRaceData.currentFrame && 
+                       frames[nextFrame] && 
+                       (frames[nextFrame].rows || []).length === 0) {
+                    nextFrame = (nextFrame + 1) % frames.length;
+                }
+                
                 this.barRaceData.currentFrame = nextFrame;
                 this.updateBarRaceFrame(nextFrame);
             }
