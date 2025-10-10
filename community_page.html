@@ -2358,9 +2358,9 @@
                         rec: rec
                     });
                     
-                    // Format mutual names display
+                    // Format mutual names display - show up to 6 mutual friends
                     const mutualNamesDisplay = mutuals.length > 0 
-                        ? mutuals.slice(0, 3).map(name => `<span class="mutual-name">${name}</span>`).join('')
+                        ? mutuals.slice(0, 6).map(name => `<span class="mutual-name">${name}</span>`).join('')
                         : '';
                     
                     div.innerHTML = `
