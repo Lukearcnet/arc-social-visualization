@@ -1027,6 +1027,13 @@
             dominant-baseline: middle;
         }
         
+        .bar-race-host {
+            width: 100%;
+            min-width: 800px;
+            height: 420px;
+            overflow: visible;
+        }
+        
         @media (max-width: 768px) {
             .rbr-header {
                 flex-direction: column;
@@ -1040,6 +1047,11 @@
             
             .rbr-timestamp {
                 text-align: center;
+            }
+            
+            .bar-race-host {
+                min-width: 100%;
+                width: 100%;
             }
         }
 
@@ -3665,8 +3677,8 @@
                 }
 
                 // Define local margins (no global var)
-                const margin = { top: 24, right: 24, bottom: 40, left: 160 };
-                const width = host.clientWidth || 744;
+                const margin = { top: 24, right: 80, bottom: 40, left: 160 }; // Increased right margin for labels
+                const width = Math.max(800, host.clientWidth || 800); // Ensure minimum width
                 const height = host.clientHeight || 420;
                 const innerW = Math.max(0, width - margin.left - margin.right);
                 const innerH = Math.max(0, height - margin.top - margin.bottom);
