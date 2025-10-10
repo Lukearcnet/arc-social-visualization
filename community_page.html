@@ -2466,13 +2466,18 @@
                     const taps = rawData.taps || rawData.tap_data || [];
                     const users = rawData.users || rawData.user_profiles || [];
                     
-                    // Get time window from weekly data
+                    // Get time window from weekly data - but use a longer window to match weekly API logic
+                    // The weekly API seems to use a longer window than just 7 days
                     const timeWindow = this.data.weekly?.week?.time_window || '7d';
                     const timeWindowMs = this.getTimeWindowMs(timeWindow);
-                    const now = new Date();
-                    const startTime = new Date(now.getTime() - timeWindowMs);
                     
-                    console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
+                    // Use a longer window to match what the weekly API is actually counting
+                    // Try 30 days instead of 7 days to see if that matches
+                    const extendedTimeWindowMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+                    const now = new Date();
+                    const startTime = new Date(now.getTime() - extendedTimeWindowMs);
+                    
+                    console.log(`[Connections] User: ${userId}, TimeWindow: ${timeWindow}, ExtendedWindow: 30d, StartTime: ${startTime.toISOString()}, Now: ${now.toISOString()}`);
                     console.log(`[Connections] Total taps available: ${taps.length}`);
                     console.log(`[Connections] Weekly API says user has ${userData.tap_count || userData.new_first_degree || 0} new connections`);
                     
