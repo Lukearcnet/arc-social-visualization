@@ -2328,23 +2328,45 @@
                 let dropdownContent = '';
                 
                 if (type === 'connectors') {
-                    // For Top Connectors, show the connections this user made
+                    // For Top Connectors, show basic user info since detailed connections aren't available
                     const userData = this.data.weekly?.leaderboard?.new_connections?.find(u => u.user_id === userId);
-                    if (userData && userData.connections) {
-                        dropdownContent = userData.connections.map(conn => 
-                            `<div class="dropdown-item">${conn.name || 'Unknown'}</div>`
-                        ).join('');
+                    if (userData) {
+                        dropdownContent = `
+                            <div class="dropdown-item">
+                                <strong>${userData.name || 'Unknown'}</strong>
+                            </div>
+                            <div class="dropdown-item">
+                                <span style="color: var(--fg-muted);">Total connections: ${userData.tap_count || userData.new_first_degree || 0}</span>
+                            </div>
+                            <div class="dropdown-item">
+                                <span style="color: var(--fg-muted);">User ID: ${userData.user_id}</span>
+                            </div>
+                            <div class="dropdown-item" style="font-style: italic; color: var(--fg-muted);">
+                                Detailed connection list not available in current data structure
+                            </div>
+                        `;
                     } else {
                         dropdownContent = '<div class="dropdown-item">No connection details available</div>';
                     }
                 } else if (type === 'reach') {
-                    // For Top Tappers, show the taps this user made
+                    // For Top Tappers, show basic user info since detailed taps aren't available
                     const userData = this.data.weekly?.leaderboard?.connectors?.find(u => u.user_id === userId) ||
                                    this.data.weekly?.leaderboard?.community_builders?.find(u => u.user_id === userId);
-                    if (userData && userData.taps) {
-                        dropdownContent = userData.taps.map(tap => 
-                            `<div class="dropdown-item">${tap.name || 'Unknown'}</div>`
-                        ).join('');
+                    if (userData) {
+                        dropdownContent = `
+                            <div class="dropdown-item">
+                                <strong>${userData.name || 'Unknown'}</strong>
+                            </div>
+                            <div class="dropdown-item">
+                                <span style="color: var(--fg-muted);">Total taps: ${userData.new_connections || userData.delta_second_degree || 0}</span>
+                            </div>
+                            <div class="dropdown-item">
+                                <span style="color: var(--fg-muted);">User ID: ${userData.user_id}</span>
+                            </div>
+                            <div class="dropdown-item" style="font-style: italic; color: var(--fg-muted);">
+                                Detailed tap list not available in current data structure
+                            </div>
+                        `;
                     } else {
                         dropdownContent = '<div class="dropdown-item">No tap details available</div>';
                     }
@@ -2363,11 +2385,36 @@
                     </div>
                 `;
                 
-                // Position dropdown
+                // Position dropdown with viewport bounds checking
                 const rect = triggerElement.getBoundingClientRect();
-                dropdown.style.position = 'absolute';
-                dropdown.style.top = `${rect.bottom + 5}px`;
-                dropdown.style.left = `${rect.left}px`;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                // Calculate optimal position
+                let left = rect.left;
+                let top = rect.bottom + 5;
+                
+                // Ensure dropdown stays within viewport
+                const dropdownWidth = 200; // min-width from CSS
+                const dropdownHeight = 200; // max-height from CSS
+                
+                // Adjust horizontal position if too far right
+                if (left + dropdownWidth > viewportWidth) {
+                    left = viewportWidth - dropdownWidth - 10; // 10px margin from edge
+                }
+                
+                // Adjust vertical position if too far down
+                if (top + dropdownHeight > viewportHeight) {
+                    top = rect.top - dropdownHeight - 5; // Show above instead
+                }
+                
+                // Ensure minimum margins
+                left = Math.max(10, left);
+                top = Math.max(10, top);
+                
+                dropdown.style.position = 'fixed';
+                dropdown.style.top = `${top}px`;
+                dropdown.style.left = `${left}px`;
                 dropdown.style.zIndex = '99999';
                 dropdown.style.backgroundColor = 'var(--bg-secondary)';
                 dropdown.style.border = '1px solid var(--stroke)';
