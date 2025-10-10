@@ -2770,12 +2770,20 @@
                     if (dataResponse.ok) {
                         const dataResult = await dataResponse.json();
                         if (dataResult.users) {
-                            this.searchIndex = dataResult.users.map(user => ({
-                                user_id: user.id || user.user_id,
-                                name: user.name || user.first_name + ' ' + user.last_name || user.username,
-                                user_name: user.username,
-                                displayName: user.name || user.first_name + ' ' + user.last_name
-                            }));
+                            // Safe name concatenation helper
+                            const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
+                            
+                            this.searchIndex = dataResult.users.map(user => {
+                                const userId = user.user_id || user.id;
+                                const name = user.name || user.display_name || user.full_name || 
+                                           safeJoin(user.first_name, user.last_name) || 
+                                           user.username || 'Unknown';
+                                
+                                return {
+                                    user_id: userId,
+                                    name: name
+                                };
+                            });
                         }
                     }
                     
@@ -2783,11 +2791,12 @@
                     this.userIndex = {};
                     
                     // Normalize user data to plain name strings
+                    const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
                     const normalizeUser = (user) => {
                         if (typeof user === 'string') return user;
                         if (typeof user === 'object' && user) {
                             return user.name || user.user_name || user.display_name || user.full_name || 
-                                   ([user.first_name, user.last_name].filter(Boolean).join(' ')) || 'Unknown';
+                                   safeJoin(user.first_name, user.last_name) || 'Unknown';
                         }
                         return 'Unknown';
                     };
@@ -2827,13 +2836,24 @@
             }
 
             addUsersFromWeekly(weeklyData) {
+                // Safe name normalization helper
+                const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
+                const normalizeUser = (user) => {
+                    if (typeof user === 'string') return user;
+                    if (typeof user === 'object' && user) {
+                        return user.name || user.user_name || user.display_name || user.full_name || 
+                               safeJoin(user.first_name, user.last_name) || 'Unknown';
+                    }
+                    return 'Unknown';
+                };
+                
                 // Add users from recap sections
                 const sections = ['first_degree_new', 'second_degree_new', 'third_degree_new'];
                 sections.forEach(section => {
                     if (weeklyData.recap && weeklyData.recap[section]) {
                         weeklyData.recap[section].forEach(user => {
                             if (user.user_id && !this.userIndex[user.user_id]) {
-                                this.userIndex[user.user_id] = user.name || 'Unknown';
+                                this.userIndex[user.user_id] = normalizeUser(user);
                             }
                         });
                     }
@@ -2845,7 +2865,7 @@
                     if (weeklyData.leaderboard && weeklyData.leaderboard[section]) {
                         weeklyData.leaderboard[section].forEach(user => {
                             if (user.user_id && !this.userIndex[user.user_id]) {
-                                this.userIndex[user.user_id] = user.name || 'Unknown';
+                                this.userIndex[user.user_id] = normalizeUser(user);
                             }
                         });
                     }
@@ -2853,11 +2873,22 @@
             }
 
             addUsersFromHealth(healthData) {
+                // Safe name normalization helper
+                const safeJoin = (first, last) => [first, last].filter(Boolean).join(' ');
+                const normalizeUser = (user) => {
+                    if (typeof user === 'string') return user;
+                    if (typeof user === 'object' && user) {
+                        return user.name || user.user_name || user.display_name || user.full_name || 
+                               safeJoin(user.first_name, user.last_name) || 'Unknown';
+                    }
+                    return 'Unknown';
+                };
+                
                 // Add users from health connections
                 if (healthData.connections) {
                     healthData.connections.forEach(conn => {
                         if (conn.other_user_id && !this.userIndex[conn.other_user_id]) {
-                            this.userIndex[conn.other_user_id] = conn.name || 'Unknown';
+                            this.userIndex[conn.other_user_id] = normalizeUser(conn);
                         }
                     });
                 }
@@ -2891,7 +2922,9 @@
                 const barRace = content.querySelector('.radar-bar-race');
                 if (barRace) {
                     barRace.style.display = 'block';
-                    this.renderRadarBarRace(data);
+                    this.renderRadarBarRace(data).catch(error => {
+                        console.error('❌ [Bar Race] Failed to render:', error);
+                    });
                 }
 
                 console.log('📡 [Radar] Content updated, innerHTML length:', content.innerHTML.length);
@@ -2979,8 +3012,14 @@
             }
 
             // Bar Race Chart Implementation
-            renderRadarBarRace(data) {
+            async renderRadarBarRace(data) {
                 console.log('📊 [Bar Race] Rendering bar race chart:', data);
+                
+                // Ensure user indexes are loaded before rendering
+                if (!this.userIndex || Object.keys(this.userIndex).length === 0) {
+                    console.log('📊 [Bar Race] Loading user indexes before rendering...');
+                    await this.loadUserIndexes();
+                }
                 
                 // Build frames from buckets with proper stride
                 const frames = this.buildBarRaceFrames(data.buckets);
@@ -3027,18 +3066,26 @@
             safeName(id, fallback) {
                 if (!id) return 'Unknown';
                 
-                // normalize userIndex: allow string or object entries
-                const pick = u => u?.name || u?.user_name || u?.display_name || u?.full_name ||
-                             [u?.first_name, u?.last_name].filter(Boolean).join(' ') || null;
-
-                // userIndex may be Map, object, or string
-                let v = this.userIndex?.get?.(id) ?? this.userIndex?.[id];
-                const fromIndex = typeof v === 'string' ? v : pick(v);
-
-                // searchIndex is an array
-                const fromSearch = pick((this.searchIndex || []).find(u => u.id === id || u.user_id === id));
-
-                return fromIndex || fromSearch || fallback || `Unknown · ${String(id).slice(-4)}`;
+                // 1. Check userIndex[id] (string)
+                if (this.userIndex && this.userIndex[id]) {
+                    return this.userIndex[id];
+                }
+                
+                // 2. Check searchIndex (by user_id/id) → take .name
+                if (this.searchIndex) {
+                    const match = this.searchIndex.find(u => u.id === id || u.user_id === id);
+                    if (match && match.name) {
+                        return match.name;
+                    }
+                }
+                
+                // 3. fallback (if provided)
+                if (fallback) {
+                    return fallback;
+                }
+                
+                // 4. Unknown · ${idTail}
+                return `Unknown · ${String(id).slice(-4)}`;
             }
 
             buildUserIndex() {
@@ -3229,7 +3276,7 @@
                     console.log('🔍 [Bar Race Debug] First 5 rows:', rows.slice(0, 5).map(row => ({
                         id: row.id,
                         value: row.value,
-                        resolvedName: this.safeName(row.id, row.label),
+                        resolvedName: this.safeName(row.id),
                         userIndexValue: this.userIndex?.[row.id],
                         searchIndexMatch: this.searchIndex?.find(u => u.id === row.id || u.user_id === row.id)
                     })));
@@ -3260,7 +3307,7 @@
 
                 // Left name labels (white text, positioned left of bars)
                 merged.select('text.label')
-                    .text(d => this.safeName(d.id, d.label))
+                    .text(d => this.safeName(d.id))
                     .attr('x', -8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
@@ -3375,7 +3422,9 @@
                     }
                     
                     const data = await response.json();
-                    this.renderRadarBarRace(data);
+                    this.renderRadarBarRace(data).catch(error => {
+                        console.error('❌ [Bar Race] Failed to change window:', error);
+                    });
                     
                 } catch (error) {
                     console.error('❌ [Bar Race] Failed to change window:', error);
