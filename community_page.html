@@ -1323,10 +1323,9 @@
 
                         <!-- Leaderboard Tabs -->
                         <div class="leaderboard-section">
-                            <div class="leaderboard-nav">
-                                <button class="leaderboard-tab active" data-leaderboard="connectors">Top Connectors</button>
-                                <button class="leaderboard-tab" data-leaderboard="reach">Top Tappers</button>
-                            </div>
+                <div class="leaderboard-nav">
+                    <button class="leaderboard-tab active" data-leaderboard="reach">Top Tappers</button>
+                </div>
                             <div class="leaderboard-content" id="leaderboard-list"></div>
                         </div>
 
@@ -2266,7 +2265,7 @@
 
 
                 // Render leaderboard
-                this.renderLeaderboard('connectors');
+                this.renderLeaderboard('reach');
 
                 // Render recommendations
                 this.renderRecommendations();
@@ -2279,23 +2278,11 @@
                 const data = this.data.weekly;
                 if (!data) return;
 
-                // Use safe array access
-                const newConnections = this.safeArr(data.leaderboard?.new_connections);
+                // Only handle Top Tappers now
                 const communityBuilders = this.safeArr(data.leaderboard?.community_builders);
-
-                // Map type to appropriate array
-                let leaderboardData = [];
-                let emptyMessage = '';
-                
-                if (type === 'connectors') {
-                    leaderboardData = newConnections;
-                    emptyMessage = 'No connections ranked yet this week.';
-                } else if (type === 'reach') {
-                    // Check for new connectors field first, fallback to community_builders
-                    const connectors = this.safeArr(data.leaderboard?.connectors);
-                    leaderboardData = connectors.length > 0 ? connectors : communityBuilders;
-                    emptyMessage = 'No top tappers data yet this week.';
-                }
+                const connectors = this.safeArr(data.leaderboard?.connectors);
+                const leaderboardData = connectors.length > 0 ? connectors : communityBuilders;
+                const emptyMessage = 'No top tappers data yet this week.';
                 
                 const container = document.getElementById('leaderboard-list');
                 container.innerHTML = '';
@@ -2313,15 +2300,18 @@
                     return;
                 }
 
+                // Format like "People You Should Meet" section
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'section-title';
+                titleDiv.style.cssText = 'font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--fg-primary);';
+                titleDiv.textContent = 'Top Tappers';
+                container.appendChild(titleDiv);
+
                 leaderboardData.forEach((item, index) => {
                     const div = document.createElement('div');
                     div.className = 'leaderboard-item';
                     
-                    const value = type === 'connectors' ? 
-                        (item.tap_count || item.new_first_degree || 0) + ' new connections' :
-                        type === 'reach' ? 
-                        (item.new_connections || item.delta_second_degree || 0) + ' new taps' :
-                        (item.streak_days || 0) + ' days';
+                    const value = (item.new_connections || item.delta_second_degree || 0) + ' new taps';
                     
                     div.innerHTML = `
                         <div>
