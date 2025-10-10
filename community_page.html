@@ -282,6 +282,42 @@
             font-weight: 600;
             margin-bottom: var(--space-2);
         }
+        
+        .connected-through {
+            color: var(--fg-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .mutual-names {
+            margin-bottom: 1rem;
+        }
+        
+        .mutual-name {
+            display: inline-block;
+            background: var(--bg-tertiary);
+            color: var(--fg-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .view-profile-btn {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+        
+        .view-profile-btn:hover {
+            background: var(--accent-primary-hover);
+        }
 
         .recommendation-scores {
             display: flex;
@@ -1324,7 +1360,7 @@
 
                         <!-- Recommendations -->
                         <div class="recommendations-section">
-                            <h3>People You Should Meet</h3>
+                            <h3 style="margin-bottom: 1.5rem;">People You Should Meet</h3>
                             <div class="recommendations-carousel" id="recommendations-list"></div>
                         </div>
                             </div>
@@ -2307,18 +2343,34 @@
                         ? mutuals.slice(0, 3).join(', ') + (mutuals.length > 3 ? ` +${mutuals.length - 3} more` : '')
                         : 'No mutuals';
                     
+                    // Format mutual names display
+                    const mutualNamesDisplay = mutuals.length > 0 
+                        ? mutuals.slice(0, 3).map(name => `<span class="mutual-name">${name}</span>`).join('')
+                        : '';
+                    
                     div.innerHTML = `
                         <h4>${name}</h4>
-                        <div class="recommendation-scores">
-                            <span class="score-badge">${Math.round(total * 100)}% match</span>
-                            <span class="score-badge">${mutualsDisplay}</span>
+                        <div class="connected-through">Connected through ${mutuals.length} mutual friends</div>
+                        <div class="mutual-names">
+                            ${mutualNamesDisplay}
                         </div>
-                        <p>${explain}</p>
                         <div class="recommendation-actions">
-                            <button class="action-btn primary">Connect</button>
-                            <button class="action-btn">View Profile</button>
+                            <button class="view-profile-btn" data-user-id="${rec.user_id}">View Profile</button>
                         </div>
                     `;
+                    
+                    // Add click handler for View Profile button
+                    const viewProfileBtn = div.querySelector('.view-profile-btn');
+                    if (viewProfileBtn) {
+                        viewProfileBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const userId = viewProfileBtn.dataset.userId;
+                            if (userId) {
+                                // Navigate to graph view with this user selected
+                                window.location.href = `/unified_bedrock_user.html?userName=${encodeURIComponent(name)}&userId=${userId}`;
+                            }
+                        });
+                    }
                     container.appendChild(div);
                 });
             }
