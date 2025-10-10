@@ -1378,6 +1378,11 @@
                                     <div class="rbr-header">
                                         <div class="rbr-title">Opportunity Radar</div>
                                         <div class="rbr-controls">
+                                            <select id="rbr-view-mode">
+                                                <option value="connections" selected>Your top connections</option>
+                                                <option value="network-taps">Network Taps</option>
+                                                <option value="network-connections">Network Connections</option>
+                                            </select>
                                             <select id="rbr-window">
                                                 <option value="24">Last 24h</option>
                                                 <option value="168" selected>Last 7d</option>
@@ -3208,8 +3213,8 @@
             }
 
             // Bar Race Chart Implementation
-            async renderRadarBarRace(data) {
-                console.log('📊 [Bar Race] Rendering bar race chart:', data);
+            async renderRadarBarRace(data, viewMode = 'connections') {
+                console.log('📊 [Bar Race] Rendering bar race chart:', { data, viewMode });
                 
                 // Ensure user indexes are loaded before rendering
                 if (!this.userIndex || Object.keys(this.userIndex).length === 0) {
@@ -3217,12 +3222,24 @@
                     await this.loadUserIndexes();
                 }
                 
-                // Pre-seed names from radar buckets participants
-                this.preseedNamesFromRadar(data.buckets);
+                // Store view mode
+                this.barRaceData = this.barRaceData || {};
+                this.barRaceData.viewMode = viewMode;
                 
-                // Build frames from buckets with proper stride
-                const frames = this.buildBarRaceFrames(data.buckets);
-                console.log('📊 [Bar Race] Built', frames.length, 'frames');
+                let frames;
+                
+                if (viewMode === 'connections') {
+                    // Pre-seed names from radar buckets participants
+                    this.preseedNamesFromRadar(data.buckets);
+                    
+                    // Build frames from buckets with proper stride (existing logic)
+                    frames = this.buildBarRaceFrames(data.buckets);
+                } else {
+                    // Network modes: build frames from network data
+                    frames = await this.buildBarRaceFramesFromNetwork(data, viewMode);
+                }
+                
+                console.log('📊 [Bar Race] Built', frames.length, 'frames for mode:', viewMode);
                 
                 if (frames.length === 0) {
                     this.renderRadarEmpty();
@@ -3230,7 +3247,6 @@
                 }
                 
                 // Store frames and initialize
-                this.barRaceData = this.barRaceData || {};
                 this.barRaceData.frames = frames;
                 
                 // Find first non-empty frame
@@ -3247,6 +3263,7 @@
                 // Debug logging
                 if (new URLSearchParams(window.location.search).get('debug') === '1') {
                     console.log('📊 [Bar Race] Debug info:', {
+                        viewMode: viewMode,
                         framesCount: frames.length,
                         firstNonEmptyFrame: this.barRaceData.firstFrameIndex,
                         firstFrameRows: frames[this.barRaceData.firstFrameIndex]?.rows?.slice(0, 3) || []
@@ -3368,6 +3385,92 @@
                             bucket.participants.forEach(participant => {
                                 const current = entityTotals.get(participant.user_id) || 0;
                                 entityTotals.set(participant.user_id, current + participant.count);
+                            });
+                        }
+                    });
+                    
+                    // Create frame with top 10 participants (sorted desc by value)
+                    const topParticipants = Array.from(entityTotals.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10)
+                        .map(([userId, total]) => ({
+                            id: userId, // Keep stable user_id as id
+                            value: total
+                        }));
+                    
+                    // Skip empty frames
+                    if (topParticipants.length === 0) continue;
+                    
+                    // Use the last bucket in the window for timestamp
+                    const lastBucket = windowBuckets[windowBuckets.length - 1];
+                    frames.push({
+                        time: new Date(lastBucket.ts),
+                        rows: topParticipants
+                    });
+                }
+                
+                // Debug: Verify final totals match server-side
+                const frameSum = Array.from(entityTotals.values()).reduce((sum, count) => sum + count, 0);
+                console.log(`📊 [Bar Race] Final frame total: ${frameSum}, Server total: ${serverSum}, Match: ${Math.abs(frameSum - serverSum) <= 1}`);
+                
+                // Debug: Show per-ID deltas for top participants
+                const topParticipants = Array.from(entityTotals.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                console.log('📊 [Bar Race] Top participants final counts:', topParticipants.map(([id, count]) => ({ id, count })));
+                
+                return frames;
+            }
+
+            async buildBarRaceFramesFromNetwork(data, viewMode) {
+                const { networkMembers, buckets } = data;
+                const frames = [];
+                const entityTotals = new Map(); // Track cumulative totals (never reset)
+                
+                // Calculate stride for ~10s playback at ~60 FPS (targetFrames ≈ 600)
+                const targetFrames = 600;
+                const stride = Math.max(1, Math.ceil(buckets.length / targetFrames));
+                
+                console.log(`📊 [Bar Race] Processing ${buckets.length} buckets for network mode ${viewMode} with stride ${stride}`);
+                
+                // Debug: Calculate server-side total for verification
+                let serverSum = 0;
+                buckets.forEach(bucket => {
+                    if (bucket && bucket.participants) {
+                        bucket.participants.forEach(participant => {
+                            if (networkMembers.includes(participant.user_id)) {
+                                if (viewMode === 'network-taps') {
+                                    serverSum += participant.count;
+                                } else if (viewMode === 'network-connections') {
+                                    // For connections, count unique partners per bucket
+                                    serverSum += 1; // Each participant represents a unique connection
+                                }
+                            }
+                        });
+                    }
+                });
+                console.log(`📊 [Bar Race] Server-side total count for ${viewMode}: ${serverSum}`);
+                
+                // Process buckets in stride windows, aggregating all buckets in each window
+                for (let i = 0; i < buckets.length; i += stride) {
+                    const windowEnd = Math.min(i + stride, buckets.length);
+                    const windowBuckets = buckets.slice(i, windowEnd);
+                    
+                    // Aggregate all buckets in this stride window
+                    windowBuckets.forEach(bucket => {
+                        if (bucket && bucket.participants) {
+                            bucket.participants.forEach(participant => {
+                                if (networkMembers.includes(participant.user_id)) {
+                                    const current = entityTotals.get(participant.user_id) || 0;
+                                    
+                                    if (viewMode === 'network-taps') {
+                                        // Count total taps for this network member
+                                        entityTotals.set(participant.user_id, current + participant.count);
+                                    } else if (viewMode === 'network-connections') {
+                                        // Count unique connections (increment by 1 per bucket where they appear)
+                                        entityTotals.set(participant.user_id, current + 1);
+                                    }
+                                }
                             });
                         }
                     });
@@ -3570,6 +3673,7 @@
                 const pauseBtn = document.getElementById('rbr-pause');
                 const stepBtn = document.getElementById('rbr-step');
                 const windowSelect = document.getElementById('rbr-window');
+                const viewModeSelect = document.getElementById('rbr-view-mode');
                 
                 if (playBtn) {
                     playBtn.onclick = () => this.playBarRace();
@@ -3585,6 +3689,10 @@
                 
                 if (windowSelect) {
                     windowSelect.onchange = () => this.changeBarRaceWindow();
+                }
+                
+                if (viewModeSelect) {
+                    viewModeSelect.onchange = () => this.changeBarRaceView();
                 }
             }
 
@@ -3650,28 +3758,138 @@
                 this.updateBarRaceFrame(nextFrame);
             }
 
+            async fetchNetworkData(hours) {
+                const userId = this.currentUser?.user_id || this.currentUser?.id;
+                
+                // Convert hours to time window format
+                const timeWindowMap = {
+                    24: '1d',
+                    168: '7d', 
+                    720: '30d',
+                    4320: '180d',
+                    8760: '365d'
+                };
+                const timeWindow = timeWindowMap[hours] || '7d';
+                
+                // Fetch weekly data to get network members
+                const weeklyResponse = await fetch(`/api/community/weekly?user_id=${userId}&time_window=${timeWindow}`);
+                if (!weeklyResponse.ok) {
+                    throw new Error(`Weekly API failed: ${weeklyResponse.status}`);
+                }
+                const weeklyData = await weeklyResponse.json();
+                
+                // Build network members set (1st/2nd/3rd degree + logged-in user)
+                const networkMembers = new Set();
+                networkMembers.add(userId); // Include logged-in user
+                
+                // Add 1st degree connections
+                if (weeklyData.recap?.first_degree_new) {
+                    weeklyData.recap.first_degree_new.forEach(conn => networkMembers.add(conn.user_id));
+                }
+                
+                // Add 2nd degree connections
+                if (weeklyData.recap?.second_degree_new) {
+                    weeklyData.recap.second_degree_new.forEach(conn => networkMembers.add(conn.user_id));
+                }
+                
+                // Add 3rd degree connections
+                if (weeklyData.recap?.third_degree_new) {
+                    weeklyData.recap.third_degree_new.forEach(conn => networkMembers.add(conn.user_id));
+                }
+                
+                // Fetch radar data for tap information
+                const radarResponse = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                if (!radarResponse.ok) {
+                    throw new Error(`Radar API failed: ${radarResponse.status}`);
+                }
+                const radarData = await radarResponse.json();
+                
+                return {
+                    networkMembers: Array.from(networkMembers),
+                    buckets: radarData.buckets,
+                    timeWindow: timeWindow,
+                    hours: hours
+                };
+            }
+
+            async changeBarRaceView() {
+                const viewModeSelect = document.getElementById('rbr-view-mode');
+                const windowSelect = document.getElementById('rbr-window');
+                const viewMode = viewModeSelect.value;
+                const hours = parseInt(windowSelect.value);
+                
+                this.pauseBarRace();
+                
+                // Store view mode in bar race data
+                this.barRaceData = this.barRaceData || {};
+                this.barRaceData.viewMode = viewMode;
+                
+                try {
+                    const userId = this.currentUser?.user_id || this.currentUser?.id;
+                    
+                    if (viewMode === 'connections') {
+                        // Use existing radar API
+                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        // Pre-seed names from new radar data (don't clear existing cache)
+                        this.preseedNamesFromRadar(data.buckets);
+                        
+                        this.renderRadarBarRace(data, viewMode).catch(error => {
+                            console.error('❌ [Bar Race] Failed to change view:', error);
+                        });
+                    } else {
+                        // Use network data for network-taps and network-connections
+                        const networkData = await this.fetchNetworkData(hours);
+                        this.renderRadarBarRace(networkData, viewMode).catch(error => {
+                            console.error('❌ [Bar Race] Failed to change view:', error);
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ [Bar Race] Failed to change view:', error);
+                }
+            }
+
             async changeBarRaceWindow() {
                 const windowSelect = document.getElementById('rbr-window');
+                const viewModeSelect = document.getElementById('rbr-view-mode');
                 const hours = parseInt(windowSelect.value);
+                const viewMode = viewModeSelect.value;
                 
                 this.pauseBarRace();
                 
                 try {
                     const userId = this.currentUser?.user_id || this.currentUser?.id;
-                    const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
                     
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    if (viewMode === 'connections') {
+                        // Use existing radar API
+                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        // Pre-seed names from new radar data (don't clear existing cache)
+                        this.preseedNamesFromRadar(data.buckets);
+                        
+                        this.renderRadarBarRace(data, viewMode).catch(error => {
+                            console.error('❌ [Bar Race] Failed to change window:', error);
+                        });
+                    } else {
+                        // Use network data for network-taps and network-connections
+                        const networkData = await this.fetchNetworkData(hours);
+                        this.renderRadarBarRace(networkData, viewMode).catch(error => {
+                            console.error('❌ [Bar Race] Failed to change window:', error);
+                        });
                     }
-                    
-                    const data = await response.json();
-                    
-                    // Pre-seed names from new radar data (don't clear existing cache)
-                    this.preseedNamesFromRadar(data.buckets);
-                    
-                    this.renderRadarBarRace(data).catch(error => {
-                        console.error('❌ [Bar Race] Failed to change window:', error);
-                    });
                     
                 } catch (error) {
                     console.error('❌ [Bar Race] Failed to change window:', error);
