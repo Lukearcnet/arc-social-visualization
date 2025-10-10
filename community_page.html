@@ -1259,7 +1259,6 @@
                             <div class="leaderboard-nav">
                                 <button class="leaderboard-tab active" data-leaderboard="connectors">Top Connectors</button>
                                 <button class="leaderboard-tab" data-leaderboard="reach">Expanding Reach</button>
-                                <button class="leaderboard-tab" data-leaderboard="consistency">Consistency</button>
                             </div>
                             <div class="leaderboard-content" id="leaderboard-list"></div>
                         </div>
@@ -1415,7 +1414,6 @@
                 if (data.leaderboard) {
                     if (!Array.isArray(data.leaderboard.new_connections)) warnings.push('leaderboard.new_connections should be array');
                     if (!Array.isArray(data.leaderboard.community_builders)) warnings.push('leaderboard.community_builders should be array');
-                    if (!Array.isArray(data.leaderboard.streak_masters)) warnings.push('leaderboard.streak_masters should be array');
                 }
 
                 // Check recommendations
@@ -1649,7 +1647,6 @@
                     const geoExpansion = this.safeArr(recap.geo_expansion);
                     const newConnections = this.safeArr(leaderboard.new_connections);
                     const communityBuilders = this.safeArr(leaderboard.community_builders);
-                    const streakMasters = this.safeArr(leaderboard.streak_masters);
                     
                     // Store normalized data
                     this.data.weekly = {
@@ -1662,8 +1659,7 @@
                         },
                         leaderboard: {
                             new_connections: newConnections,
-                            community_builders: communityBuilders,
-                            streak_masters: streakMasters
+                            community_builders: communityBuilders
                         },
                         recommendations,
                         warnings
@@ -2098,9 +2094,6 @@
                         community_builders: [
                             { user_id: "u555", name: "Mia", delta_second_degree: 18 }
                         ],
-                        streak_masters: [
-                            { user_id: "u789", name: "Alex", streak_days: 21 }
-                        ]
                     },
                     recommendations: [
                         {
@@ -2194,7 +2187,6 @@
                 // Use safe array access
                 const newConnections = this.safeArr(data.leaderboard?.new_connections);
                 const communityBuilders = this.safeArr(data.leaderboard?.community_builders);
-                const streakMasters = this.safeArr(data.leaderboard?.streak_masters);
 
                 // Map type to appropriate array
                 let leaderboardData = [];
@@ -2208,9 +2200,6 @@
                     const connectors = this.safeArr(data.leaderboard?.connectors);
                     leaderboardData = connectors.length > 0 ? connectors : communityBuilders;
                     emptyMessage = 'No expanding reach data yet this week.';
-                } else {
-                    leaderboardData = streakMasters;
-                    emptyMessage = 'No active streaks to show yet.';
                 }
                 
                 const container = document.getElementById('leaderboard-list');
