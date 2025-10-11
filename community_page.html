@@ -3727,7 +3727,7 @@
                 // Create scales
                 const xScale = d3.scaleLinear().range([0, innerW]);
                 const yScale = d3.scaleBand().range([0, innerH]).padding(0.15);
-                const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+                const colorScale = d3.scaleOrdinal(d3.schemeDark2);
 
                 // Persist state for updateBarRaceFrame
                 this.barRaceData = {
