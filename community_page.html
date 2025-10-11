@@ -3727,7 +3727,7 @@
                 // Create scales
                 const xScale = d3.scaleLinear().range([0, innerW]);
                 const yScale = d3.scaleBand().range([0, innerH]).padding(0.15);
-                const colorScale = d3.scaleOrdinal(d3.schemeSet1);
+                const colorScale = d3.scaleOrdinal(d3.schemeDark2);
 
                 // Persist state for updateBarRaceFrame
                 this.barRaceData = {
@@ -3768,7 +3768,7 @@
                 
                 // Determine transition duration based on playback speed
                 const isPlaying = this.barRaceData?.isPlaying || false;
-                const transitionDuration = isPlaying ? 225 : 450; // 50% faster transitions for better responsiveness
+                const transitionDuration = isPlaying ? 270 : 540; // 20% slower transitions for smoother feel
 
                 // Get top 10 rows for this frame
                 const rows = (frame.rows || []).slice(0, 10);
