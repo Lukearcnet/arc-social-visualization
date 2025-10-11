@@ -800,6 +800,58 @@
             color: var(--fg-muted);
             margin-bottom: var(--space-4);
         }
+        
+        .health-title-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-icon {
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            user-select: none;
+        }
+        
+        .info-icon:hover {
+            opacity: 1;
+        }
+        
+        .info-popup {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 300px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .info-popup h4 {
+            margin: 0 0 8px 0;
+            color: var(--fg-primary);
+            font-size: 1rem;
+        }
+        
+        .info-popup p {
+            margin: 0 0 8px 0;
+            color: var(--fg-secondary);
+        }
+        
+        .info-popup ul {
+            margin: 8px 0 0 0;
+            padding-left: 16px;
+        }
+        
+        .info-popup li {
+            margin: 4px 0;
+            color: var(--fg-secondary);
+        }
 
         .health-summary {
             display: grid;
@@ -1497,7 +1549,10 @@
                     <div id="health-section" class="community-section">
                         <div class="health-container">
                             <div class="health-header">
-                                <h2>Relationship Health</h2>
+                                <div class="health-title-container">
+                                    <h2>Relationship Health</h2>
+                                    <div class="info-icon" id="health-info-icon" title="Click for more information">ℹ️</div>
+                                </div>
                                 <div class="health-subtitle">Connection strength analysis and relationship insights</div>
                             </div>
 
@@ -1729,6 +1784,14 @@
                         this.switchLeaderboard(leaderboard);
                     });
                 });
+                
+                // Health info icon
+                const healthInfoIcon = document.getElementById('health-info-icon');
+                if (healthInfoIcon) {
+                    healthInfoIcon.addEventListener('click', (e) => {
+                        this.showHealthInfoPopup(e.target);
+                    });
+                }
             }
 
             switchSection(section) {
@@ -2268,6 +2331,56 @@
                         <div class="empty-details">Start connecting with people to see relationship insights</div>
                     </div>
                 `;
+            }
+            
+            showHealthInfoPopup(icon) {
+                // Remove any existing popup
+                const existingPopup = document.querySelector('.info-popup');
+                if (existingPopup) {
+                    existingPopup.remove();
+                    return;
+                }
+                
+                // Create popup content
+                const popup = document.createElement('div');
+                popup.className = 'info-popup';
+                popup.innerHTML = `
+                    <h4>How Relationship Health Works</h4>
+                    <p>Relationship Health analyzes your connections based on recent interaction patterns over the last 90 days.</p>
+                    <p><strong>Health Levels:</strong></p>
+                    <ul>
+                        <li><strong>Excellent (80%+):</strong> Strong, active relationships</li>
+                        <li><strong>Good (60-79%):</strong> Regular, healthy connections</li>
+                        <li><strong>Fair (40-59%):</strong> Moderate interaction levels</li>
+                        <li><strong>Needs Attention (&lt;40%):</strong> Infrequent or distant connections</li>
+                    </ul>
+                    <p><strong>What affects your score:</strong></p>
+                    <ul>
+                        <li>Recent activity (last 30 days)</li>
+                        <li>Consistent interaction (90-day period)</li>
+                        <li>Time since last interaction</li>
+                    </ul>
+                `;
+                
+                // Position popup
+                const rect = icon.getBoundingClientRect();
+                popup.style.left = `${rect.left}px`;
+                popup.style.top = `${rect.bottom + 8}px`;
+                
+                // Add to page
+                document.body.appendChild(popup);
+                
+                // Close on click outside
+                const closePopup = (e) => {
+                    if (!popup.contains(e.target) && e.target !== icon) {
+                        popup.remove();
+                        document.removeEventListener('click', closePopup);
+                    }
+                };
+                
+                setTimeout(() => {
+                    document.addEventListener('click', closePopup);
+                }, 100);
             }
 
             loadMockData() {
