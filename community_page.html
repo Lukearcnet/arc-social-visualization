@@ -374,6 +374,10 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            .community-header {
+                display: none;
+            }
+            
             .community-page {
                 padding: var(--space-2);
             }
@@ -1397,7 +1401,7 @@
                 <!-- Header -->
                 <div class="community-header">
                     <h1>Community</h1>
-                    <div class="last-updated">Last updated at <span id="last-updated-time"></span></div>
+                    <div class="last-updated">updated at <span id="last-updated-time"></span></div>
                 </div>
 
                 <!-- Navigation Tabs -->
@@ -1508,9 +1512,6 @@
                                 <div class="radar-subtitle">Race to the top!</div>
                             </div>
 
-                            <button class="refresh-button" id="radar-refresh-button" title="Refresh radar">
-                                ↻
-                            </button>
 
                             <div id="radar-content">
                                 <div class="loading-state">
@@ -1556,9 +1557,6 @@
                                 <div class="health-subtitle">Connection strength analysis and relationship insights</div>
                             </div>
 
-                            <button class="refresh-button" id="health-refresh-button" title="Refresh health data">
-                                ↻
-                            </button>
 
                             <div id="health-content">
                                 <div class="loading-state">
@@ -2229,8 +2227,6 @@
 
                 console.log('🏥 [Health] Content updated, innerHTML length:', content.innerHTML.length);
 
-                // Setup refresh button
-                this.setupHealthRefresh();
             }
 
             renderHealthSummary(summary) {
@@ -2882,12 +2878,6 @@
                 }
             }
 
-            setupHealthRefresh() {
-                const refreshButton = document.getElementById('health-refresh-button');
-                if (refreshButton) {
-                    refreshButton.onclick = () => this.refreshHealth();
-                }
-            }
 
             async refreshQuests() {
                 const refreshButton = document.getElementById('quests-refresh-button');
