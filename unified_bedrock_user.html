@@ -162,33 +162,75 @@
             top: 20px;
             left: 400px; /* Move to the right of the control panel (320px + 80px padding) */
             z-index: 1000;
-            display: flex;
-            background: var(--stroke);
-            border-radius: var(--radius-2);
-            padding: 4px;
-            gap: 4px;
         }
 
-        .nav-btn {
+        .view-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-btn {
             padding: 8px 16px;
             border: none;
-            background: transparent;
-            color: var(--fg-muted);
+            background: var(--stroke);
+            color: var(--fg-primary);
             border-radius: var(--radius-2);
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 100px;
         }
 
-        .nav-btn.active {
+        .dropdown-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .dropdown-chevron {
+            font-size: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown-btn.open .dropdown-chevron {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius-2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            display: none;
+            min-width: 100px;
+        }
+
+        .dropdown-menu.open {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            color: var(--fg-primary);
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .dropdown-item.active {
             background: var(--fg-primary);
             color: var(--bg-primary);
-        }
-
-        .nav-btn:hover:not(.active) {
-            background: var(--bg-tertiary);
-            color: var(--fg-primary);
         }
 
         /* Iframe Container */
@@ -296,6 +338,10 @@
                 right: auto !important;
                 z-index: 1001 !important;
             }
+            
+            .dropdown-menu {
+                z-index: 1002 !important;
+            }
         }
         
         /* Extra small screens (iPhone mini) - keep same alignment */
@@ -393,11 +439,19 @@
     <div class="main-container">
         <!-- Content Area -->
         <div class="content-area">
-            <!-- View Toggle Buttons -->
+            <!-- View Toggle Dropdown -->
             <div class="view-toggle">
-                <button class="nav-btn active" id="mapBtn" onclick="switchView('map')">Map</button>
-                <button class="nav-btn" id="networkBtn" onclick="switchView('network')">Graph</button>
-                <button class="nav-btn" id="communityBtn" onclick="switchView('community')">Community</button>
+                <div class="view-dropdown" id="viewDropdown">
+                    <button class="dropdown-btn" id="dropdownBtn" onclick="toggleDropdown()">
+                        <span id="dropdownText">Map</span>
+                        <span class="dropdown-chevron">▼</span>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-item" data-view="map" onclick="selectView('map')">Map</div>
+                        <div class="dropdown-item" data-view="network" onclick="selectView('network')">Graph</div>
+                        <div class="dropdown-item" data-view="community" onclick="selectView('community')">Community</div>
+                    </div>
+                </div>
             </div>
             
             <!-- Map View Iframe -->
@@ -1001,7 +1055,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view');
             
-            if (viewParam === 'map' || viewParam === 'network') {
+            if (viewParam === 'map' || viewParam === 'network' || viewParam === 'community') {
                 currentView = viewParam;
             }
             
@@ -1010,6 +1064,17 @@
             
             // Switch to the correct view
             switchViewContent();
+            
+            // Add click outside to close dropdown
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('viewDropdown');
+                if (dropdown && !dropdown.contains(event.target)) {
+                    const dropdownBtn = document.getElementById('dropdownBtn');
+                    const dropdownMenu = document.getElementById('dropdownMenu');
+                    dropdownBtn.classList.remove('open');
+                    dropdownMenu.classList.remove('open');
+                }
+            });
             
             // Hide loading screen after a short delay
             setTimeout(() => {
@@ -1034,15 +1099,23 @@
             switchViewContent();
         }
 
-        // Update navigation buttons
+        // Update navigation dropdown
         function updateNavigation() {
-            const mapBtn = document.getElementById('mapBtn');
-            const networkBtn = document.getElementById('networkBtn');
-            const communityBtn = document.getElementById('communityBtn');
+            const dropdownText = document.getElementById('dropdownText');
+            const dropdownItems = document.querySelectorAll('.dropdown-item');
             
-            mapBtn.classList.toggle('active', currentView === 'map');
-            networkBtn.classList.toggle('active', currentView === 'network');
-            communityBtn.classList.toggle('active', currentView === 'community');
+            // Update dropdown button text
+            const viewNames = {
+                'map': 'Map',
+                'network': 'Graph',
+                'community': 'Community'
+            };
+            dropdownText.textContent = viewNames[currentView] || 'Map';
+            
+            // Update active state in dropdown items
+            dropdownItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.view === currentView);
+            });
         }
 
         // Update URL
@@ -1050,6 +1123,28 @@
             const url = new URL(window.location);
             url.searchParams.set('view', currentView);
             window.history.pushState({}, '', url);
+        }
+
+        // Toggle dropdown
+        function toggleDropdown() {
+            const dropdownBtn = document.getElementById('dropdownBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            dropdownBtn.classList.toggle('open');
+            dropdownMenu.classList.toggle('open');
+        }
+
+        // Select view from dropdown
+        function selectView(view) {
+            // Close dropdown
+            const dropdownBtn = document.getElementById('dropdownBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            dropdownBtn.classList.remove('open');
+            dropdownMenu.classList.remove('open');
+            
+            // Switch view
+            switchView(view);
         }
 
         // Switch view content
