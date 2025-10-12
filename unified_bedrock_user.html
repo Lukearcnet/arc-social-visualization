@@ -1037,7 +1037,7 @@
             // Initialize bedrocks after setting user name
             initializeBedrocks();
             
-            // Fallback: If community view is active and no iframe has loaded after 1ms, force completion
+            // Fallback: If community view is active and no iframe has loaded after 3 seconds, force completion
             if (currentView === 'community') {
                 setTimeout(() => {
                     if (!visibleIframeLoaded) {
@@ -1045,7 +1045,7 @@
                         visibleIframeLoaded = true;
                         checkLoadingComplete();
                     }
-                }, 1);
+                }, 3000);
             }
         }
 
