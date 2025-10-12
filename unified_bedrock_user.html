@@ -954,13 +954,24 @@
             // Track which iframe is the currently visible one
             let visibleIframeLoaded = false;
             let hiddenIframeLoaded = false;
+            let communityIframeLoaded = false;
             
             // Function to check if we should hide loading screen
             function checkLoadingComplete() {
-                if (visibleIframeLoaded && hiddenIframeLoaded) {
-                    setTimeout(() => {
-                        hideLoadingScreen();
-                    }, 2800); // Give more time for the auto-selection to complete
+                // For community view, we need the community iframe + one other iframe
+                if (currentView === 'community') {
+                    if (visibleIframeLoaded && (hiddenIframeLoaded || communityIframeLoaded)) {
+                        setTimeout(() => {
+                            hideLoadingScreen();
+                        }, 2800); // Give more time for the auto-selection to complete
+                    }
+                } else {
+                    // For map/network views, use original logic
+                    if (visibleIframeLoaded && hiddenIframeLoaded) {
+                        setTimeout(() => {
+                            hideLoadingScreen();
+                        }, 2800); // Give more time for the auto-selection to complete
+                    }
                 }
             }
             
@@ -987,6 +998,18 @@
                     checkLoadingComplete();
                 };
                 networkFrame.src = networkUrl;
+            }
+            
+            // Add community iframe load handler
+            if (communityFrame) {
+                communityFrame.onload = function() {
+                    if (currentView === 'community') {
+                        visibleIframeLoaded = true;
+                    } else {
+                        communityIframeLoaded = true;
+                    }
+                    checkLoadingComplete();
+                };
             }
             
             // Initialize bedrocks after setting user name
