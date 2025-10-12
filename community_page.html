@@ -3460,6 +3460,12 @@
                 this.barRaceData = this.barRaceData || {};
                 this.barRaceData.meta = { ...(this.barRaceData.meta || {}), mode: viewMode };
                 
+                // Clear any existing empty message from chart container
+                const chartContainer = document.getElementById('rbr-chart');
+                if (chartContainer) {
+                    chartContainer.innerHTML = '';
+                }
+                
                 // Store last network data with mode
                 this._lastNetworkData = { 
                     ...data, 
