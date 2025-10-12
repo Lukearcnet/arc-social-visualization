@@ -1314,9 +1314,8 @@
             pointer-events: auto;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            width: 350px;
-            min-width: 350px;
-            max-width: 350px;
+            min-width: 200px;
+            /* Width will be set dynamically by JavaScript to match trigger card */
         }
 
         /* Mobile responsive dropdown */
@@ -1324,9 +1323,7 @@
             .portal-dropdown {
                 left: var(--space-4) !important;
                 right: var(--space-4) !important;
-                width: 350px !important;
-                min-width: 350px !important;
-                max-width: 350px !important;
+                /* Width will be set dynamically by JavaScript to match trigger card */
             }
         }
 
@@ -2075,12 +2072,12 @@
                     dropdown.style.left = `${padding}px`;
                     dropdown.style.right = `${padding}px`;
                     dropdown.style.top = `${rect.bottom + 8}px`;
-                    dropdown.style.width = 'auto';
+                    dropdown.style.width = `${rect.width}px`; // Match the trigger card width
                 } else {
-                    // Desktop positioning - center the dropdown
+                    // Desktop positioning - match the trigger card width
                     const viewportWidth = window.innerWidth;
                     const viewportHeight = window.innerHeight;
-                    const dropdownWidth = 350; // match CSS width
+                    const dropdownWidth = rect.width; // Match the trigger card width
                     const dropdownHeight = 200; // max-height from CSS
                     
                     // Center the dropdown horizontally relative to the trigger card
