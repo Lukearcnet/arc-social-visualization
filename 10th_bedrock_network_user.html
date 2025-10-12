@@ -1852,6 +1852,15 @@ DO NOT use file:// URLs with this version
                     top: 20px;
                 }
                 
+                /* Desktop z-index fixes - ensure search appears above settings */
+                .search-control-floating {
+                    z-index: 10001 !important;
+                }
+                
+                .settings-control-floating {
+                    z-index: 10000 !important;
+                }
+                
                 /* Ensure desktop sidebar has proper height constraint */
                 .sidebar {
                     max-height: 100vh;
