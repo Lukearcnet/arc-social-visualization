@@ -3408,6 +3408,49 @@
                 `;
             }
 
+            renderRadarEmptyChart() {
+                // Show empty chart message without replacing control panel
+                const content = document.getElementById('radar-content');
+                
+                // Hide loading state
+                const loadingState = content.querySelector('.loading-state');
+                if (loadingState) {
+                    loadingState.style.display = 'none';
+                }
+                
+                // Show bar race chart container
+                const barRace = content.querySelector('.radar-bar-race');
+                if (barRace) {
+                    barRace.style.display = 'block';
+                    
+                    // Only replace the chart area, keep controls intact
+                    const existingChart = barRace.querySelector('#rbr-chart');
+                    if (existingChart) {
+                        // Replace only the chart content
+                        existingChart.innerHTML = `
+                            <div style="text-align: center; padding: 60px 20px; color: var(--fg-muted);">
+                                <div style="font-size: 2rem; margin-bottom: var(--space-3);">📊</div>
+                                <div style="font-size: var(--text-lg); margin-bottom: var(--space-2);">No data for this time period</div>
+                                <div style="font-size: var(--text-sm);">Try selecting a different time window above</div>
+                            </div>
+                        `;
+                    } else {
+                        // Create chart container if it doesn't exist
+                        const chartContainer = document.createElement('div');
+                        chartContainer.id = 'rbr-chart';
+                        chartContainer.className = 'bar-race-host';
+                        chartContainer.innerHTML = `
+                            <div style="text-align: center; padding: 60px 20px; color: var(--fg-muted);">
+                                <div style="font-size: 2rem; margin-bottom: var(--space-3);">📊</div>
+                                <div style="font-size: var(--text-lg); margin-bottom: var(--space-2);">No data for this time period</div>
+                                <div style="font-size: var(--text-sm);">Try selecting a different time window above</div>
+                            </div>
+                        `;
+                        barRace.appendChild(chartContainer);
+                    }
+                }
+            }
+
             // Bar Race Chart Implementation
             async renderRadarBarRace(data, viewMode = 'connections') {
                 console.log('📊 [Bar Race] Rendering bar race chart:', { data, viewMode });
@@ -3466,7 +3509,7 @@
                 console.log('[Bar Race] frames built for:', this.barRaceData.framesForMode, 'frameCount:', frames.length);
                 
                 if (frames.length === 0) {
-                    this.renderRadarEmpty();
+                    this.renderRadarEmptyChart();
                     return;
                 }
                 
