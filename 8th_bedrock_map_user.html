@@ -2312,8 +2312,12 @@
                 }
             }
             
+            // Determine marker size based on screen size
+            const isMobile = window.matchMedia('(max-width: 900px)').matches;
+            const markerRadius = isMobile ? 8 : 4;
+            
             const marker = L.circleMarker([location.latitude, location.longitude], {
-                radius: 4, /* Further reduced from 6 */
+                radius: markerRadius,
                 fillColor: fillColor,
                 color: markerColor,
                 weight: 2, /* Further reduced from 3 */
@@ -2946,8 +2950,12 @@
                 };
                 
                 // Create marker for this connection
+                // Determine marker size based on screen size
+                const isMobile = window.matchMedia('(max-width: 900px)').matches;
+                const markerRadius = isMobile ? 8 : 4;
+                
                 const marker = L.circleMarker([location.latitude, location.longitude], {
-                    radius: 4, // Match normal marker size
+                    radius: markerRadius,
                     fillColor: '#0E76A8', // Deep azure blue for searched user's connections
                     color: '#0E76A8',
                     weight: 2,
