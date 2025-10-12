@@ -958,9 +958,17 @@
             
             // Function to check if we should hide loading screen
             function checkLoadingComplete() {
+                console.log('🔍 [Loading] Checking completion:', {
+                    currentView,
+                    visibleIframeLoaded,
+                    hiddenIframeLoaded,
+                    communityIframeLoaded
+                });
+                
                 // For community view, we need the community iframe + one other iframe
                 if (currentView === 'community') {
                     if (visibleIframeLoaded && (hiddenIframeLoaded || communityIframeLoaded)) {
+                        console.log('✅ [Loading] Community view ready - hiding loading screen');
                         setTimeout(() => {
                             hideLoadingScreen();
                         }, 2800); // Give more time for the auto-selection to complete
@@ -968,6 +976,7 @@
                 } else {
                     // For map/network views, use original logic
                     if (visibleIframeLoaded && hiddenIframeLoaded) {
+                        console.log('✅ [Loading] Map/Network view ready - hiding loading screen');
                         setTimeout(() => {
                             hideLoadingScreen();
                         }, 2800); // Give more time for the auto-selection to complete
@@ -1002,18 +1011,42 @@
             
             // Add community iframe load handler
             if (communityFrame) {
-                communityFrame.onload = function() {
+                // Check if community iframe is already loaded (pre-loaded in HTML)
+                if (communityFrame.contentDocument && communityFrame.contentDocument.readyState === 'complete') {
+                    console.log('📄 Community iframe already loaded');
                     if (currentView === 'community') {
                         visibleIframeLoaded = true;
                     } else {
                         communityIframeLoaded = true;
                     }
                     checkLoadingComplete();
-                };
+                } else {
+                    // Set up load handler for future loads
+                    communityFrame.onload = function() {
+                        console.log('📄 Community iframe loaded via onload');
+                        if (currentView === 'community') {
+                            visibleIframeLoaded = true;
+                        } else {
+                            communityIframeLoaded = true;
+                        }
+                        checkLoadingComplete();
+                    };
+                }
             }
             
             // Initialize bedrocks after setting user name
             initializeBedrocks();
+            
+            // Fallback: If community view is active and no iframe has loaded after 5 seconds, force completion
+            if (currentView === 'community') {
+                setTimeout(() => {
+                    if (!visibleIframeLoaded) {
+                        console.log('⚠️ Community iframe loading timeout - forcing completion');
+                        visibleIframeLoaded = true;
+                        checkLoadingComplete();
+                    }
+                }, 5000);
+            }
         }
 
         // Check for existing authentication
