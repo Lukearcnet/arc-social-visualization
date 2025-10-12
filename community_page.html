@@ -3465,6 +3465,10 @@
                 if (chartContainer) {
                     // Clear the container but preserve the structure for re-initialization
                     chartContainer.innerHTML = '';
+                    // Reset SVG reference to force re-initialization
+                    if (this.barRaceData) {
+                        this.barRaceData.svg = null;
+                    }
                 }
                 
                 // Store last network data with mode
@@ -3868,7 +3872,13 @@
 
                 // Create container <svg> + <g> once
                 let svg = this.barRaceData?.svg;
-                if (!svg || !svg.tagName || svg.tagName.toLowerCase() !== 'svg') {
+                console.log('🔧 [Bar Race] SVG check:', { 
+                    hasSvg: !!svg, 
+                    tagName: svg?.tagName, 
+                    isInDOM: svg ? document.contains(svg) : false 
+                });
+                if (!svg || !svg.tagName || svg.tagName.toLowerCase() !== 'svg' || !document.contains(svg)) {
+                    console.log('🔧 [Bar Race] Creating new SVG element');
                     svg = d3.select(host).html('').append('svg')
                         .attr('width', width).attr('height', height)
                         .attr('viewBox', `0 0 ${width} ${height}`)
