@@ -2104,6 +2104,9 @@
             }
 
             toggleDegreeDropdown(degree) {
+                const card = document.getElementById(`${degree}-degree-card`);
+                if (!card) return;
+
                 // Check if this dropdown is already open
                 if (this.currentDropdown && this.currentTriggerCard && 
                     this.currentTriggerCard.id === `${degree}-degree-card`) {
@@ -2114,9 +2117,6 @@
 
                 // Close all other dropdowns first
                 this.closeAllDropdowns();
-
-                const card = document.getElementById(`${degree}-degree-card`);
-                if (!card) return;
 
                 const users = this.degreeData[degree] || [];
                 if (users.length === 0) {
