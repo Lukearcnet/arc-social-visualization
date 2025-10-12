@@ -1037,11 +1037,19 @@
             // Initialize bedrocks after setting user name
             initializeBedrocks();
             
-            // Fallback: If community view is active and no iframe has loaded after 3 seconds, force completion
+            // For community view, skip loading screen entirely - just show the content
             if (currentView === 'community') {
+                console.log('📄 Community view - skipping loading screen');
+                // Immediately mark as loaded since we're not showing loading screen
+                visibleIframeLoaded = true;
+                hiddenIframeLoaded = true; // Mark one hidden iframe as loaded to satisfy the logic
+                // Hide any existing loading screen
+                hideLoadingScreen();
+            } else {
+                // Fallback: If other views and no iframe has loaded after 3 seconds, force completion
                 setTimeout(() => {
                     if (!visibleIframeLoaded) {
-                        console.log('⚠️ Community iframe loading timeout - forcing completion');
+                        console.log('⚠️ Iframe loading timeout - forcing completion');
                         visibleIframeLoaded = true;
                         checkLoadingComplete();
                     }
@@ -1059,7 +1067,12 @@
                     
                     // Skip login overlay and go straight to loading screen
                     hideLoginOverlay();
-                    showLoadingScreen();
+                    
+                    // Skip loading screen for community view - it loads instantly
+                    if (currentView !== 'community') {
+                        showLoadingScreen();
+                    }
+                    
                     passUserToBedrocks(authenticatedUser.user_id, authenticatedUser.name);
                     return true;
                 } catch (error) {
