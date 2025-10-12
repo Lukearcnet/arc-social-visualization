@@ -2104,6 +2104,14 @@
             }
 
             toggleDegreeDropdown(degree) {
+                // Check if this dropdown is already open
+                if (this.currentDropdown && this.currentTriggerCard && 
+                    this.currentTriggerCard.id === `${degree}-degree-card`) {
+                    // Same dropdown is already open, close it
+                    this.closeAllDropdowns();
+                    return;
+                }
+
                 // Close all other dropdowns first
                 this.closeAllDropdowns();
 
