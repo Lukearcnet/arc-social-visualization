@@ -318,7 +318,7 @@ DO NOT use file:// URLs with this version
                 top: 100%; /* Position below the button */
                 left: 0;
                 width: 100%;
-                height: 400px; /* 10x the height of search input (40px * 10 = 400px) */
+                height: 120px; /* Reduced from 400px to fit content better */
                 background: rgba(20, 20, 20, 0.98); /* Same as sidebar background */
                 border: 1px solid rgba(64, 64, 64, 0.8);
                 border-radius: var(--radius-1);
@@ -454,7 +454,7 @@ DO NOT use file:// URLs with this version
                 backdrop-filter: blur(10px);
                 max-height: 200px;
                 overflow-y: auto;
-                z-index: 1003;
+                z-index: 1004;
                 display: none;
             }
             
@@ -2034,7 +2034,7 @@ DO NOT use file:// URLs with this version
                                             <div class="settings-description">Adaptive physics that recalculates layout when timeline or filters change</div>
                                         </div>
                                         <div class="toggle-switch">
-                                            <input type="checkbox" id="syncTimelinePhysics" class="toggle-input">
+                                            <input type="checkbox" id="syncTimelinePhysics" class="toggle-input" checked>
                                             <span class="toggle-slider"></span>
                                         </div>
                                     </div>
@@ -4063,6 +4063,14 @@ Remember: You're helping someone explore and understand their social network dat
                 
                 if (syncToggle) {
                     console.log('⚙️ Initializing settings toggle...');
+                    
+                    // Set default state to enabled
+                    syncToggle.checked = true;
+                    dynamicLayoutEnabled = true;
+                    console.log('⚙️ DYNAMIC LAYOUT: ENABLED (default)');
+                    
+                    // Initialize dynamic layout system by default
+                    initDynamicLayoutSystem();
                     
                     syncToggle.addEventListener('change', function() {
                         const isEnabled = this.checked;
