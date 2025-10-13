@@ -2011,41 +2011,19 @@
                 const thirdDegreeCard = document.getElementById('third-degree-card');
 
                 if (firstDegreeCard) {
-                    firstDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('first'));
+                    firstDegreeCard.addEventListener('click', () => this.toggleDegreeCard('first'));
                 }
                 if (secondDegreeCard) {
-                    secondDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('second'));
+                    secondDegreeCard.addEventListener('click', () => this.toggleDegreeCard('second'));
                 }
                 if (thirdDegreeCard) {
-                    thirdDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('third'));
+                    thirdDegreeCard.addEventListener('click', () => this.toggleDegreeCard('third'));
                 }
 
-                // Close dropdowns when clicking outside or on same card
+                // Close dropdowns when clicking outside
                 document.addEventListener('click', (e) => {
                     const clickedCard = e.target.closest('.recap-card.clickable');
                     const clickedDropdown = e.target.closest('.portal-dropdown');
-                    
-                    console.log('🔍 [Debug] Click detected:', {
-                        clickedCard: clickedCard?.id,
-                        currentTriggerCard: this.currentTriggerCard?.id,
-                        hasDropdown: !!this.currentDropdown,
-                        isSameCard: clickedCard === this.currentTriggerCard
-                    });
-                    
-                    // If clicking on a card and there's an open dropdown
-                    if (clickedCard && this.currentTriggerCard) {
-                        // Check if it's the same card that's already open
-                        if (clickedCard === this.currentTriggerCard) {
-                            // Don't close if we just created the dropdown
-                            if (this._justCreatedDropdown) {
-                                console.log('🚫 [Debug] Ignoring close - just created dropdown');
-                                return;
-                            }
-                            console.log('🔄 [Debug] Same card clicked, closing dropdown');
-                            this.closeAllDropdowns();
-                            return;
-                        }
-                    }
                     
                     // If clicking outside both cards and dropdowns
                     if (!clickedCard && !clickedDropdown) {
@@ -2130,6 +2108,22 @@
                 }
             }
 
+            toggleDegreeCard(degree) {
+                console.log(`🎯 [Debug] toggleDegreeCard called for: ${degree}`);
+                
+                // Check if this card's dropdown is currently open
+                if (this.currentDropdown && this.currentTriggerCard && 
+                    this.currentTriggerCard.id === `${degree}-degree-card`) {
+                    console.log(`🔄 [Debug] Closing ${degree} dropdown`);
+                    this.closeAllDropdowns();
+                    return;
+                }
+                
+                // If we get here, either no dropdown is open OR a different dropdown is open
+                console.log(`📂 [Debug] Opening ${degree} dropdown`);
+                this.toggleDegreeDropdown(degree);
+            }
+
             toggleDegreeDropdown(degree) {
                 console.log(`🎯 [Debug] toggleDegreeDropdown called for: ${degree}`);
                 
@@ -2182,12 +2176,6 @@
 
                 // Store reference for cleanup
                 this.currentDropdown = dropdown;
-                
-                // Set flag to prevent immediate close by global listener
-                this._justCreatedDropdown = true;
-                setTimeout(() => {
-                    this._justCreatedDropdown = false;
-                }, 100);
             }
 
             closeAllDropdowns() {
