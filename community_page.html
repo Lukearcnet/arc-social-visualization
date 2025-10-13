@@ -2111,7 +2111,7 @@
             toggleDegreeCard(degree) {
                 console.log(`🎯 [Debug] toggleDegreeCard called for: ${degree}`);
                 
-                // Check if this card's dropdown is currently open BEFORE closing anything
+                // Check if this card's dropdown is currently open
                 const isCurrentlyOpen = this.currentDropdown && this.currentTriggerCard && 
                     this.currentTriggerCard.id === `${degree}-degree-card`;
                 
@@ -2123,14 +2123,18 @@
                 
                 // If we get here, either no dropdown is open OR a different dropdown is open
                 console.log(`📂 [Debug] Opening ${degree} dropdown`);
+                
+                // Only close other dropdowns if a different one is open
+                if (this.currentDropdown && this.currentTriggerCard) {
+                    console.log(`🔄 [Debug] Closing different dropdown first`);
+                    this.closeAllDropdowns();
+                }
+                
                 this.toggleDegreeDropdown(degree);
             }
 
             toggleDegreeDropdown(degree) {
                 console.log(`🎯 [Debug] toggleDegreeDropdown called for: ${degree}`);
-                
-                // Close all other dropdowns first
-                this.closeAllDropdowns();
 
                 const card = document.getElementById(`${degree}-degree-card`);
                 if (!card) {
