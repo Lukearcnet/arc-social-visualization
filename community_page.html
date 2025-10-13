@@ -2111,9 +2111,11 @@
             toggleDegreeCard(degree) {
                 console.log(`🎯 [Debug] toggleDegreeCard called for: ${degree}`);
                 
-                // Check if this card's dropdown is currently open
-                if (this.currentDropdown && this.currentTriggerCard && 
-                    this.currentTriggerCard.id === `${degree}-degree-card`) {
+                // Check if this card's dropdown is currently open BEFORE closing anything
+                const isCurrentlyOpen = this.currentDropdown && this.currentTriggerCard && 
+                    this.currentTriggerCard.id === `${degree}-degree-card`;
+                
+                if (isCurrentlyOpen) {
                     console.log(`🔄 [Debug] Closing ${degree} dropdown`);
                     this.closeAllDropdowns();
                     return;
