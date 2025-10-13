@@ -4,6 +4,7 @@
 
 const { getExport } = require('../../lib/community/exportReader');
 const { getDisplayName, userById } = require('../../lib/community/names');
+const { filterTapsByCity } = require('../../lib/community/cityFilter');
 
 // Main handler
 const handler = async (req, res) => {
@@ -13,7 +14,7 @@ const handler = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { user_id, hours = 24, debug } = req.query;
+  const { user_id, hours = 24, city, debug } = req.query;
   const isDebug = debug === '1';
   const hoursBack = parseInt(hours) || 24;
   
@@ -32,12 +33,27 @@ const handler = async (req, res) => {
     const windowStart = new Date(now.getTime() - (hoursBack * 60 * 60 * 1000));
     
     // Filter taps where user participated within the time window
-    const userTaps = taps.filter(tap => {
+    let userTaps = taps.filter(tap => {
       const tapTime = new Date(tap.time);
       const id1 = tap.user1_id || tap.id1;
       const id2 = tap.user2_id || tap.id2;
       return (id1 === user_id || id2 === user_id) && tapTime >= windowStart;
     });
+    
+    // Apply city filtering if specified
+    if (city) {
+      const originalCount = userTaps.length;
+      userTaps = filterTapsByCity(userTaps, city);
+      
+      if (isDebug) {
+        console.log('📡 [radar] City filtering results:', {
+          city: city,
+          originalTaps: originalCount,
+          filteredTaps: userTaps.length,
+          filteredOut: originalCount - userTaps.length
+        });
+      }
+    }
     
     if (isDebug) {
       console.log('📡 [radar] Initial filtering results:', {
@@ -236,7 +252,8 @@ const handler = async (req, res) => {
       buckets: bucketsArray,
       top_current_window: topCurrentWindow,
       meta: {
-        duration_ms: Date.now() - startTime
+        duration_ms: Date.now() - startTime,
+        city_filter: city || null
       }
     };
     
