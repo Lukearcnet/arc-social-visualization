@@ -2104,6 +2104,15 @@
             }
 
             toggleDegreeDropdown(degree) {
+                // Check if THIS specific dropdown is already open BEFORE clearing anything
+                if (this.currentDropdown && this.currentTriggerCard && 
+                    this.currentTriggerCard.id === `${degree}-degree-card`) {
+                    // Same dropdown is open, close it and return
+                    this.closeAllDropdowns();
+                    return;
+                }
+                
+                // If we get here, either no dropdown is open OR a different dropdown is open
                 // Close all other dropdowns first
                 this.closeAllDropdowns();
 
