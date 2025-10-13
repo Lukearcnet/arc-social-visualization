@@ -2020,9 +2020,22 @@
                     thirdDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('third'));
                 }
 
-                // Close dropdowns when clicking outside
+                // Close dropdowns when clicking outside or on same card
                 document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.recap-card.clickable') && !e.target.closest('.portal-dropdown')) {
+                    const clickedCard = e.target.closest('.recap-card.clickable');
+                    const clickedDropdown = e.target.closest('.portal-dropdown');
+                    
+                    // If clicking on a card and there's an open dropdown
+                    if (clickedCard && this.currentTriggerCard) {
+                        // Check if it's the same card that's already open
+                        if (clickedCard === this.currentTriggerCard) {
+                            this.closeAllDropdowns();
+                            return;
+                        }
+                    }
+                    
+                    // If clicking outside both cards and dropdowns
+                    if (!clickedCard && !clickedDropdown) {
                         this.closeAllDropdowns();
                     }
                 });
