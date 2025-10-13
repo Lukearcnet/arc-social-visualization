@@ -2150,12 +2150,6 @@
                 
                 console.log(`✅ [Debug] Creating dropdown for ${degree} with ${users.length} users`);
 
-                // Set flag to prevent immediate close by global listener
-                this._justCreatedDropdown = true;
-                setTimeout(() => {
-                    this._justCreatedDropdown = false;
-                }, 100);
-
                 // Store reference to trigger card for positioning
                 this.currentTriggerCard = card;
 
@@ -2188,6 +2182,12 @@
 
                 // Store reference for cleanup
                 this.currentDropdown = dropdown;
+                
+                // Set flag to prevent immediate close by global listener
+                this._justCreatedDropdown = true;
+                setTimeout(() => {
+                    this._justCreatedDropdown = false;
+                }, 100);
             }
 
             closeAllDropdowns() {
