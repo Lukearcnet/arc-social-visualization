@@ -2037,7 +2037,10 @@
                         // Check if it's the same card that's already open
                         if (clickedCard === this.currentTriggerCard) {
                             console.log('🔄 [Debug] Same card clicked, closing dropdown');
-                            this.closeAllDropdowns();
+                            // Add small delay to prevent immediate close after creation
+                            setTimeout(() => {
+                                this.closeAllDropdowns();
+                            }, 10);
                             return;
                         }
                     }
