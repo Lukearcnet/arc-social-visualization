@@ -2011,37 +2011,13 @@
                 const thirdDegreeCard = document.getElementById('third-degree-card');
 
                 if (firstDegreeCard) {
-                    firstDegreeCard.addEventListener('click', () => {
-                        // Check if this dropdown is already open
-                        if (this.currentDropdown && this.currentTriggerCard && 
-                            this.currentTriggerCard.id === 'first-degree-card') {
-                            this.closeAllDropdowns();
-                        } else {
-                            this.toggleDegreeDropdown('first');
-                        }
-                    });
+                    firstDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('first'));
                 }
                 if (secondDegreeCard) {
-                    secondDegreeCard.addEventListener('click', () => {
-                        // Check if this dropdown is already open
-                        if (this.currentDropdown && this.currentTriggerCard && 
-                            this.currentTriggerCard.id === 'second-degree-card') {
-                            this.closeAllDropdowns();
-                        } else {
-                            this.toggleDegreeDropdown('second');
-                        }
-                    });
+                    secondDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('second'));
                 }
                 if (thirdDegreeCard) {
-                    thirdDegreeCard.addEventListener('click', () => {
-                        // Check if this dropdown is already open
-                        if (this.currentDropdown && this.currentTriggerCard && 
-                            this.currentTriggerCard.id === 'third-degree-card') {
-                            this.closeAllDropdowns();
-                        } else {
-                            this.toggleDegreeDropdown('third');
-                        }
-                    });
+                    thirdDegreeCard.addEventListener('click', () => this.toggleDegreeDropdown('third'));
                 }
 
                 // Close dropdowns when clicking outside
