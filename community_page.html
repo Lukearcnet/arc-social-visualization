@@ -154,6 +154,13 @@
             color: var(--fg-primary);
         }
 
+        /* Prevent child elements from stealing clicks */
+        .recap-card.clickable .recap-value,
+        .recap-card.clickable .recap-subtitle,
+        .recap-card.clickable h3 {
+            pointer-events: none;
+        }
+
 
         /* Leaderboard */
         .leaderboard-section {
@@ -1449,17 +1456,17 @@
 
                                 <!-- Recap Cards -->
                                 <div class="recap-strip">
-                                    <div class="recap-card clickable" id="first-degree-card">
+                                    <div class="recap-card clickable" id="first-degree-card" data-degree="first">
                                         <h3>1st Degree Taps</h3>
                                         <div class="recap-value" id="first-degree-count">-</div>
                                         <div class="recap-subtitle">Direct connections</div>
                                     </div>
-                                    <div class="recap-card clickable" id="second-degree-card">
+                                    <div class="recap-card clickable" id="second-degree-card" data-degree="second">
                                         <h3>2nd Degree Taps</h3>
                                         <div class="recap-value" id="second-degree-count">-</div>
                                         <div class="recap-subtitle">Friends of friends</div>
                                     </div>
-                                    <div class="recap-card clickable" id="third-degree-card">
+                                    <div class="recap-card clickable" id="third-degree-card" data-degree="third">
                                         <h3>3rd Degree Taps</h3>
                                         <div class="recap-value" id="third-degree-count">-</div>
                                         <div class="recap-subtitle">Friends of friends of friends</div>
@@ -2005,32 +2012,33 @@
             }
 
             setupDegreeDropdowns() {
-                // Setup click handlers for degree cards
-                const firstDegreeCard = document.getElementById('first-degree-card');
-                const secondDegreeCard = document.getElementById('second-degree-card');
-                const thirdDegreeCard = document.getElementById('third-degree-card');
+                const container = document.getElementById('pulse-section') || document;
 
-                if (firstDegreeCard) {
-                    firstDegreeCard.addEventListener('click', () => this.toggleDegreeCard('first'));
-                }
-                if (secondDegreeCard) {
-                    secondDegreeCard.addEventListener('click', () => this.toggleDegreeCard('second'));
-                }
-                if (thirdDegreeCard) {
-                    thirdDegreeCard.addEventListener('click', () => this.toggleDegreeCard('third'));
-                }
+                // Delegated click: runs once per physical click, before bubbling handlers
+                container.addEventListener('click', (e) => {
+                    const card = e.target.closest('.recap-card.clickable');
+                    if (!card || !container.contains(card)) return;
+                    e.stopImmediatePropagation();
+                    e.stopPropagation();
+                    e.preventDefault();
 
-                // Close dropdowns when clicking outside
-                document.addEventListener('click', (e) => {
-                    const clickedCard = e.target.closest('.recap-card.clickable');
-                    const clickedDropdown = e.target.closest('.portal-dropdown');
-                    
-                    // If clicking outside both cards and dropdowns
-                    if (!clickedCard && !clickedDropdown) {
-                        console.log('🚪 [Debug] Clicked outside, closing dropdown');
-                        this.closeAllDropdowns();
+                    const degree = card.dataset.degree ||
+                        (card.id || '').replace('-degree-card', ''); // fallback
+                    if (degree) {
+                        // Debounce rapid clicks
+                        if (this._degLock) return;
+                        this._degLock = true;
+                        this.toggleDegreeCard(degree);
+                        setTimeout(() => (this._degLock = false), 120);
                     }
-                });
+                }, true);
+
+                // Close on outside click (ignore clicks inside dropdown portal)
+                document.addEventListener('click', (e) => {
+                    const inCard = e.target.closest('.recap-card.clickable');
+                    const inDropdown = e.target.closest('.portal-dropdown');
+                    if (!inCard && !inDropdown) this.closeAllDropdowns();
+                }, true);
 
                 // Close dropdowns on escape key
                 document.addEventListener('keydown', (e) => {
@@ -2109,58 +2117,31 @@
             }
 
             toggleDegreeCard(degree) {
-                console.log(`🎯 [Debug] toggleDegreeCard called for: ${degree}`);
-                
-                // Check if this card's dropdown is currently open
-                const isCurrentlyOpen = this.currentDropdown && this.currentTriggerCard && 
-                    this.currentTriggerCard.id === `${degree}-degree-card`;
-                
-                if (isCurrentlyOpen) {
-                    console.log(`🔄 [Debug] Closing ${degree} dropdown`);
-                    this.closeAllDropdowns();
-                    return;
+                const card = document.getElementById(`${degree}-degree-card`);
+                if (!card) return;
+
+                const wasOpen = card.classList.contains('open');
+
+                // close everything first
+                this.closeAllDropdowns();
+
+                if (!wasOpen) {
+                    this.openDegreeDropdown(degree, card);
                 }
-                
-                // If we get here, either no dropdown is open OR a different dropdown is open
-                console.log(`📂 [Debug] Opening ${degree} dropdown`);
-                
-                // Only close other dropdowns if a different one is open
-                if (this.currentDropdown && this.currentTriggerCard) {
-                    console.log(`🔄 [Debug] Closing different dropdown first`);
-                    this.closeAllDropdowns();
-                }
-                
-                this.toggleDegreeDropdown(degree);
             }
 
-            toggleDegreeDropdown(degree) {
-                console.log(`🎯 [Debug] toggleDegreeDropdown called for: ${degree}`);
-
-                const card = document.getElementById(`${degree}-degree-card`);
-                if (!card) {
-                    console.log(`❌ [Debug] Card not found: ${degree}-degree-card`);
-                    return;
-                }
+            openDegreeDropdown(degree, card) {
+                if (!card) return;
 
                 const users = this.degreeData[degree] || [];
                 if (users.length === 0) {
                     console.log(`No ${degree} degree users to show`);
                     return;
                 }
-                
-                console.log(`✅ [Debug] Creating dropdown for ${degree} with ${users.length} users`);
 
-                // Store reference to trigger card for positioning
-                this.currentTriggerCard = card;
-
-                // Get portal root
                 const portalRoot = this.getPortalRoot();
-
-                // Create dropdown in portal
                 const dropdown = document.createElement('div');
                 dropdown.className = 'portal-dropdown';
-
-                // Populate dropdown with users
                 dropdown.innerHTML = users.map(user => `
                     <div class="degree-user-item">
                         <div class="user-name">${user.name}</div>
@@ -2169,19 +2150,20 @@
                         </div>
                     </div>
                 `).join('');
-
-                // Add to portal first
                 portalRoot.appendChild(dropdown);
 
-                // Position dropdown after it's in the DOM
+                this.currentTriggerCard = card;
+                this.currentDropdown = dropdown;
+
+                // mark state on card
+                card.classList.add('open');
+
+                // position after mount
                 this.updateDropdownPosition();
 
-                // Focus management
+                // focus (optional)
                 dropdown.setAttribute('tabindex', '0');
                 dropdown.focus();
-
-                // Store reference for cleanup
-                this.currentDropdown = dropdown;
             }
 
             closeAllDropdowns() {
@@ -2194,6 +2176,10 @@
                 // Clear references
                 this.currentTriggerCard = null;
                 this.currentDropdown = null;
+                
+                // Clear open state from all cards
+                document.querySelectorAll('.recap-card.clickable.open')
+                    .forEach(c => c.classList.remove('open'));
             }
 
             async loadQuests() {
