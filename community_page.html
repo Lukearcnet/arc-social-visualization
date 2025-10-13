@@ -2025,10 +2025,18 @@
                     const clickedCard = e.target.closest('.recap-card.clickable');
                     const clickedDropdown = e.target.closest('.portal-dropdown');
                     
+                    console.log('🔍 [Debug] Click detected:', {
+                        clickedCard: clickedCard?.id,
+                        currentTriggerCard: this.currentTriggerCard?.id,
+                        hasDropdown: !!this.currentDropdown,
+                        isSameCard: clickedCard === this.currentTriggerCard
+                    });
+                    
                     // If clicking on a card and there's an open dropdown
                     if (clickedCard && this.currentTriggerCard) {
                         // Check if it's the same card that's already open
                         if (clickedCard === this.currentTriggerCard) {
+                            console.log('🔄 [Debug] Same card clicked, closing dropdown');
                             this.closeAllDropdowns();
                             return;
                         }
@@ -2036,6 +2044,7 @@
                     
                     // If clicking outside both cards and dropdowns
                     if (!clickedCard && !clickedDropdown) {
+                        console.log('🚪 [Debug] Clicked outside, closing dropdown');
                         this.closeAllDropdowns();
                     }
                 });
@@ -2117,17 +2126,24 @@
             }
 
             toggleDegreeDropdown(degree) {
+                console.log(`🎯 [Debug] toggleDegreeDropdown called for: ${degree}`);
+                
                 // Close all other dropdowns first
                 this.closeAllDropdowns();
 
                 const card = document.getElementById(`${degree}-degree-card`);
-                if (!card) return;
+                if (!card) {
+                    console.log(`❌ [Debug] Card not found: ${degree}-degree-card`);
+                    return;
+                }
 
                 const users = this.degreeData[degree] || [];
                 if (users.length === 0) {
                     console.log(`No ${degree} degree users to show`);
                     return;
                 }
+                
+                console.log(`✅ [Debug] Creating dropdown for ${degree} with ${users.length} users`);
 
                 // Store reference to trigger card for positioning
                 this.currentTriggerCard = card;
