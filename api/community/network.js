@@ -4,6 +4,7 @@
 
 const { getExport } = require('../../lib/community/exportReader');
 const { getDisplayName, userById, buildUserIndex } = require('../../lib/community/names');
+const { filterTapsByCity } = require('../../lib/community/cityFilter');
 
 // Main handler
 const handler = async (req, res) => {
@@ -13,7 +14,7 @@ const handler = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { user_id, hours = 168, mode, debug } = req.query;
+  const { user_id, hours = 168, mode, city, debug } = req.query;
   const isDebug = debug === '1';
   const hoursBack = parseInt(hours) || 168;
   
@@ -47,10 +48,25 @@ const handler = async (req, res) => {
     const windowStart = new Date(now.getTime() - (hoursBack * 60 * 60 * 1000));
     
     // Filter taps within time window
-    const windowTaps = taps.filter(tap => {
+    let windowTaps = taps.filter(tap => {
       const tapTime = new Date(tap.time);
       return tapTime >= windowStart;
     });
+    
+    // Apply city filtering if specified
+    if (city) {
+      const originalCount = windowTaps.length;
+      windowTaps = filterTapsByCity(windowTaps, city);
+      
+      if (isDebug) {
+        console.log('🌐 [network] City filtering results:', {
+          city: city,
+          originalTaps: originalCount,
+          filteredTaps: windowTaps.length,
+          filteredOut: originalCount - windowTaps.length
+        });
+      }
+    }
     
     if (isDebug) {
       console.log(`🌐 [network] Window taps: ${windowTaps.length} out of ${taps.length} total`);
@@ -230,7 +246,8 @@ const handler = async (req, res) => {
         name_map: nameMap,
         network_members: networkMembers.length,
         total_network_taps: networkTaps,
-        total_unique_connections: totalUniqueConnections
+        total_unique_connections: totalUniqueConnections,
+        city_filter: city || null
       }
     };
     

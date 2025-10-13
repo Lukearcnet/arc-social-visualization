@@ -1554,6 +1554,18 @@
                                                 <option value="4320" selected>Last 6mo</option>
                                                 <option value="8760">Last 1y</option>
                                             </select>
+                                            <select id="rbr-city-filter">
+                                                <option value="">All Cities</option>
+                                                <option value="NY">New York</option>
+                                                <option value="London">London</option>
+                                                <option value="LA">Los Angeles</option>
+                                                <option value="SF">San Francisco</option>
+                                                <option value="Dallas">Dallas</option>
+                                                <option value="Chicago">Chicago</option>
+                                                <option value="Jackson Hole">Jackson Hole</option>
+                                                <option value="Austin">Austin</option>
+                                                <option value="Nashville">Nashville</option>
+                                            </select>
                                             <button id="rbr-play">▶️ Play</button>
                                             <button id="rbr-pause" style="display: none;">⏸️ Pause</button>
                                             <button id="rbr-step">⏭️ Step</button>
@@ -2972,12 +2984,14 @@
                     // Get the selected values from dropdowns
                     const viewMode = document.getElementById('rbr-view-mode')?.value || 'network-connections';
                     const hours = document.getElementById('rbr-window')?.value || '4320'; // 6 months default
+                    const city = document.getElementById('rbr-city-filter')?.value || '';
                     
-                    console.log('📡 [Radar] Using viewMode:', viewMode, 'hours:', hours);
+                    console.log('📡 [Radar] Using viewMode:', viewMode, 'hours:', hours, 'city:', city);
 
                     // Use the appropriate API based on view mode
                     if (viewMode === 'connections') {
-                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                        const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}${cityParam}&debug=1`);
                         
                         if (!response.ok) {
                             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -2989,7 +3003,7 @@
                         this.renderRadar(data);
                     } else {
                         // For network modes, use the network data
-                        const networkData = await this.fetchNetworkData(hours, viewMode);
+                        const networkData = await this.fetchNetworkData(hours, viewMode, city);
                         this.renderRadar(networkData);
                     }
                     
@@ -4106,6 +4120,7 @@
                 const stepBtn = document.getElementById('rbr-step');
                 const windowSelect = document.getElementById('rbr-window');
                 const viewModeSelect = document.getElementById('rbr-view-mode');
+                const citySelect = document.getElementById('rbr-city-filter');
                 
                 if (playBtn) {
                     playBtn.onclick = () => this.playBarRace();
@@ -4125,6 +4140,10 @@
                 
                 if (viewModeSelect) {
                     viewModeSelect.onchange = () => this.changeBarRaceView();
+                }
+                
+                if (citySelect) {
+                    citySelect.onchange = () => this.changeBarRaceView();
                 }
             }
 
@@ -4201,7 +4220,7 @@
                 this.updateBarRaceFrame(nextFrame);
             }
 
-            async fetchNetworkData(hours, viewMode) {
+            async fetchNetworkData(hours, viewMode, city = '') {
                 const userId = this.currentUser?.user_id || this.currentUser?.id;
                 
                 // Build network members from weekly recap (1st/2nd/3rd) + logged-in user
@@ -4247,7 +4266,8 @@
                 const mode = viewMode === 'network-taps' ? 'taps' : 'connections';
                 
                 // Fetch network data from new endpoint
-                const networkResponse = await fetch(`/api/community/network?user_id=${userId}&hours=${hours}&mode=${mode}&debug=1`);
+                const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+                const networkResponse = await fetch(`/api/community/network?user_id=${userId}&hours=${hours}&mode=${mode}${cityParam}&debug=1`);
                 if (!networkResponse.ok) {
                     throw new Error(`Network API failed: ${networkResponse.status}`);
                 }
@@ -4273,8 +4293,10 @@
             async changeBarRaceView() {
                 const viewModeSelect = document.getElementById('rbr-view-mode');
                 const windowSelect = document.getElementById('rbr-window');
+                const citySelect = document.getElementById('rbr-city-filter');
                 const viewMode = viewModeSelect.value;
                 const hours = parseInt(windowSelect.value);
+                const city = citySelect?.value || '';
                 
                 this.pauseBarRace();
                 
@@ -4287,7 +4309,8 @@
                     
                     if (viewMode === 'connections') {
                         // Use existing radar API
-                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                        const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}${cityParam}&debug=1`);
                         
                         if (!response.ok) {
                             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -4303,7 +4326,7 @@
                         });
                     } else {
                         // Use network data for network-taps and network-connections
-                        const networkData = await this.fetchNetworkData(hours, viewMode);
+                        const networkData = await this.fetchNetworkData(hours, viewMode, city);
                         this.renderRadarBarRace(networkData, viewMode).catch(error => {
                             console.error('❌ [Bar Race] Failed to change view:', error);
                         });
@@ -4317,8 +4340,10 @@
             async changeBarRaceWindow() {
                 const windowSelect = document.getElementById('rbr-window');
                 const viewModeSelect = document.getElementById('rbr-view-mode');
+                const citySelect = document.getElementById('rbr-city-filter');
                 const hours = parseInt(windowSelect.value);
                 const viewMode = viewModeSelect.value;
+                const city = citySelect?.value || '';
                 
                 this.pauseBarRace();
                 
@@ -4327,7 +4352,8 @@
                     
                     if (viewMode === 'connections') {
                         // Use existing radar API
-                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}&debug=1`);
+                        const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+                        const response = await fetch(`/api/community/radar?user_id=${userId}&hours=${hours}${cityParam}&debug=1`);
                         
                         if (!response.ok) {
                             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -4343,7 +4369,7 @@
                         });
                     } else {
                         // Use network data for network-taps and network-connections
-                        const networkData = await this.fetchNetworkData(hours, viewMode);
+                        const networkData = await this.fetchNetworkData(hours, viewMode, city);
                         this.renderRadarBarRace(networkData, viewMode).catch(error => {
                             console.error('❌ [Bar Race] Failed to change window:', error);
                         });
