@@ -2036,11 +2036,13 @@
                     if (clickedCard && this.currentTriggerCard) {
                         // Check if it's the same card that's already open
                         if (clickedCard === this.currentTriggerCard) {
+                            // Don't close if we just created the dropdown
+                            if (this._justCreatedDropdown) {
+                                console.log('🚫 [Debug] Ignoring close - just created dropdown');
+                                return;
+                            }
                             console.log('🔄 [Debug] Same card clicked, closing dropdown');
-                            // Add small delay to prevent immediate close after creation
-                            setTimeout(() => {
-                                this.closeAllDropdowns();
-                            }, 10);
+                            this.closeAllDropdowns();
                             return;
                         }
                     }
@@ -2147,6 +2149,12 @@
                 }
                 
                 console.log(`✅ [Debug] Creating dropdown for ${degree} with ${users.length} users`);
+
+                // Set flag to prevent immediate close by global listener
+                this._justCreatedDropdown = true;
+                setTimeout(() => {
+                    this._justCreatedDropdown = false;
+                }, 100);
 
                 // Store reference to trigger card for positioning
                 this.currentTriggerCard = card;
