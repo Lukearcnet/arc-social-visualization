@@ -1,7 +1,7 @@
 (function safeConsoleMute() {
   try {
     // Simple production toggle - set to true for development, false for production
-    const ENABLE_LOGGING = true; // Toggle this for dev/prod
+    const ENABLE_LOGGING = false; // Toggle this for dev/prod
     
     // Keep easy toggles in console for runtime control
     window.__CONSOLE = {
