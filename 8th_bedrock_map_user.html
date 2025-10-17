@@ -253,6 +253,42 @@
             color: var(--fg-muted);
         }
         
+        /* Custom styling for Leaflet.draw edit handles */
+        /* Center move handle - transparent circle matching original circle size */
+        .leaflet-editing-icon.leaflet-edit-move {
+            background-color: transparent !important;
+            border: 2px dashed rgba(0, 123, 255, 0.4) !important;
+            border-radius: 50% !important;
+            width: 16px !important;
+            height: 16px !important;
+            margin-left: -8px !important;
+            margin-top: -8px !important;
+        }
+        
+        /* Resize handle - accent blue circle */
+        .leaflet-editing-icon.leaflet-edit-resize {
+            background-color: rgba(0, 123, 255, 0.9) !important;
+            border: 2px solid rgba(0, 123, 255, 0.6) !important;
+            border-radius: 50% !important;
+            width: 12px !important;
+            height: 12px !important;
+            margin-left: -6px !important;
+            margin-top: -6px !important;
+        }
+        
+        /* Hover states for better UX */
+        .leaflet-editing-icon.leaflet-edit-resize:hover {
+            background-color: rgba(0, 123, 255, 1) !important;
+            border-color: rgba(0, 123, 255, 0.8) !important;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        
+        .leaflet-editing-icon.leaflet-edit-move:hover {
+            border-color: rgba(0, 123, 255, 0.6) !important;
+            cursor: move;
+        }
+        
         .search-toggle-btn svg {
             width: 16px;
             height: 16px;
