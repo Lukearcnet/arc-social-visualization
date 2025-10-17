@@ -4093,6 +4093,9 @@
         
         // Show circle results in dropdown
         function showCircleResults(tapsInCircle, circle) {
+            // Clear any existing dropdown first
+            closeCircleResults();
+            
             if (tapsInCircle.length === 0) {
                 showEmptyResults();
                 return;
@@ -4123,6 +4126,9 @@
         
         // Show empty results state
         function showEmptyResults() {
+            // Clear any existing dropdown first
+            closeCircleResults();
+            
             const portalRoot = getPortalRoot();
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
