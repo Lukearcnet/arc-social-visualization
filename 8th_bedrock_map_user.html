@@ -3979,6 +3979,9 @@
                     // Get taps in circle and show results
                     const tapsInCircle = getVisibleTapsInCircle(layer);
                     showCircleResults(tapsInCircle, layer);
+                    
+                    // Auto-enable edit mode on the circle
+                    enableCircleEditMode(layer);
                 }
             });
             
@@ -3993,15 +3996,18 @@
                 });
             });
             
-            // Also listen for circle changes during editing (resize/reposition)
-            map.on('draw:editresize', function(e) {
-                const layer = e.layer;
-                if (layer instanceof L.Circle) {
-                    const tapsInCircle = getVisibleTapsInCircle(layer);
-                    showCircleResults(tapsInCircle, layer);
+            // Listen for vertex drag events for real-time updates
+            map.on('draw:editvertex', function(e) {
+                if (drawnItems && drawnItems.getLayers().length > 0) {
+                    const circle = drawnItems.getLayers()[0];
+                    if (circle instanceof L.Circle) {
+                        const tapsInCircle = getVisibleTapsInCircle(circle);
+                        showCircleResults(tapsInCircle, circle);
+                    }
                 }
             });
             
+            // Listen for drag events during repositioning
             map.on('draw:editmove', function(e) {
                 const layer = e.layer;
                 if (layer instanceof L.Circle) {
@@ -4243,8 +4249,12 @@
                 if (isCrosshairsMode && clickStartPos) {
                     const distance = clickStartPos.distanceTo(e.containerPoint);
                     if (distance <= dragThreshold) {
-                        // This is a click, not a drag - clear existing circle
-                        clearExistingCircle();
+                        // This is a click, not a drag
+                        // Check if we clicked on a circle or empty space
+                        if (!isClickOnCircle(e)) {
+                            // Clicked on empty space - clear existing circle and re-enable crosshairs
+                            clearExistingCircleAndResetCrosshairs();
+                        }
                     }
                     clickStartPos = null;
                 }
@@ -4270,14 +4280,62 @@
                 if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 0) {
                     const distance = clickStartPos.distanceTo(e.containerPoint);
                     if (distance <= dragThreshold) {
-                        clearExistingCircle();
+                        if (!isClickOnCircle(e)) {
+                            clearExistingCircleAndResetCrosshairs();
+                        }
                     }
                     clickStartPos = null;
                 }
             });
         }
         
-        // Clear existing circle but stay in crosshairs mode
+        // Enable edit mode on a circle (shows resize/move handles on hover)
+        function enableCircleEditMode(layer) {
+            // Make the circle editable by enabling Leaflet.draw edit handlers
+            layer.editing.enable();
+            
+            // Add event listeners for real-time updates during drag/resize
+            if (layer._mRadius) {
+                // Listen to the drag events on the circle itself
+                layer.on('drag', function() {
+                    const tapsInCircle = getVisibleTapsInCircle(layer);
+                    showCircleResults(tapsInCircle, layer);
+                });
+            }
+        }
+        
+        // Check if click is on an existing circle
+        function isClickOnCircle(e) {
+            if (!drawnItems || drawnItems.getLayers().length === 0) {
+                return false;
+            }
+            
+            const circle = drawnItems.getLayers()[0];
+            if (!circle || !(circle instanceof L.Circle)) {
+                return false;
+            }
+            
+            const center = circle.getLatLng();
+            const radius = circle.getRadius();
+            const clickPos = e.latlng;
+            const distance = center.distanceTo(clickPos);
+            
+            return distance <= radius;
+        }
+        
+        // Clear existing circle and re-enable crosshairs
+        function clearExistingCircleAndResetCrosshairs() {
+            if (drawnItems && drawnItems.getLayers().length > 0) {
+                drawnItems.clearLayers();
+                closeCircleResults();
+                // Re-trigger circle drawing tool to maintain crosshairs
+                setTimeout(() => {
+                    triggerCircleDrawing();
+                }, 100);
+            }
+        }
+        
+        // Clear existing circle but stay in crosshairs mode (deprecated - kept for compatibility)
         function clearExistingCircle() {
             if (drawnItems && drawnItems.getLayers().length > 0) {
                 drawnItems.clearLayers();
