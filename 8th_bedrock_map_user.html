@@ -133,7 +133,16 @@
             z-index: 1000;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+        }
+        
+        /* Drawing Control - Below Search */
+        .drawing-control-floating {
+            position: absolute;
+            top: 156px; /* Below search button with 8px gap (108px + 40px button height + 8px gap) */
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
         }
         
         .search-control-floating .search-toggle-btn {
@@ -157,28 +166,28 @@
             border-color: rgba(255, 255, 255, 0.4);
         }
         
-        /* Drawing Tool Button */
-        .draw-toggle-btn {
+        /* Drawing button in its own container */
+        .drawing-control-floating .drawing-toggle-btn {
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: var(--fg);
-            padding: 8px 12px;
             border-radius: var(--radius-1);
             cursor: pointer;
             transition: all 0.2s ease;
             backdrop-filter: blur(10px);
-            min-width: 100px;
+            padding: 8px;
+            min-width: auto;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .draw-toggle-btn:hover {
+        .drawing-control-floating .drawing-toggle-btn:hover {
             background: rgba(40, 40, 40, 0.9);
             border-color: rgba(255, 255, 255, 0.4);
         }
 
-        .draw-toggle-btn.active {
+        .drawing-toggle-btn.active {
             background: rgba(0, 123, 255, 0.9);
             border-color: rgba(0, 123, 255, 0.6);
         }
@@ -988,6 +997,11 @@
                 z-index: 10000 !important;
             }
             
+            body.iframe-context .drawing-control-floating {
+                top: 146px !important; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+                z-index: 10000 !important;
+            }
+            
         }
 
         /* ========================================
@@ -1159,6 +1173,11 @@
             .search-control-floating {
                 top: 98px; /* Move up 10px to follow control buttons (108px - 10px) */
             }
+            
+            /* Drawing control positioning on mobile - below search button */
+            .drawing-control-floating {
+                top: 146px; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+            }
         }
 
         @media (min-width: 901px) {
@@ -1169,6 +1188,15 @@
             /* Hide resize handle completely on desktop */
             .resize-handle {
                 display: none !important;
+            }
+            
+            /* Desktop z-index fixes - ensure search appears above drawing */
+            .search-control-floating {
+                z-index: 10001 !important;
+            }
+            
+            .drawing-control-floating {
+                z-index: 10000 !important;
             }
         }
         
@@ -1349,11 +1377,14 @@
                     <input type="text" id="expandableSearchInput" class="search-input" placeholder="Type name or username..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
                     <div id="expandableSearchResults" class="search-results"></div>
                 </button>
-                
-                <!-- Drawing Tool Button -->
-                <button class="control-btn draw-toggle-btn" id="drawToggleBtn" title="Draw Circle">
+            </div>
+            
+            <!-- Drawing Tool Button - Below Search -->
+            <div class="drawing-control-floating">
+                <button class="control-btn drawing-toggle-btn" id="drawToggleBtn" title="Draw Circle">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/>
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 18l-4 1 1-4L16.5 3.5z"></path>
                     </svg>
                 </button>
             </div>
