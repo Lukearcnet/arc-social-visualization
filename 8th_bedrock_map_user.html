@@ -1433,6 +1433,8 @@
         let isCrosshairsMode = false;
         let clickStartPos = null;
         let dragThreshold = 5; // pixels
+        let drawUpdateTimeout = null;
+        let isDragging = false;
         
         // Search state management
         let originalUserId = null;        // The logged-in user
@@ -3996,23 +3998,34 @@
                 });
             });
             
-            // Listen for vertex drag events for real-time updates
+            // Listen for vertex drag start
+            map.on('draw:editstart', function(e) {
+                isDragging = true;
+            });
+            
+            // Listen for vertex drag events for debounced updates
             map.on('draw:editvertex', function(e) {
+                if (isDragging) {
+                    debouncedUpdateResults();
+                }
+            });
+            
+            // Listen for drag events during repositioning
+            map.on('draw:editmove', function(e) {
+                if (isDragging) {
+                    debouncedUpdateResults();
+                }
+            });
+            
+            // Listen for edit end to update results immediately
+            map.on('draw:editstop', function(e) {
+                isDragging = false;
                 if (drawnItems && drawnItems.getLayers().length > 0) {
                     const circle = drawnItems.getLayers()[0];
                     if (circle instanceof L.Circle) {
                         const tapsInCircle = getVisibleTapsInCircle(circle);
                         showCircleResults(tapsInCircle, circle);
                     }
-                }
-            });
-            
-            // Listen for drag events during repositioning
-            map.on('draw:editmove', function(e) {
-                const layer = e.layer;
-                if (layer instanceof L.Circle) {
-                    const tapsInCircle = getVisibleTapsInCircle(layer);
-                    showCircleResults(tapsInCircle, layer);
                 }
             });
             
@@ -4294,12 +4307,13 @@
             // Make the circle editable by enabling Leaflet.draw edit handlers
             layer.editing.enable();
             
-            // Add event listeners for real-time updates during drag/resize
+            // Add event listeners for debounced updates during drag/resize
             if (layer._mRadius) {
                 // Listen to the drag events on the circle itself
                 layer.on('drag', function() {
-                    const tapsInCircle = getVisibleTapsInCircle(layer);
-                    showCircleResults(tapsInCircle, layer);
+                    if (isDragging) {
+                        debouncedUpdateResults();
+                    }
                 });
             }
         }
@@ -4333,6 +4347,25 @@
                     triggerCircleDrawing();
                 }, 100);
             }
+        }
+        
+        // Debounced update results to prevent spazzy updates during drag
+        function debouncedUpdateResults() {
+            // Clear any existing timeout
+            if (drawUpdateTimeout) {
+                clearTimeout(drawUpdateTimeout);
+            }
+            
+            // Set a new timeout to update after drag stops
+            drawUpdateTimeout = setTimeout(() => {
+                if (drawnItems && drawnItems.getLayers().length > 0) {
+                    const circle = drawnItems.getLayers()[0];
+                    if (circle instanceof L.Circle) {
+                        const tapsInCircle = getVisibleTapsInCircle(circle);
+                        showCircleResults(tapsInCircle, circle);
+                    }
+                }
+            }, 150); // 150ms delay to wait for drag to settle
         }
         
         // Clear existing circle but stay in crosshairs mode (deprecated - kept for compatibility)
