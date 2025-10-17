@@ -1430,6 +1430,9 @@
         let drawControl = null;
         let isDrawingMode = false;
         let currentDropdown = null;
+        let isCrosshairsMode = false;
+        let clickStartPos = null;
+        let dragThreshold = 5; // pixels
         
         // Search state management
         let originalUserId = null;        // The logged-in user
@@ -3950,6 +3953,16 @@
                 }
             });
             
+            // Hide the control panel by default
+            drawControl.setDrawingOptions({
+                circle: {
+                    showLength: false,
+                    metric: false,
+                    feet: false,
+                    nautic: false
+                }
+            });
+            
             // Add drawing event listeners
             map.on(L.Draw.Event.CREATED, function(e) {
                 const layer = e.layer;
@@ -3980,10 +3993,30 @@
                 });
             });
             
+            // Also listen for circle changes during editing (resize/reposition)
+            map.on('draw:editresize', function(e) {
+                const layer = e.layer;
+                if (layer instanceof L.Circle) {
+                    const tapsInCircle = getVisibleTapsInCircle(layer);
+                    showCircleResults(tapsInCircle, layer);
+                }
+            });
+            
+            map.on('draw:editmove', function(e) {
+                const layer = e.layer;
+                if (layer instanceof L.Circle) {
+                    const tapsInCircle = getVisibleTapsInCircle(layer);
+                    showCircleResults(tapsInCircle, layer);
+                }
+            });
+            
             // Handle deletions
             map.on(L.Draw.Event.DELETED, function(e) {
                 closeCircleResults();
             });
+            
+            // Add custom map event handlers for click/drag detection
+            addCustomMapEventHandlers();
             
             // Initialize drawing button
             initDrawingButton();
@@ -4002,17 +4035,21 @@
         function toggleDrawingMode() {
             const drawToggleBtn = document.getElementById('drawToggleBtn');
             
-            if (isDrawingMode) {
-                // Disable drawing mode
-                isDrawingMode = false;
+            if (isCrosshairsMode) {
+                // Disable crosshairs mode
+                isCrosshairsMode = false;
                 drawToggleBtn.classList.remove('active');
                 map.removeControl(drawControl);
                 closeCircleResults();
+                hideControlPanel();
             } else {
-                // Enable drawing mode
-                isDrawingMode = true;
+                // Enable crosshairs mode
+                isCrosshairsMode = true;
                 drawToggleBtn.classList.add('active');
                 map.addControl(drawControl);
+                hideControlPanel();
+                // Programmatically trigger circle drawing tool
+                triggerCircleDrawing();
             }
         }
         
@@ -4163,6 +4200,88 @@
                     const tapsInCircle = getVisibleTapsInCircle(circle);
                     showCircleResults(tapsInCircle, circle);
                 }
+            }
+        }
+        
+        // Hide the Leaflet.draw control panel
+        function hideControlPanel() {
+            const controlPanel = document.querySelector('.leaflet-draw-toolbar');
+            if (controlPanel) {
+                controlPanel.style.display = 'none';
+            }
+        }
+        
+        // Programmatically trigger circle drawing tool
+        function triggerCircleDrawing() {
+            // Find and click the circle drawing button
+            const circleButton = document.querySelector('.leaflet-draw-toolbar a[title*="circle" i], .leaflet-draw-toolbar a[title*="Circle"]');
+            if (circleButton) {
+                circleButton.click();
+            }
+        }
+        
+        // Add custom map event handlers for click/drag detection
+        function addCustomMapEventHandlers() {
+            // Mouse events
+            map.on('mousedown', function(e) {
+                if (isCrosshairsMode) {
+                    clickStartPos = e.containerPoint;
+                }
+            });
+            
+            map.on('mousemove', function(e) {
+                if (isCrosshairsMode && clickStartPos) {
+                    const distance = clickStartPos.distanceTo(e.containerPoint);
+                    if (distance > dragThreshold) {
+                        // This is a drag, not a click
+                        clickStartPos = null;
+                    }
+                }
+            });
+            
+            map.on('mouseup', function(e) {
+                if (isCrosshairsMode && clickStartPos) {
+                    const distance = clickStartPos.distanceTo(e.containerPoint);
+                    if (distance <= dragThreshold) {
+                        // This is a click, not a drag - clear existing circle
+                        clearExistingCircle();
+                    }
+                    clickStartPos = null;
+                }
+            });
+            
+            // Touch events for mobile
+            map.on('touchstart', function(e) {
+                if (isCrosshairsMode && e.originalEvent.touches.length === 1) {
+                    clickStartPos = e.containerPoint;
+                }
+            });
+            
+            map.on('touchmove', function(e) {
+                if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 1) {
+                    const distance = clickStartPos.distanceTo(e.containerPoint);
+                    if (distance > dragThreshold) {
+                        clickStartPos = null;
+                    }
+                }
+            });
+            
+            map.on('touchend', function(e) {
+                if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 0) {
+                    const distance = clickStartPos.distanceTo(e.containerPoint);
+                    if (distance <= dragThreshold) {
+                        clearExistingCircle();
+                    }
+                    clickStartPos = null;
+                }
+            });
+        }
+        
+        // Clear existing circle but stay in crosshairs mode
+        function clearExistingCircle() {
+            if (drawnItems && drawnItems.getLayers().length > 0) {
+                drawnItems.clearLayers();
+                closeCircleResults();
             }
         }
 
