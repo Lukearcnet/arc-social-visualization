@@ -4005,21 +4005,18 @@
             
             // Listen for vertex drag events for debounced updates
             map.on('draw:editvertex', function(e) {
-                if (isDragging) {
-                    debouncedUpdateResults();
-                }
+                debouncedUpdateResults();
             });
             
             // Listen for drag events during repositioning
             map.on('draw:editmove', function(e) {
-                if (isDragging) {
-                    debouncedUpdateResults();
-                }
+                debouncedUpdateResults();
             });
             
             // Listen for edit end to update results immediately
             map.on('draw:editstop', function(e) {
                 isDragging = false;
+                // Always update results when edit stops, regardless of isDragging state
                 if (drawnItems && drawnItems.getLayers().length > 0) {
                     const circle = drawnItems.getLayers()[0];
                     if (circle instanceof L.Circle) {
@@ -4311,9 +4308,7 @@
             if (layer._mRadius) {
                 // Listen to the drag events on the circle itself
                 layer.on('drag', function() {
-                    if (isDragging) {
-                        debouncedUpdateResults();
-                    }
+                    debouncedUpdateResults();
                 });
             }
         }
