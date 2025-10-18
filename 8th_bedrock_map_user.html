@@ -4399,9 +4399,27 @@
             drawnItems.clearLayers();
             closeCircleResults();
             
-            // Create a very large circle for mobile (250km radius)
+            // Calculate radius in meters based on current zoom level
+            // Use a fixed pixel radius that scales with zoom
+            const mapContainer = map.getContainer();
+            const containerWidth = mapContainer.offsetWidth;
+            const containerHeight = mapContainer.offsetHeight;
+            
+            // Use 30% of the smaller dimension as the pixel radius
+            const pixelRadius = Math.min(containerWidth, containerHeight) * 0.3;
+            
+            // Convert pixel radius to meters based on current zoom
+            const centerPoint = map.latLngToLayerPoint(latlng);
+            const edgePoint = {
+                x: centerPoint.x + pixelRadius,
+                y: centerPoint.y
+            };
+            const edgeLatLng = map.layerPointToLatLng(edgePoint);
+            const radiusInMeters = latlng.distanceTo(edgeLatLng);
+            
+            // Create circle with calculated radius
             const circle = L.circle(latlng, {
-                radius: 250000, // 250km radius
+                radius: radiusInMeters,
                 color: '#007bff',
                 fillColor: '#007bff',
                 fillOpacity: 0.1,
