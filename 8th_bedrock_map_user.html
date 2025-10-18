@@ -4098,6 +4098,60 @@
             });
         }
         
+        // Check if device is mobile/touch
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   ('ontouchstart' in window) || 
+                   (navigator.maxTouchPoints > 0);
+        }
+        
+        // Show mobile draw indicator
+        function showMobileDrawIndicator() {
+            // Create instruction banner
+            const banner = document.createElement('div');
+            banner.id = 'mobile-draw-banner';
+            banner.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 123, 255, 0.95);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(10px);
+                text-align: center;
+                max-width: 90%;
+            `;
+            banner.innerHTML = 'Tap and drag to draw circle';
+            document.body.appendChild(banner);
+            
+            // Add blue overlay to map
+            const mapContainer = document.querySelector('#map');
+            if (mapContainer) {
+                mapContainer.style.filter = 'brightness(0.9) saturate(1.1)';
+                mapContainer.style.transition = 'filter 0.3s ease';
+            }
+        }
+        
+        // Remove mobile draw indicator
+        function removeMobileDrawIndicator() {
+            const banner = document.getElementById('mobile-draw-banner');
+            if (banner) {
+                banner.remove();
+            }
+            
+            // Remove blue overlay from map
+            const mapContainer = document.querySelector('#map');
+            if (mapContainer) {
+                mapContainer.style.filter = '';
+            }
+        }
+        
         // Toggle drawing mode
         function toggleDrawingMode() {
             const drawToggleBtn = document.getElementById('drawToggleBtn');
@@ -4109,12 +4163,25 @@
                 map.removeControl(drawControl);
                 closeCircleResults();
                 hideControlPanel();
+                
+                // Re-enable map dragging on mobile
+                if (isMobileDevice()) {
+                    map.dragging.enable();
+                    removeMobileDrawIndicator();
+                }
             } else {
                 // Enable crosshairs mode
                 isCrosshairsMode = true;
                 drawToggleBtn.classList.add('active');
                 map.addControl(drawControl);
                 hideControlPanel();
+                
+                // Disable map dragging on mobile and show indicator
+                if (isMobileDevice()) {
+                    map.dragging.disable();
+                    showMobileDrawIndicator();
+                }
+                
                 // Programmatically trigger circle drawing tool
                 triggerCircleDrawing();
             }
