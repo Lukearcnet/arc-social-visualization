@@ -257,12 +257,10 @@
         /* Center move handle - transparent circle matching original circle size */
         .leaflet-editing-icon.leaflet-edit-move {
             background-color: transparent !important;
-            border: 2px dashed rgba(0, 123, 255, 0.4) !important;
+            border: 1px dashed rgba(0, 123, 255, 0.1) !important;
             border-radius: 50% !important;
-            width: 48px !important;
-            height: 48px !important;
-            margin-left: -24px !important;
-            margin-top: -24px !important;
+            /* Size will be set dynamically by JavaScript */
+            pointer-events: all !important;
         }
         
         /* Resize handle - accent blue circle */
@@ -4042,6 +4040,13 @@
             // Listen for vertex drag events for debounced updates
             map.on('draw:editvertex', function(e) {
                 debouncedUpdateResults();
+                // Update center handle size when circle is resized
+                if (drawnItems && drawnItems.getLayers().length > 0) {
+                    const circle = drawnItems.getLayers()[0];
+                    if (circle instanceof L.Circle) {
+                        updateCenterHandleSize(circle);
+                    }
+                }
             });
             
             // Listen for drag events during repositioning
@@ -4065,6 +4070,16 @@
             // Handle deletions
             map.on(L.Draw.Event.DELETED, function(e) {
                 closeCircleResults();
+            });
+            
+            // Handle zoom events to update center handle size
+            map.on('zoomend', function() {
+                if (drawnItems && drawnItems.getLayers().length > 0) {
+                    const circle = drawnItems.getLayers()[0];
+                    if (circle instanceof L.Circle) {
+                        updateCenterHandleSize(circle);
+                    }
+                }
             });
             
             // Add custom map event handlers for click/drag detection
@@ -4341,10 +4356,43 @@
             });
         }
         
+        // Update center handle size to match circle
+        function updateCenterHandleSize(circle) {
+            if (!circle || !map) return;
+            
+            try {
+                // Get circle center and radius
+                const center = circle.getLatLng();
+                const radius = circle.getRadius();
+                
+                // Convert radius to pixels by calculating two points
+                const centerPoint = map.latLngToLayerPoint(center);
+                const edgePoint = map.latLngToLayerPoint(center.destinationPoint(0, radius));
+                
+                // Calculate diameter in pixels
+                const diameterPx = Math.abs(edgePoint.x - centerPoint.x) * 2;
+                
+                // Find the center handle element
+                const centerHandle = document.querySelector('.leaflet-editing-icon.leaflet-edit-move');
+                if (centerHandle) {
+                    // Set dynamic size
+                    centerHandle.style.width = diameterPx + 'px';
+                    centerHandle.style.height = diameterPx + 'px';
+                    centerHandle.style.marginLeft = -(diameterPx / 2) + 'px';
+                    centerHandle.style.marginTop = -(diameterPx / 2) + 'px';
+                }
+            } catch (error) {
+                console.warn('Could not update center handle size:', error);
+            }
+        }
+        
         // Enable edit mode on a circle (shows resize/move handles on hover)
         function enableCircleEditMode(layer) {
             // Make the circle editable by enabling Leaflet.draw edit handlers
             layer.editing.enable();
+            
+            // Update center handle size to match circle
+            updateCenterHandleSize(layer);
             
             // Add event listeners for debounced updates during drag/resize
             if (layer._mRadius) {
