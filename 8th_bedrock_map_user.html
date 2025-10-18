@@ -3993,10 +3993,16 @@
             });
             
             // Hide Geoman toolbar (we'll use custom pencil button)
-            const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
-            if (geomanToolbar) {
-                geomanToolbar.style.display = 'none';
-            }
+            // Use setTimeout to ensure toolbar is rendered first
+            setTimeout(() => {
+                const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
+                if (geomanToolbar) {
+                    geomanToolbar.style.display = 'none';
+                    console.log('Geoman toolbar hidden');
+                } else {
+                    console.log('Geoman toolbar not found');
+                }
+            }, 100);
             
             // Configure Geoman global options
             map.pm.setGlobalOptions({
@@ -4007,7 +4013,9 @@
             
             // Add Geoman event listeners
             map.on('pm:create', function(e) {
+                console.log('Geoman create event:', e);
                 const layer = e.layer;
+                console.log('Created layer:', layer);
                 
                 // Clear any existing shapes and dropdowns
                 drawnItems.clearLayers();
@@ -4018,11 +4026,13 @@
                 
                 // Get taps in shape and show results
                 const tapsInShape = getVisibleTapsInShape(layer);
+                console.log('Taps in shape:', tapsInShape.length);
                 showCircleResults(tapsInShape, layer);
             });
             
             // Handle edits to keep results in sync
             map.on('pm:edit', function(e) {
+                console.log('Geoman edit event:', e);
                 const layer = e.layer;
                 const tapsInShape = getVisibleTapsInShape(layer);
                 showCircleResults(tapsInShape, layer);
@@ -4030,6 +4040,7 @@
             
             // Handle shape removal
             map.on('pm:remove', function(e) {
+                console.log('Geoman remove event:', e);
                 closeCircleResults();
             });
             
@@ -4075,17 +4086,34 @@
         // Toggle drawing mode
         function toggleDrawingMode() {
             const drawToggleBtn = document.getElementById('drawToggleBtn');
+            console.log('Toggle drawing mode, current state:', isCrosshairsMode);
             
             if (isCrosshairsMode) {
                 // Disable drawing mode
+                console.log('Disabling draw mode');
                 isCrosshairsMode = false;
                 drawToggleBtn.classList.remove('active');
                 map.pm.disableDraw();
                 closeCircleResults();
+                
+                // Re-enable tap marker interactions
+                markers.forEach(marker => {
+                    if (marker._tapData) {
+                        marker.dragging.enable();
+                    }
+                });
             } else {
                 // Enable freehand drawing mode
+                console.log('Enabling freehand draw mode');
                 isCrosshairsMode = true;
                 drawToggleBtn.classList.add('active');
+                
+                // Disable tap marker interactions during drawing
+                markers.forEach(marker => {
+                    if (marker._tapData) {
+                        marker.dragging.disable();
+                    }
+                });
                 
                 // Enable Geoman freehand drawing
                 map.pm.enableDraw('Freehand', {
@@ -4099,6 +4127,17 @@
                     snapDistance: 20,
                     allowSelfIntersection: false
                 });
+                
+                // Hide Geoman toolbar again (in case it reappeared)
+                setTimeout(() => {
+                    const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
+                    if (geomanToolbar) {
+                        geomanToolbar.style.display = 'none';
+                        console.log('Geoman toolbar hidden again');
+                    }
+                }, 50);
+                
+                console.log('Freehand drawing enabled');
             }
         }
         
