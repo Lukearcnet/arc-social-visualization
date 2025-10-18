@@ -4399,9 +4399,9 @@
             drawnItems.clearLayers();
             closeCircleResults();
             
-            // Create a standard-sized circle (e.g., 1000m radius)
+            // Create a large circle for mobile (25km radius)
             const circle = L.circle(latlng, {
-                radius: 1000, // 1km radius
+                radius: 25000, // 25km radius
                 color: '#007bff',
                 fillColor: '#007bff',
                 fillOpacity: 0.1,
