@@ -13,6 +13,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js" crossorigin=""></script>
     
+    <!-- Leaflet-Geoman CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" crossorigin=""/>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js" crossorigin=""></script>
+    
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
@@ -3967,119 +3971,82 @@
         // DRAWING TOOL FUNCTIONS
         // ========================================
         
-        // Initialize drawing tools
+        // Initialize drawing tools with Geoman
         function initDrawingTools() {
             // Create feature group for drawn items
             drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
             
-            // Create draw control
-            drawControl = new L.Control.Draw({
-                draw: {
-                    circle: true,
-                    polygon: false,
-                    rectangle: false,
-                    marker: false,
-                    polyline: false
-                },
-                edit: {
-                    featureGroup: drawnItems,
-                    edit: true,
-                    remove: true
-                }
+            // Initialize Geoman on the map
+            map.pm.addControls({
+                position: 'topleft',
+                drawCircle: false,
+                drawMarker: false,
+                drawCircleMarker: false,
+                drawPolyline: false,
+                drawRectangle: false,
+                drawPolygon: false,
+                editMode: true,
+                dragMode: true,
+                cutPolygon: false,
+                removalMode: true
             });
             
-            // Hide the control panel by default
-            drawControl.setDrawingOptions({
-                circle: {
-                    showLength: false,
-                    metric: false,
-                    feet: false,
-                    nautic: false
-                }
+            // Hide Geoman toolbar (we'll use custom pencil button)
+            const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
+            if (geomanToolbar) {
+                geomanToolbar.style.display = 'none';
+            }
+            
+            // Configure Geoman global options
+            map.pm.setGlobalOptions({
+                pmIgnore: false,
+                allowSelfIntersection: false,
+                allowSelfIntersectionEdit: false
             });
             
-            // Add drawing event listeners
-            map.on(L.Draw.Event.CREATED, function(e) {
+            // Add Geoman event listeners
+            map.on('pm:create', function(e) {
                 const layer = e.layer;
-                const type = e.layerType;
                 
-                if (type === 'circle') {
-                    // Clear any existing circles and dropdowns
-                    drawnItems.clearLayers();
-                    closeCircleResults();
-                    
-                    // Add the new circle
-                    drawnItems.addLayer(layer);
-                    
-                    // Get taps in circle and show results
-                    const tapsInCircle = getVisibleTapsInCircle(layer);
-                    showCircleResults(tapsInCircle, layer);
-                    
-                    // Auto-enable edit mode on the circle
-                    enableCircleEditMode(layer);
-                }
+                // Clear any existing shapes and dropdowns
+                drawnItems.clearLayers();
+                closeCircleResults();
+                
+                // Add the new shape
+                drawnItems.addLayer(layer);
+                
+                // Get taps in shape and show results
+                const tapsInShape = getVisibleTapsInShape(layer);
+                showCircleResults(tapsInShape, layer);
             });
             
             // Handle edits to keep results in sync
-            map.on(L.Draw.Event.EDITED, function(e) {
-                const layers = e.layers;
-                layers.eachLayer(function(layer) {
-                    if (layer instanceof L.Circle) {
-                        const tapsInCircle = getVisibleTapsInCircle(layer);
-                        showCircleResults(tapsInCircle, layer);
-                    }
-                });
+            map.on('pm:edit', function(e) {
+                const layer = e.layer;
+                const tapsInShape = getVisibleTapsInShape(layer);
+                showCircleResults(tapsInShape, layer);
             });
             
-            // Listen for vertex drag start
-            map.on('draw:editstart', function(e) {
-                isDragging = true;
-            });
-            
-            // Listen for vertex drag events for debounced updates
-            map.on('draw:editvertex', function(e) {
-                debouncedUpdateResults();
-                // Update center handle size when circle is resized
-                if (drawnItems && drawnItems.getLayers().length > 0) {
-                    const circle = drawnItems.getLayers()[0];
-                    if (circle instanceof L.Circle) {
-                        updateCenterHandleSize(circle);
-                    }
-                }
-            });
-            
-            // Listen for drag events during repositioning
-            map.on('draw:editmove', function(e) {
-                debouncedUpdateResults();
-            });
-            
-            // Listen for edit end to update results immediately
-            map.on('draw:editstop', function(e) {
-                isDragging = false;
-                // Always update results when edit stops, regardless of isDragging state
-                if (drawnItems && drawnItems.getLayers().length > 0) {
-                    const circle = drawnItems.getLayers()[0];
-                    if (circle instanceof L.Circle) {
-                        const tapsInCircle = getVisibleTapsInCircle(circle);
-                        showCircleResults(tapsInCircle, circle);
-                    }
-                }
-            });
-            
-            // Handle deletions
-            map.on(L.Draw.Event.DELETED, function(e) {
+            // Handle shape removal
+            map.on('pm:remove', function(e) {
                 closeCircleResults();
             });
             
-            // Handle zoom events to update center handle size
-            map.on('zoomend', function() {
-                if (drawnItems && drawnItems.getLayers().length > 0) {
-                    const circle = drawnItems.getLayers()[0];
-                    if (circle instanceof L.Circle) {
-                        updateCenterHandleSize(circle);
-                    }
-                }
+            // Listen for drag events during repositioning
+            map.on('pm:dragstart', function(e) {
+                isDragging = true;
+            });
+            
+            map.on('pm:drag', function(e) {
+                debouncedUpdateResults();
+            });
+            
+            map.on('pm:dragend', function(e) {
+                isDragging = false;
+                const layer = e.layer;
+                const tapsInShape = getVisibleTapsInShape(layer);
+                showCircleResults(tapsInShape, layer);
             });
             
             // Add custom map event handlers for click/drag detection
@@ -4110,48 +4077,92 @@
             const drawToggleBtn = document.getElementById('drawToggleBtn');
             
             if (isCrosshairsMode) {
-                // Disable crosshairs mode
+                // Disable drawing mode
                 isCrosshairsMode = false;
                 drawToggleBtn.classList.remove('active');
-                map.removeControl(drawControl);
+                map.pm.disableDraw();
                 closeCircleResults();
-                hideControlPanel();
             } else {
-                // Enable crosshairs mode
+                // Enable freehand drawing mode
                 isCrosshairsMode = true;
                 drawToggleBtn.classList.add('active');
-                map.addControl(drawControl);
-                hideControlPanel();
                 
-                // On mobile, don't trigger circle drawing tool immediately
-                // Instead, wait for long-click
-                if (!isMobileDevice()) {
-                    // Programmatically trigger circle drawing tool on desktop
-                    triggerCircleDrawing();
-                }
+                // Enable Geoman freehand drawing
+                map.pm.enableDraw('Freehand', {
+                    pathOptions: {
+                        color: '#007bff',
+                        fillColor: '#007bff',
+                        fillOpacity: 0.1,
+                        weight: 2
+                    },
+                    continueDrawing: false,
+                    snapDistance: 20,
+                    allowSelfIntersection: false
+                });
             }
         }
         
-        // Get visible taps within a circle
-        function getVisibleTapsInCircle(circle) {
-            const center = circle.getLatLng();
-            const radius = circle.getRadius();
-            
-            // Pre-filter by bounds for performance
-            const bounds = circle.getBounds();
-            
-            return markers.filter(marker => {
-                const markerPos = marker.getLatLng();
+        // Get visible taps within a shape (polygon or circle)
+        function getVisibleTapsInShape(shape) {
+            if (shape instanceof L.Circle) {
+                // Handle circles (for backward compatibility)
+                const center = shape.getLatLng();
+                const radius = shape.getRadius();
                 
-                // Quick bounds check first
-                if (!bounds.contains(markerPos)) {
-                    return false;
+                // Pre-filter by bounds for performance
+                const bounds = shape.getBounds();
+                
+                return markers.filter(marker => {
+                    const markerPos = marker.getLatLng();
+                    
+                    // Quick bounds check first
+                    if (!bounds.contains(markerPos)) {
+                        return false;
+                    }
+                    
+                    // Then distance check
+                    const distance = center.distanceTo(markerPos);
+                    return distance <= radius;
+                }).map(marker => marker._tapData);
+            } else if (shape instanceof L.Polygon) {
+                // Handle polygons using point-in-polygon detection
+                return markers.filter(marker => {
+                    if (!marker._tapData) return false;
+                    
+                    const markerPos = marker.getLatLng();
+                    
+                    // First do a quick bounds check
+                    if (!shape.getBounds().contains(markerPos)) {
+                        return false;
+                    }
+                    
+                    // Then do precise point-in-polygon check
+                    return isPointInPolygon(markerPos, shape);
+                }).map(marker => marker._tapData);
+            }
+            
+            return [];
+        }
+        
+        // Point-in-polygon detection using ray casting algorithm
+        function isPointInPolygon(point, polygon) {
+            const lat = point.lat;
+            const lng = point.lng;
+            const latlngs = polygon.getLatLngs()[0]; // Get outer ring
+            
+            let inside = false;
+            for (let i = 0, j = latlngs.length - 1; i < latlngs.length; j = i++) {
+                const xi = latlngs[i].lng;
+                const yi = latlngs[i].lat;
+                const xj = latlngs[j].lng;
+                const yj = latlngs[j].lat;
+                
+                if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
                 }
-                
-                // Then distance check
-                const distance = center.distanceTo(markerPos);
-                return distance <= radius;
-            }).map(marker => marker._tapData);
+            }
+            
+            return inside;
         }
         
         // Show circle results in dropdown
@@ -4331,8 +4342,8 @@
                         // This is a click, not a drag
                         // Check if we clicked on a circle or empty space
                         if (!isClickOnCircle(e)) {
-                            // Clicked on empty space - clear existing circle and re-enable crosshairs
-                            clearExistingCircleAndResetCrosshairs();
+                            // Clicked on empty space - clear existing shape and re-enable draw mode
+                            clearExistingShapeAndResetDrawMode();
                         }
                     }
                     clickStartPos = null;
@@ -4350,7 +4361,7 @@
                     if (isMobileDevice()) {
                         longPressTimer = setTimeout(function() {
                             if (clickStartPos) {
-                                createCircleAtLocation(e.latlng);
+                                createShapeAtLocation(e.latlng);
                             }
                         }, 500); // 500ms long press
                     }
@@ -4383,7 +4394,7 @@
                     const distance = clickStartPos.distanceTo(e.containerPoint);
                     if (distance <= dragThreshold) {
                         if (!isClickOnCircle(e)) {
-                            clearExistingCircleAndResetCrosshairs();
+                            clearExistingShapeAndResetDrawMode();
                         }
                     }
                     clickStartPos = null;
@@ -4391,16 +4402,16 @@
             });
         }
         
-        // Create circle at specific location (for mobile long-press)
-        function createCircleAtLocation(latlng) {
+        // Create shape at specific location (for mobile long-press)
+        function createShapeAtLocation(latlng) {
             if (!isCrosshairsMode || !isMobileDevice()) return;
             
-            // Clear any existing circles
+            // Clear any existing shapes
             drawnItems.clearLayers();
             closeCircleResults();
             
-            // Calculate radius in meters based on current zoom level
-            // Use a fixed pixel radius that scales with zoom
+            // For mobile, create a default polygon shape at the location
+            // This gives users a starting point they can then edit
             const mapContainer = map.getContainer();
             const containerWidth = mapContainer.offsetWidth;
             const containerHeight = mapContainer.offsetHeight;
@@ -4417,9 +4428,14 @@
             const edgeLatLng = map.layerPointToLatLng(edgePoint);
             const radiusInMeters = latlng.distanceTo(edgeLatLng);
             
-            // Create circle with calculated radius
-            const circle = L.circle(latlng, {
-                radius: radiusInMeters,
+            // Create a simple square polygon as starting shape
+            const offset = radiusInMeters / 2;
+            const polygon = L.polygon([
+                [latlng.lat + offset, latlng.lng - offset],
+                [latlng.lat + offset, latlng.lng + offset],
+                [latlng.lat - offset, latlng.lng + offset],
+                [latlng.lat - offset, latlng.lng - offset]
+            ], {
                 color: '#007bff',
                 fillColor: '#007bff',
                 fillOpacity: 0.1,
@@ -4427,14 +4443,14 @@
             });
             
             // Add to drawn items
-            drawnItems.addLayer(circle);
+            drawnItems.addLayer(polygon);
             
-            // Get taps in circle and show results
-            const tapsInCircle = getVisibleTapsInCircle(circle);
-            showCircleResults(tapsInCircle, circle);
+            // Get taps in shape and show results
+            const tapsInShape = getVisibleTapsInShape(polygon);
+            showCircleResults(tapsInShape, polygon);
             
-            // Enable edit mode
-            enableCircleEditMode(circle);
+            // Enable Geoman editing on the polygon
+            polygon.pm.enable();
         }
         
         // Update center handle size to match circle
@@ -4503,15 +4519,25 @@
             return distance <= radius;
         }
         
-        // Clear existing circle and re-enable crosshairs
-        function clearExistingCircleAndResetCrosshairs() {
+        // Clear existing shape and re-enable draw mode
+        function clearExistingShapeAndResetDrawMode() {
             if (drawnItems && drawnItems.getLayers().length > 0) {
                 drawnItems.clearLayers();
                 closeCircleResults();
-                // Re-trigger circle drawing tool to maintain crosshairs
-                setTimeout(() => {
-                    triggerCircleDrawing();
-                }, 100);
+                // Re-enable freehand drawing to maintain draw mode
+                if (isCrosshairsMode) {
+                    map.pm.enableDraw('Freehand', {
+                        pathOptions: {
+                            color: '#007bff',
+                            fillColor: '#007bff',
+                            fillOpacity: 0.1,
+                            weight: 2
+                        },
+                        continueDrawing: false,
+                        snapDistance: 20,
+                        allowSelfIntersection: false
+                    });
+                }
             }
         }
         
