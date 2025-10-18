@@ -4105,53 +4105,6 @@
                    (navigator.maxTouchPoints > 0);
         }
         
-        // Show mobile draw indicator
-        function showMobileDrawIndicator() {
-            // Create instruction banner
-            const banner = document.createElement('div');
-            banner.id = 'mobile-draw-banner';
-            banner.style.cssText = `
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0, 123, 255, 0.95);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 500;
-                z-index: 10000;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                backdrop-filter: blur(10px);
-                text-align: center;
-                max-width: 90%;
-            `;
-            banner.innerHTML = 'Tap and drag to draw circle';
-            document.body.appendChild(banner);
-            
-            // Add blue overlay to map
-            const mapContainer = document.querySelector('#map');
-            if (mapContainer) {
-                mapContainer.style.filter = 'brightness(0.9) saturate(1.1)';
-                mapContainer.style.transition = 'filter 0.3s ease';
-            }
-        }
-        
-        // Remove mobile draw indicator
-        function removeMobileDrawIndicator() {
-            const banner = document.getElementById('mobile-draw-banner');
-            if (banner) {
-                banner.remove();
-            }
-            
-            // Remove blue overlay from map
-            const mapContainer = document.querySelector('#map');
-            if (mapContainer) {
-                mapContainer.style.filter = '';
-            }
-        }
-        
         // Toggle drawing mode
         function toggleDrawingMode() {
             const drawToggleBtn = document.getElementById('drawToggleBtn');
@@ -4163,12 +4116,6 @@
                 map.removeControl(drawControl);
                 closeCircleResults();
                 hideControlPanel();
-                
-                // Re-enable map dragging on mobile
-                if (isMobileDevice()) {
-                    map.dragging.enable();
-                    removeMobileDrawIndicator();
-                }
             } else {
                 // Enable crosshairs mode
                 isCrosshairsMode = true;
@@ -4176,14 +4123,12 @@
                 map.addControl(drawControl);
                 hideControlPanel();
                 
-                // Disable map dragging on mobile and show indicator
-                if (isMobileDevice()) {
-                    map.dragging.disable();
-                    showMobileDrawIndicator();
+                // On mobile, don't trigger circle drawing tool immediately
+                // Instead, wait for long-click
+                if (!isMobileDevice()) {
+                    // Programmatically trigger circle drawing tool on desktop
+                    triggerCircleDrawing();
                 }
-                
-                // Programmatically trigger circle drawing tool
-                triggerCircleDrawing();
             }
         }
         
@@ -4395,13 +4340,30 @@
             });
             
             // Touch events for mobile
+            let longPressTimer = null;
+            
             map.on('touchstart', function(e) {
                 if (isCrosshairsMode && e.originalEvent.touches.length === 1) {
                     clickStartPos = e.containerPoint;
+                    
+                    // On mobile, set up long-press timer
+                    if (isMobileDevice()) {
+                        longPressTimer = setTimeout(function() {
+                            if (clickStartPos) {
+                                createCircleAtLocation(e.latlng);
+                            }
+                        }, 500); // 500ms long press
+                    }
                 }
             });
             
             map.on('touchmove', function(e) {
+                // Cancel long press if user moves finger
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                
                 if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 1) {
                     const distance = clickStartPos.distanceTo(e.containerPoint);
                     if (distance > dragThreshold) {
@@ -4411,6 +4373,12 @@
             });
             
             map.on('touchend', function(e) {
+                // Cancel long press timer
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                
                 if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 0) {
                     const distance = clickStartPos.distanceTo(e.containerPoint);
                     if (distance <= dragThreshold) {
@@ -4421,6 +4389,34 @@
                     clickStartPos = null;
                 }
             });
+        }
+        
+        // Create circle at specific location (for mobile long-press)
+        function createCircleAtLocation(latlng) {
+            if (!isCrosshairsMode || !isMobileDevice()) return;
+            
+            // Clear any existing circles
+            drawnItems.clearLayers();
+            closeCircleResults();
+            
+            // Create a standard-sized circle (e.g., 1000m radius)
+            const circle = L.circle(latlng, {
+                radius: 1000, // 1km radius
+                color: '#007bff',
+                fillColor: '#007bff',
+                fillOpacity: 0.1,
+                weight: 2
+            });
+            
+            // Add to drawn items
+            drawnItems.addLayer(circle);
+            
+            // Get taps in circle and show results
+            const tapsInCircle = getVisibleTapsInCircle(circle);
+            showCircleResults(tapsInCircle, circle);
+            
+            // Enable edit mode
+            enableCircleEditMode(circle);
         }
         
         // Update center handle size to match circle
