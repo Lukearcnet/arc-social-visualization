@@ -4119,9 +4119,9 @@
                 console.log('Available Geoman modes:', Object.keys(map.pm.Draw));
                 console.log('Geoman global options:', map.pm.getGlobalOptions());
                 
-                // Enable Geoman freehand drawing
-                console.log('Attempting to enable Freehand mode...');
-                map.pm.enableDraw('Freehand', {
+                // Try different mode names since 'Freehand' doesn't exist
+                console.log('Attempting to enable Polygon mode (with freehand options)...');
+                map.pm.enableDraw('Polygon', {
                     pathOptions: {
                         color: '#007bff',
                         fillColor: '#007bff',
@@ -4133,10 +4133,31 @@
                     allowSelfIntersection: false
                 });
                 
-                // Debug: Check if freehand mode was enabled successfully
+                // Debug: Check if polygon mode was enabled successfully
                 setTimeout(() => {
-                    console.log('Freehand mode enabled:', map.pm.globalDrawModeEnabled());
+                    console.log('Polygon mode enabled:', map.pm.globalDrawModeEnabled());
                     console.log('Current draw mode:', map.pm.getGlobalDrawMode());
+                    
+                    // If Polygon mode failed, try other common modes
+                    if (!map.pm.globalDrawModeEnabled()) {
+                        console.log('Polygon mode failed, trying other modes...');
+                        const availableModes = Object.keys(map.pm.Draw);
+                        console.log('Available modes to try:', availableModes);
+                        
+                        // Try the first available mode as fallback
+                        if (availableModes.length > 0) {
+                            const fallbackMode = availableModes[0];
+                            console.log('Trying fallback mode:', fallbackMode);
+                            map.pm.enableDraw(fallbackMode, {
+                                pathOptions: {
+                                    color: '#007bff',
+                                    fillColor: '#007bff',
+                                    fillOpacity: 0.1,
+                                    weight: 2
+                                }
+                            });
+                        }
+                    }
                 }, 100);
                 
                 // Hide Geoman toolbar again (in case it reappeared)
