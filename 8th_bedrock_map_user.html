@@ -4574,6 +4574,25 @@
                 computedStyle: window.getComputedStyle(currentDropdown).display
             });
             
+            // Create a simple test element to verify DOM rendering works
+            const testElement = document.createElement('div');
+            testElement.style.position = 'fixed';
+            testElement.style.left = '10px';
+            testElement.style.top = '10px';
+            testElement.style.width = '100px';
+            testElement.style.height = '50px';
+            testElement.style.backgroundColor = 'red';
+            testElement.style.zIndex = '99999';
+            testElement.textContent = 'TEST';
+            document.body.appendChild(testElement);
+            console.log('Test element created - should see red box in top-left corner');
+            
+            // Remove test element after 3 seconds
+            setTimeout(() => {
+                testElement.remove();
+                console.log('Test element removed');
+            }, 3000);
+            
             console.log('showCircleResults completed');
         }
         
@@ -4688,14 +4707,21 @@
             
             console.log('Final position:', { left, top, width: dropdownWidth });
             
-            // Apply position with explicit positioning
+            // Apply position with explicit positioning and force visibility
             currentDropdown.style.position = 'fixed';
             currentDropdown.style.left = `${left}px`;
             currentDropdown.style.top = `${top}px`;
             currentDropdown.style.width = `${dropdownWidth}px`;
-            currentDropdown.style.zIndex = '10000';
+            currentDropdown.style.zIndex = '99999';
             currentDropdown.style.display = 'block';
             currentDropdown.style.visibility = 'visible';
+            currentDropdown.style.opacity = '1';
+            currentDropdown.style.pointerEvents = 'auto';
+            
+            // Force the element to be visible by removing any potential hiding styles
+            currentDropdown.style.transform = 'none';
+            currentDropdown.style.clip = 'none';
+            currentDropdown.style.overflow = 'visible';
             
             console.log('Position applied to dropdown:', {
                 left: currentDropdown.style.left,
