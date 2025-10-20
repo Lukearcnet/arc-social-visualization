@@ -4548,13 +4548,14 @@
             // Don't use portal-dropdown class initially - test with basic styling
             
             // Add basic inline styling to make it visible
-            dropdown.style.backgroundColor = 'white';
-            dropdown.style.border = '2px solid red';
-            dropdown.style.padding = '10px';
-            dropdown.style.fontSize = '14px';
+            dropdown.style.backgroundColor = 'yellow'; // Changed to bright yellow for visibility
+            dropdown.style.border = '3px solid red';
+            dropdown.style.padding = '15px';
+            dropdown.style.fontSize = '16px';
             dropdown.style.color = 'black';
             dropdown.style.maxHeight = '200px';
             dropdown.style.overflowY = 'auto';
+            dropdown.style.fontWeight = 'bold';
             
             // Build content from tap data
             dropdown.innerHTML = tapsInCircle.map(tap => `
@@ -4589,6 +4590,34 @@
                 parentElement: currentDropdown.parentElement,
                 offsetParent: currentDropdown.offsetParent,
                 computedStyle: window.getComputedStyle(currentDropdown).display
+            });
+            
+            // Additional debugging for visibility
+            const computedStyle = window.getComputedStyle(currentDropdown);
+            console.log('Dropdown computed styles:', {
+                display: computedStyle.display,
+                visibility: computedStyle.visibility,
+                opacity: computedStyle.opacity,
+                position: computedStyle.position,
+                left: computedStyle.left,
+                top: computedStyle.top,
+                width: computedStyle.width,
+                height: computedStyle.height,
+                zIndex: computedStyle.zIndex,
+                backgroundColor: computedStyle.backgroundColor,
+                border: computedStyle.border
+            });
+            
+            // Check if dropdown is actually visible
+            const rect = currentDropdown.getBoundingClientRect();
+            console.log('Dropdown bounding rect:', {
+                width: rect.width,
+                height: rect.height,
+                top: rect.top,
+                left: rect.left,
+                bottom: rect.bottom,
+                right: rect.right,
+                visible: rect.width > 0 && rect.height > 0
             });
             
             // Create a simple test element to verify DOM rendering works
