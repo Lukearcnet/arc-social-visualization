@@ -4595,8 +4595,24 @@
             portalRoot.appendChild(dropdown);
             currentDropdown = dropdown;
             
-            console.log('Empty results dropdown appended, but NO positioning called!');
-            console.log('This is likely the issue - showEmptyResults has no positioning!');
+            // Position the empty results dropdown in the center of the screen
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const dropdownWidth = 200;
+            const dropdownHeight = 150;
+            
+            const left = Math.max(10, (viewportWidth - dropdownWidth) / 2);
+            const top = Math.max(10, (viewportHeight - dropdownHeight) / 2);
+            
+            currentDropdown.style.position = 'fixed';
+            currentDropdown.style.left = `${left}px`;
+            currentDropdown.style.top = `${top}px`;
+            currentDropdown.style.width = `${dropdownWidth}px`;
+            currentDropdown.style.zIndex = '10000';
+            currentDropdown.style.display = 'block';
+            currentDropdown.style.visibility = 'visible';
+            
+            console.log('Empty results positioned at center:', { left, top });
         }
         
         // Position dropdown near shape (circle or polygon)
@@ -4670,15 +4686,23 @@
             
             console.log('Final position:', { left, top, width: dropdownWidth });
             
-            // Apply position
+            // Apply position with explicit positioning
+            currentDropdown.style.position = 'fixed';
             currentDropdown.style.left = `${left}px`;
             currentDropdown.style.top = `${top}px`;
             currentDropdown.style.width = `${dropdownWidth}px`;
+            currentDropdown.style.zIndex = '10000';
+            currentDropdown.style.display = 'block';
+            currentDropdown.style.visibility = 'visible';
             
             console.log('Position applied to dropdown:', {
                 left: currentDropdown.style.left,
                 top: currentDropdown.style.top,
                 width: currentDropdown.style.width,
+                position: currentDropdown.style.position,
+                zIndex: currentDropdown.style.zIndex,
+                display: currentDropdown.style.display,
+                visibility: currentDropdown.style.visibility,
                 visible: currentDropdown.offsetParent !== null
             });
         }
