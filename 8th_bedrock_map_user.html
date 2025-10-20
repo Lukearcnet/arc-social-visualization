@@ -4564,8 +4564,16 @@
                 </div>
             `).join('');
             
-            console.log('Dropdown HTML created, appending directly to document.body');
-            document.body.appendChild(dropdown);
+            console.log('Dropdown HTML created, appending to map container');
+            // Append to map container instead of document.body
+            const mapContainer = document.getElementById('map');
+            if (mapContainer) {
+                mapContainer.appendChild(dropdown);
+                console.log('Dropdown appended to map container');
+            } else {
+                document.body.appendChild(dropdown);
+                console.log('Map container not found, appended to document.body');
+            }
             currentDropdown = dropdown;
             
             console.log('Dropdown appended, calling positionDropdownNearCircle');
@@ -4621,8 +4629,16 @@
                 </div>
             `;
             
-            console.log('Empty results dropdown created, appending directly to document.body');
-            document.body.appendChild(dropdown);
+            console.log('Empty results dropdown created, appending to map container');
+            // Append to map container instead of document.body
+            const mapContainer = document.getElementById('map');
+            if (mapContainer) {
+                mapContainer.appendChild(dropdown);
+                console.log('Empty dropdown appended to map container');
+            } else {
+                document.body.appendChild(dropdown);
+                console.log('Map container not found, appended to document.body');
+            }
             currentDropdown = dropdown;
             
             // Position the empty results dropdown in the center of the screen
