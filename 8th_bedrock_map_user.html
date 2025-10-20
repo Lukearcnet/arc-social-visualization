@@ -4723,10 +4723,9 @@
             const dropdownWidth = 200;
             const dropdownHeight = 150; // max-height from CSS
             
-            // Calculate initial position below/near the shape
-            // Use absolute positioning relative to the map container, not fixed positioning
-            let left = point.x;
-            let top = point.y + 20; // 20px below center
+            // Calculate position relative to viewport (accounting for sidebar offset)
+            let left = point.x + containerRect.left;  // Add map container's offset from viewport
+            let top = point.y + containerRect.top + 20; // Add map container's offset + 20px below center
             
             console.log('Initial position:', { left, top });
             
@@ -4762,8 +4761,8 @@
             
             console.log('Final position:', { left, top, width: dropdownWidth });
             
-            // Apply absolute positioning relative to map container
-            currentDropdown.style.position = 'absolute';
+            // Apply fixed positioning relative to viewport
+            currentDropdown.style.position = 'fixed';
             currentDropdown.style.left = `${left}px`;
             currentDropdown.style.top = `${top}px`;
             currentDropdown.style.width = `${dropdownWidth}px`;
