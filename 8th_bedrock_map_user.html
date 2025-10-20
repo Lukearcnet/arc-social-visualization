@@ -4543,9 +4543,9 @@
             
             console.log('Creating dropdown with', tapsInCircle.length, 'taps');
             
-            // Create simple dropdown without CSS classes first
+            // Create dropdown with portal-dropdown class for proper event handling
             const dropdown = document.createElement('div');
-            // Don't use portal-dropdown class initially - test with basic styling
+            dropdown.className = 'portal-dropdown';
             
             // Add basic inline styling to make it visible
             dropdown.style.backgroundColor = 'yellow'; // Changed to bright yellow for visibility
