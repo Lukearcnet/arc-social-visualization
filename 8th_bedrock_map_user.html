@@ -4103,17 +4103,22 @@
                 drawToggleBtn.classList.remove('active');
                 mapContainer.classList.remove('drawing-mode');
                 
-                // Re-enable map interactions
+                // Re-enable map dragging (zoom was never disabled)
                 map.dragging.enable();
-                map.scrollWheelZoom.enable();
-                map.touchZoom.enable();
-                map.doubleClickZoom.enable();
                 
                 // Remove custom event listeners
                 map.off('pointerdown', startFreehandDrawing);
                 map.off('pointermove', continueFreehandDrawing);
                 map.off('pointerup', finishFreehandDrawing);
                 map.off('pointercancel', cancelFreehandDrawing);
+                
+                // Remove fallback event listeners
+                map.off('mousedown', startFreehandDrawing);
+                map.off('mousemove', continueFreehandDrawing);
+                map.off('mouseup', finishFreehandDrawing);
+                map.off('touchstart', startFreehandDrawing);
+                map.off('touchmove', continueFreehandDrawing);
+                map.off('touchend', finishFreehandDrawing);
                 
                 // Disable Geoman draw mode (in case it was active)
                 map.pm.disableDraw();
@@ -4132,11 +4137,8 @@
                 drawToggleBtn.classList.add('active');
                 mapContainer.classList.add('drawing-mode');
                 
-                // Disable map interactions during drawing mode
+                // Disable map dragging during drawing mode (keep zoom functionality)
                 map.dragging.disable();
-                map.scrollWheelZoom.disable();
-                map.touchZoom.disable();
-                map.doubleClickZoom.disable();
                 
                 // Disable tap marker interactions during drawing
                 markers.forEach(marker => {
@@ -4146,10 +4148,19 @@
                 });
                 
                 // Add custom event listeners for freehand drawing
+                // Try both pointer events and mouse/touch events for compatibility
                 map.on('pointerdown', startFreehandDrawing);
                 map.on('pointermove', continueFreehandDrawing);
                 map.on('pointerup', finishFreehandDrawing);
                 map.on('pointercancel', cancelFreehandDrawing);
+                
+                // Fallback to mouse/touch events if pointer events don't work
+                map.on('mousedown', startFreehandDrawing);
+                map.on('mousemove', continueFreehandDrawing);
+                map.on('mouseup', finishFreehandDrawing);
+                map.on('touchstart', startFreehandDrawing);
+                map.on('touchmove', continueFreehandDrawing);
+                map.on('touchend', finishFreehandDrawing);
                 
                 console.log('Custom freehand drawing enabled with pointer events');
             }
@@ -4161,7 +4172,12 @@
          * Uses Pointer Events API for unified desktop/mobile/stylus support
          */
         function startFreehandDrawing(e) {
-            if (!isCrosshairsMode || !e.latlng) return;
+            console.log('startFreehandDrawing called:', { isCrosshairsMode, latlng: e.latlng, event: e });
+            
+            if (!isCrosshairsMode || !e.latlng) {
+                console.log('Drawing not started - conditions not met');
+                return;
+            }
             
             isDrawing = true;
             drawingPoints = [e.latlng];
@@ -4189,6 +4205,7 @@
             if (shouldAddPoint(e.latlng, lastPoint)) {
                 drawingPoints.push(e.latlng);
                 previewNeedsUpdate = true; // Set flag for rAF render
+                console.log('Added point, total points:', drawingPoints.length);
             }
         }
 
