@@ -4543,15 +4543,24 @@
             
             console.log('Creating dropdown with', tapsInCircle.length, 'taps');
             
-            // Create portal dropdown
+            // Create simple dropdown without CSS classes first
             const dropdown = document.createElement('div');
-            dropdown.className = 'portal-dropdown';
+            // Don't use portal-dropdown class initially - test with basic styling
+            
+            // Add basic inline styling to make it visible
+            dropdown.style.backgroundColor = 'white';
+            dropdown.style.border = '2px solid red';
+            dropdown.style.padding = '10px';
+            dropdown.style.fontSize = '14px';
+            dropdown.style.color = 'black';
+            dropdown.style.maxHeight = '200px';
+            dropdown.style.overflowY = 'auto';
             
             // Build content from tap data
             dropdown.innerHTML = tapsInCircle.map(tap => `
-                <div class="degree-user-item">
-                    <div class="user-name">${tap.source_name} ↔ ${tap.target_name}</div>
-                    <div class="user-meta">${tap.formatted_location || 'Unknown location'}</div>
+                <div style="padding: 5px; border-bottom: 1px solid #ccc;">
+                    <div style="font-weight: bold;">${tap.source_name} ↔ ${tap.target_name}</div>
+                    <div style="font-size: 12px; color: #666;">${tap.formatted_location || 'Unknown location'}</div>
                 </div>
             `).join('');
             
@@ -4707,21 +4716,13 @@
             
             console.log('Final position:', { left, top, width: dropdownWidth });
             
-            // Apply position with explicit positioning and force visibility
+            // Apply simple positioning
             currentDropdown.style.position = 'fixed';
             currentDropdown.style.left = `${left}px`;
             currentDropdown.style.top = `${top}px`;
             currentDropdown.style.width = `${dropdownWidth}px`;
             currentDropdown.style.zIndex = '99999';
             currentDropdown.style.display = 'block';
-            currentDropdown.style.visibility = 'visible';
-            currentDropdown.style.opacity = '1';
-            currentDropdown.style.pointerEvents = 'auto';
-            
-            // Force the element to be visible by removing any potential hiding styles
-            currentDropdown.style.transform = 'none';
-            currentDropdown.style.clip = 'none';
-            currentDropdown.style.overflow = 'visible';
             
             console.log('Position applied to dropdown:', {
                 left: currentDropdown.style.left,
