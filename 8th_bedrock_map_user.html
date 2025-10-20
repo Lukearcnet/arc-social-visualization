@@ -4543,31 +4543,21 @@
             
             console.log('Creating dropdown with', tapsInCircle.length, 'taps');
             
-            // Create dropdown with portal-dropdown class for proper event handling
+            // Create portal dropdown using the working approach from develop branch
+            const portalRoot = getPortalRoot();
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
             
-            // Add basic inline styling to make it visible
-            dropdown.style.backgroundColor = 'yellow'; // Changed to bright yellow for visibility
-            dropdown.style.border = '3px solid red';
-            dropdown.style.padding = '15px';
-            dropdown.style.fontSize = '16px';
-            dropdown.style.color = 'black';
-            dropdown.style.maxHeight = '200px';
-            dropdown.style.overflowY = 'auto';
-            dropdown.style.fontWeight = 'bold';
-            
-            // Build content from tap data
+            // Build content from tap data using proper CSS classes
             dropdown.innerHTML = tapsInCircle.map(tap => `
-                <div style="padding: 5px; border-bottom: 1px solid #ccc;">
-                    <div style="font-weight: bold;">${tap.source_name} ↔ ${tap.target_name}</div>
-                    <div style="font-size: 12px; color: #666;">${tap.formatted_location || 'Unknown location'}</div>
+                <div class="degree-user-item">
+                    <div class="user-name">${tap.source_name} ↔ ${tap.target_name}</div>
+                    <div class="user-meta">${tap.formatted_location || 'Unknown location'}</div>
                 </div>
             `).join('');
             
-            console.log('Dropdown HTML created, appending to document.body for fixed positioning');
-            // Append to document.body for true fixed positioning (not affected by backdrop-filter)
-            document.body.appendChild(dropdown);
+            console.log('Dropdown HTML created, appending to portal-root');
+            portalRoot.appendChild(dropdown);
             currentDropdown = dropdown;
             
             console.log('Dropdown appended, calling positionDropdownNearCircle');
@@ -4632,9 +4622,10 @@
                 </div>
             `;
             
-            console.log('Empty results dropdown created, appending to document.body for fixed positioning');
-            // Append to document.body for true fixed positioning (not affected by backdrop-filter)
-            document.body.appendChild(dropdown);
+            console.log('Empty results dropdown created, appending to portal-root');
+            // Use portal-root approach like the working develop branch
+            const portalRoot = getPortalRoot();
+            portalRoot.appendChild(dropdown);
             currentDropdown = dropdown;
             
             // Position the empty results dropdown in the center of the screen
@@ -4657,97 +4648,60 @@
             console.log('Empty results positioned at center:', { left, top });
         }
         
-        // Position dropdown near shape (circle or polygon)
+        // Position dropdown near shape (circle or polygon) - using working approach from develop
         function positionDropdownNearCircle(shape) {
-            console.log('positionDropdownNearCircle called with:', shape);
-            
-            if (!currentDropdown) {
-                console.log('No currentDropdown, returning');
-                return;
-            }
+            if (!currentDropdown) return;
             
             // Get shape center - handle both circles and polygons
             let center;
             if (shape instanceof L.Circle) {
-                console.log('Shape is L.Circle');
                 center = shape.getLatLng();
             } else if (shape instanceof L.Polygon) {
-                console.log('Shape is L.Polygon');
                 const bounds = shape.getBounds();
                 center = bounds.getCenter();
-                console.log('Polygon bounds:', bounds, 'Center:', center);
             } else {
-                console.warn('Unknown shape type for positioning:', shape.constructor.name);
                 return;
             }
             
             const point = map.latLngToContainerPoint(center);
             const containerRect = map.getContainer().getBoundingClientRect();
             
-            console.log('Point calculation:', { center, point, containerRect });
-            
             const isMobile = window.innerWidth <= 768;
-            const dropdownWidth = 200;
-            const dropdownHeight = 150; // max-height from CSS
             
-            // Calculate position relative to viewport (accounting for sidebar offset)
-            let left = point.x + containerRect.left;  // Add map container's offset from viewport
-            let top = point.y + containerRect.top + 20; // Add map container's offset + 20px below center
-            
-            console.log('Initial position:', { left, top });
-            
-            // Adjust to keep in viewport (responsive for both mobile and desktop)
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            
-            console.log('Viewport:', { viewportWidth, viewportHeight });
-            
-            // Keep within horizontal bounds
-            if (left + dropdownWidth > viewportWidth - 10) {
-                left = viewportWidth - dropdownWidth - 10;
-                console.log('Adjusted left for right edge:', left);
-            }
-            if (left < 10) {
-                left = 10;
-                console.log('Adjusted left for left edge:', left);
-            }
-            
-            // Keep within vertical bounds
-            if (top + dropdownHeight > viewportHeight - 10) {
-                // Try positioning above if there's more room
-                const topAbove = point.y + containerRect.top - dropdownHeight - 20;
-                if (topAbove > 10) {
-                    top = topAbove;
-                    console.log('Positioned above:', top);
-                } else {
-                    // Not enough room above or below, just ensure it's within bounds
-                    top = Math.max(10, Math.min(top, viewportHeight - dropdownHeight - 10));
-                    console.log('Adjusted top to stay in bounds:', top);
+            if (isMobile) {
+                // Mobile: full width with padding
+                const padding = 16;
+                currentDropdown.style.left = `${padding}px`;
+                currentDropdown.style.right = `${padding}px`;
+                currentDropdown.style.top = `${point.y + containerRect.top + 20}px`;
+            } else {
+                // Desktop: positioned near circle center
+                let left = point.x + containerRect.left;
+                let top = point.y + containerRect.top + 20;
+                
+                // Adjust to keep in viewport
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const dropdownWidth = 200; // min-width from CSS
+                const dropdownHeight = Math.min(currentDropdown.scrollHeight, 300);
+                
+                if (left + dropdownWidth > viewportWidth - 10) {
+                    left = viewportWidth - dropdownWidth - 10;
                 }
+                if (left < 10) {
+                    left = 10;
+                }
+                
+                if (top + dropdownHeight > viewportHeight - 10) {
+                    top = viewportHeight - dropdownHeight - 10;
+                }
+                if (top < 10) {
+                    top = 10;
+                }
+                
+                currentDropdown.style.left = `${left}px`;
+                currentDropdown.style.top = `${top}px`;
             }
-            
-            console.log('Final position:', { left, top, width: dropdownWidth });
-            
-            // Apply fixed positioning relative to viewport
-            currentDropdown.style.position = 'fixed';
-            currentDropdown.style.left = `${left}px`;
-            currentDropdown.style.top = `${top}px`;
-            currentDropdown.style.width = `${dropdownWidth}px`;
-            currentDropdown.style.zIndex = '99999';
-            currentDropdown.style.display = 'block';
-            
-            console.log('Position applied to dropdown:', {
-                left: currentDropdown.style.left,
-                top: currentDropdown.style.top,
-                width: currentDropdown.style.width,
-                position: currentDropdown.style.position,
-                zIndex: currentDropdown.style.zIndex,
-                display: currentDropdown.style.display,
-                visibility: currentDropdown.style.visibility,
-                visible: currentDropdown.offsetParent !== null,
-                offsetParent: currentDropdown.offsetParent,
-                parentElement: currentDropdown.parentElement
-            });
         }
         
         // Get or create portal root
