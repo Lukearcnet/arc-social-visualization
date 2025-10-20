@@ -4569,6 +4569,14 @@
             // Add close on outside click
             document.addEventListener('click', closeOnOutsideClick);
             
+            // Verify dropdown is in DOM
+            console.log('Dropdown verification:', {
+                inDOM: document.body.contains(currentDropdown),
+                parentElement: currentDropdown.parentElement,
+                offsetParent: currentDropdown.offsetParent,
+                computedStyle: window.getComputedStyle(currentDropdown).display
+            });
+            
             console.log('showCircleResults completed');
         }
         
@@ -4703,7 +4711,9 @@
                 zIndex: currentDropdown.style.zIndex,
                 display: currentDropdown.style.display,
                 visibility: currentDropdown.style.visibility,
-                visible: currentDropdown.offsetParent !== null
+                visible: currentDropdown.offsetParent !== null,
+                offsetParent: currentDropdown.offsetParent,
+                parentElement: currentDropdown.parentElement
             });
         }
         
