@@ -291,6 +291,15 @@
             cursor: move;
         }
         
+        /* Custom freehand drawing cursor styles */
+        .leaflet-container.drawing-mode {
+            cursor: crosshair !important;
+        }
+        
+        .leaflet-container.drawing-mode.drawing-active {
+            cursor: crosshair !important;
+        }
+        
         .search-toggle-btn svg {
             width: 16px;
             height: 16px;
@@ -1473,6 +1482,15 @@
         let dragThreshold = 5; // pixels
         let drawUpdateTimeout = null;
         let isDragging = false;
+        
+        // Custom freehand drawing state
+        let isDrawing = false;
+        let drawingPoints = [];
+        let temporaryPolyline = null;
+        let previewNeedsUpdate = false;
+        let animationFrameId = null;
+        const POINT_SIMPLIFICATION_TOLERANCE = 10; // meters
+        const MIN_POINTS_FOR_POLYGON = 3;
         
         // Search state management
         let originalUserId = null;        // The logged-in user
@@ -2922,6 +2940,11 @@
                     
                     // Also close drawing results if open
                     closeCircleResults();
+                    
+                    // Cancel any active drawing
+                    if (isDrawing) {
+                        cancelFreehandDrawing();
+                    }
                 }
             });
             
@@ -4011,24 +4034,8 @@
                 allowSelfIntersectionEdit: false
             });
             
-            // Add Geoman event listeners
-            map.on('pm:create', function(e) {
-                console.log('Geoman create event:', e);
-                const layer = e.layer;
-                console.log('Created layer:', layer);
-                
-                // Clear any existing shapes and dropdowns
-                drawnItems.clearLayers();
-                closeCircleResults();
-                
-                // Add the new shape
-                drawnItems.addLayer(layer);
-                
-                // Get taps in shape and show results
-                const tapsInShape = getVisibleTapsInShape(layer);
-                console.log('Taps in shape:', tapsInShape.length);
-                showCircleResults(tapsInShape, layer);
-            });
+            // Add Geoman event listeners (for editing only, not creation)
+            // Note: pm:create is removed since we create polygons manually with custom drawing
             
             // Handle edits to keep results in sync
             map.on('pm:edit', function(e) {
@@ -4086,6 +4093,7 @@
         // Toggle drawing mode
         function toggleDrawingMode() {
             const drawToggleBtn = document.getElementById('drawToggleBtn');
+            const mapContainer = document.getElementById('map');
             console.log('Toggle drawing mode, current state:', isCrosshairsMode);
             
             if (isCrosshairsMode) {
@@ -4093,6 +4101,15 @@
                 console.log('Disabling draw mode');
                 isCrosshairsMode = false;
                 drawToggleBtn.classList.remove('active');
+                mapContainer.classList.remove('drawing-mode');
+                
+                // Remove custom event listeners
+                map.off('pointerdown', startFreehandDrawing);
+                map.off('pointermove', continueFreehandDrawing);
+                map.off('pointerup', finishFreehandDrawing);
+                map.off('pointercancel', cancelFreehandDrawing);
+                
+                // Disable Geoman draw mode (in case it was active)
                 map.pm.disableDraw();
                 closeCircleResults();
                 
@@ -4104,9 +4121,10 @@
                 });
             } else {
                 // Enable freehand drawing mode
-                console.log('Enabling freehand draw mode');
+                console.log('Enabling custom freehand draw mode');
                 isCrosshairsMode = true;
                 drawToggleBtn.classList.add('active');
+                mapContainer.classList.add('drawing-mode');
                 
                 // Disable tap marker interactions during drawing
                 markers.forEach(marker => {
@@ -4115,62 +4133,278 @@
                     }
                 });
                 
-                // Debug: Check available Geoman modes
-                console.log('Available Geoman modes:', Object.keys(map.pm.Draw));
-                console.log('Geoman global options:', map.pm.getGlobalOptions());
+                // Add custom event listeners for freehand drawing
+                map.on('pointerdown', startFreehandDrawing);
+                map.on('pointermove', continueFreehandDrawing);
+                map.on('pointerup', finishFreehandDrawing);
+                map.on('pointercancel', cancelFreehandDrawing);
                 
-                // Try different mode names since 'Freehand' doesn't exist
-                console.log('Attempting to enable Polygon mode (with freehand options)...');
-                map.pm.enableDraw('Polygon', {
-                    pathOptions: {
-                        color: '#007bff',
-                        fillColor: '#007bff',
-                        fillOpacity: 0.1,
-                        weight: 2
-                    },
-                    continueDrawing: false,
-                    snapDistance: 20,
-                    allowSelfIntersection: false
+                console.log('Custom freehand drawing enabled with pointer events');
+            }
+        }
+        
+        // Custom freehand drawing functions
+        /**
+         * Start freehand drawing on pointer down
+         * Uses Pointer Events API for unified desktop/mobile/stylus support
+         */
+        function startFreehandDrawing(e) {
+            if (!isCrosshairsMode || !e.latlng) return;
+            
+            isDrawing = true;
+            drawingPoints = [e.latlng];
+            previewNeedsUpdate = true;
+            
+            // Disable map dragging while drawing
+            map.dragging.disable();
+            map.scrollWheelZoom.disable();
+            
+            // Add drawing-active class for cursor feedback
+            document.getElementById('map').classList.add('drawing-active');
+            
+            // Update ARIA live region for accessibility
+            updateAriaLiveRegion('Freehand drawing started');
+            
+            console.log('Started drawing at:', e.latlng);
+        }
+
+        /**
+         * Continue drawing as pointer moves
+         */
+        function continueFreehandDrawing(e) {
+            if (!isDrawing || !e.latlng) return;
+            
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            
+            // Adaptive point collection based on zoom and device
+            if (shouldAddPoint(e.latlng, lastPoint)) {
+                drawingPoints.push(e.latlng);
+                previewNeedsUpdate = true; // Set flag for rAF render
+            }
+        }
+
+        /**
+         * Finish drawing on pointer up
+         */
+        function finishFreehandDrawing(e) {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            
+            // Re-enable map interactions
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
+            
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            // Create polygon from points if valid
+            if (drawingPoints.length >= MIN_POINTS_FOR_POLYGON) {
+                createPolygonFromPoints(drawingPoints);
+                updateAriaLiveRegion(`Polygon created with ${drawingPoints.length} points`);
+            } else {
+                updateAriaLiveRegion('Drawing cancelled - not enough points');
+            }
+            
+            drawingPoints = [];
+            console.log('Finished drawing');
+        }
+
+        /**
+         * Cancel drawing (ESC key or pointer cancel event)
+         */
+        function cancelFreehandDrawing() {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            drawingPoints = [];
+            
+            // Re-enable map interactions
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
+            
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            updateAriaLiveRegion('Drawing cancelled');
+            console.log('Drawing cancelled');
+        }
+
+        /**
+         * Show real-time preview of drawing path using requestAnimationFrame
+         */
+        function updateTemporaryPath() {
+            if (!previewNeedsUpdate || drawingPoints.length < 2) return;
+            
+            // Cancel previous animation frame
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
+            animationFrameId = requestAnimationFrame(() => {
+                // Remove existing preview
+                if (temporaryPolyline) {
+                    map.removeLayer(temporaryPolyline);
+                }
+                
+                // Create new preview polyline
+                temporaryPolyline = L.polyline(drawingPoints, {
+                    color: '#007bff',
+                    weight: 2,
+                    opacity: 0.7,
+                    interactive: false
+                }).addTo(map);
+                
+                previewNeedsUpdate = false;
+            });
+        }
+
+        /**
+         * Clean up temporary preview path
+         */
+        function cleanupTemporaryPath() {
+            if (temporaryPolyline) {
+                map.removeLayer(temporaryPolyline);
+                temporaryPolyline = null;
+            }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        /**
+         * Simplify points using distance-based algorithm with adaptive tolerance
+         */
+        function simplifyPoints(points, tolerance = null) {
+            if (points.length <= MIN_POINTS_FOR_POLYGON) return points;
+            
+            // Adaptive tolerance based on zoom level (2-3 pixels converted to meters)
+            if (!tolerance) {
+                const zoom = map.getZoom();
+                const pixelToMeterRatio = 40075016.686 / (256 * Math.pow(2, zoom)); // meters per pixel
+                tolerance = Math.max(2 * pixelToMeterRatio, POINT_SIMPLIFICATION_TOLERANCE);
+            }
+            
+            const simplified = [points[0]]; // Always keep first point
+            
+            for (let i = 1; i < points.length - 1; i++) {
+                const prevPoint = simplified[simplified.length - 1];
+                const distance = map.distance(prevPoint, points[i]);
+                
+                if (distance > tolerance) {
+                    simplified.push(points[i]);
+                }
+            }
+            
+            // Always keep last point
+            simplified.push(points[points.length - 1]);
+            
+            console.log(`Simplified ${points.length} points to ${simplified.length} points`);
+            return simplified;
+        }
+
+        /**
+         * Create polygon from drawn points and enable editing
+         */
+        function createPolygonFromPoints(points) {
+            try {
+                // Simplify points for smoother shape
+                const simplified = simplifyPoints(points);
+                
+                if (simplified.length < MIN_POINTS_FOR_POLYGON) {
+                    console.warn('Not enough points for polygon:', simplified.length);
+                    return;
+                }
+                
+                // Ensure polygon is properly closed
+                const closedPoints = [...simplified];
+                if (closedPoints.length > 2) {
+                    // Check if already closed (first and last points are the same)
+                    const first = closedPoints[0];
+                    const last = closedPoints[closedPoints.length - 1];
+                    const distance = map.distance(first, last);
+                    if (distance > 1) { // More than 1 meter apart
+                        closedPoints.push(closedPoints[0]); // Close the polygon
+                    }
+                }
+                
+                // Clear any existing shapes
+                drawnItems.clearLayers();
+                closeCircleResults();
+                
+                // Create polygon with styling
+                const polygon = L.polygon(closedPoints, {
+                    color: '#007bff',
+                    fillColor: '#007bff',
+                    fillOpacity: 0.1,
+                    weight: 2
                 });
                 
-                // Debug: Check if polygon mode was enabled successfully
-                setTimeout(() => {
-                    console.log('Polygon mode enabled:', map.pm.globalDrawModeEnabled());
-                    console.log('Current draw mode:', map.pm.getGlobalDrawMode());
-                    
-                    // If Polygon mode failed, try other common modes
-                    if (!map.pm.globalDrawModeEnabled()) {
-                        console.log('Polygon mode failed, trying other modes...');
-                        const availableModes = Object.keys(map.pm.Draw);
-                        console.log('Available modes to try:', availableModes);
-                        
-                        // Try the first available mode as fallback
-                        if (availableModes.length > 0) {
-                            const fallbackMode = availableModes[0];
-                            console.log('Trying fallback mode:', fallbackMode);
-                            map.pm.enableDraw(fallbackMode, {
-                                pathOptions: {
-                                    color: '#007bff',
-                                    fillColor: '#007bff',
-                                    fillOpacity: 0.1,
-                                    weight: 2
-                                }
-                            });
-                        }
-                    }
-                }, 100);
+                // Add to map
+                drawnItems.addLayer(polygon);
                 
-                // Hide Geoman toolbar again (in case it reappeared)
-                setTimeout(() => {
-                    const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
-                    if (geomanToolbar) {
-                        geomanToolbar.style.display = 'none';
-                        console.log('Geoman toolbar hidden again');
-                    }
-                }, 50);
+                // Enable Geoman editing
+                polygon.pm.enable({
+                    allowSelfIntersection: false,
+                    preventMarkerRemoval: true
+                });
                 
-                console.log('Freehand drawing enabled');
+                // Get taps in shape and show results
+                const tapsInShape = getVisibleTapsInShape(polygon);
+                showCircleResults(tapsInShape, polygon);
+                
+                console.log('Created polygon with', closedPoints.length, 'points');
+                
+            } catch (error) {
+                console.error('Error creating polygon:', error);
+                // Clean up on error
+                cleanupTemporaryPath();
             }
+        }
+
+        /**
+         * Determine if a new point should be added based on distance and device
+         */
+        function shouldAddPoint(newPoint, lastPoint) {
+            if (!lastPoint) return true;
+            
+            // Adaptive distance based on device and zoom
+            const zoom = map.getZoom();
+            const baseDistance = isMobileDevice() ? 15 : 5; // meters
+            const zoomFactor = Math.max(0.5, 1 / Math.pow(2, zoom - 10)); // Scale with zoom
+            const minDistance = baseDistance * zoomFactor;
+            
+            const distance = map.distance(lastPoint, newPoint);
+            return distance > minDistance;
+        }
+
+        /**
+         * Update ARIA live region for accessibility
+         */
+        function updateAriaLiveRegion(message) {
+            let liveRegion = document.getElementById('drawing-live-region');
+            if (!liveRegion) {
+                liveRegion = document.createElement('div');
+                liveRegion.id = 'drawing-live-region';
+                liveRegion.setAttribute('aria-live', 'polite');
+                liveRegion.setAttribute('aria-atomic', 'true');
+                liveRegion.style.position = 'absolute';
+                liveRegion.style.left = '-10000px';
+                liveRegion.style.width = '1px';
+                liveRegion.style.height = '1px';
+                liveRegion.style.overflow = 'hidden';
+                document.body.appendChild(liveRegion);
+            }
+            liveRegion.textContent = message;
         }
         
         // Get visible taps within a shape (polygon or circle)
@@ -4411,9 +4645,9 @@
                     const distance = clickStartPos.distanceTo(e.containerPoint);
                     if (distance <= dragThreshold) {
                         // This is a click, not a drag
-                        // Check if we clicked on a circle or empty space
-                        if (!isClickOnCircle(e)) {
-                            // Clicked on empty space - clear existing shape and re-enable draw mode
+                        // Check if we clicked on a shape or empty space
+                        if (!isClickOnShape(e.latlng)) {
+                            // Clicked on empty space - clear existing shape and stay in draw mode
                             clearExistingShapeAndResetDrawMode();
                         }
                     }
@@ -4421,108 +4655,12 @@
                 }
             });
             
-            // Touch events for mobile
-            let longPressTimer = null;
-            
-            map.on('touchstart', function(e) {
-                if (isCrosshairsMode && e.originalEvent.touches.length === 1) {
-                    clickStartPos = e.containerPoint;
-                    
-                    // On mobile, set up long-press timer
-                    if (isMobileDevice()) {
-                        longPressTimer = setTimeout(function() {
-                            if (clickStartPos) {
-                                createShapeAtLocation(e.latlng);
-                            }
-                        }, 500); // 500ms long press
-                    }
-                }
-            });
-            
-            map.on('touchmove', function(e) {
-                // Cancel long press if user moves finger
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                
-                if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 1) {
-                    const distance = clickStartPos.distanceTo(e.containerPoint);
-                    if (distance > dragThreshold) {
-                        clickStartPos = null;
-                    }
-                }
-            });
-            
-            map.on('touchend', function(e) {
-                // Cancel long press timer
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                
-                if (isCrosshairsMode && clickStartPos && e.originalEvent.touches.length === 0) {
-                    const distance = clickStartPos.distanceTo(e.containerPoint);
-                    if (distance <= dragThreshold) {
-                        if (!isClickOnCircle(e)) {
-                            clearExistingShapeAndResetDrawMode();
-                        }
-                    }
-                    clickStartPos = null;
-                }
-            });
+            // Note: Touch events are now handled by unified pointer events in toggleDrawingMode()
+            // This provides better cross-platform support for desktop/mobile/stylus
         }
         
-        // Create shape at specific location (for mobile long-press)
-        function createShapeAtLocation(latlng) {
-            if (!isCrosshairsMode || !isMobileDevice()) return;
-            
-            // Clear any existing shapes
-            drawnItems.clearLayers();
-            closeCircleResults();
-            
-            // For mobile, create a default polygon shape at the location
-            // This gives users a starting point they can then edit
-            const mapContainer = map.getContainer();
-            const containerWidth = mapContainer.offsetWidth;
-            const containerHeight = mapContainer.offsetHeight;
-            
-            // Use 30% of the smaller dimension as the pixel radius
-            const pixelRadius = Math.min(containerWidth, containerHeight) * 0.3;
-            
-            // Convert pixel radius to meters based on current zoom
-            const centerPoint = map.latLngToLayerPoint(latlng);
-            const edgePoint = {
-                x: centerPoint.x + pixelRadius,
-                y: centerPoint.y
-            };
-            const edgeLatLng = map.layerPointToLatLng(edgePoint);
-            const radiusInMeters = latlng.distanceTo(edgeLatLng);
-            
-            // Create a simple square polygon as starting shape
-            const offset = radiusInMeters / 2;
-            const polygon = L.polygon([
-                [latlng.lat + offset, latlng.lng - offset],
-                [latlng.lat + offset, latlng.lng + offset],
-                [latlng.lat - offset, latlng.lng + offset],
-                [latlng.lat - offset, latlng.lng - offset]
-            ], {
-                color: '#007bff',
-                fillColor: '#007bff',
-                fillOpacity: 0.1,
-                weight: 2
-            });
-            
-            // Add to drawn items
-            drawnItems.addLayer(polygon);
-            
-            // Get taps in shape and show results
-            const tapsInShape = getVisibleTapsInShape(polygon);
-            showCircleResults(tapsInShape, polygon);
-            
-            // Enable Geoman editing on the polygon
-            polygon.pm.enable();
-        }
+        // Note: createShapeAtLocation function removed - now using unified pointer events
+        // for both desktop and mobile freehand drawing
         
         // Update center handle size to match circle
         function updateCenterHandleSize(circle) {
@@ -4572,22 +4710,31 @@
         }
         
         // Check if click is on an existing circle
-        function isClickOnCircle(e) {
+        function isClickOnShape(latlng) {
             if (!drawnItems || drawnItems.getLayers().length === 0) {
                 return false;
             }
             
-            const circle = drawnItems.getLayers()[0];
-            if (!circle || !(circle instanceof L.Circle)) {
-                return false;
-            }
+            let clickedOnShape = false;
             
-            const center = circle.getLatLng();
-            const radius = circle.getRadius();
-            const clickPos = e.latlng;
-            const distance = center.distanceTo(clickPos);
+            drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Polygon) {
+                    // Use point-in-polygon detection for polygons
+                    if (isPointInPolygon(latlng, layer)) {
+                        clickedOnShape = true;
+                    }
+                } else if (layer instanceof L.Circle) {
+                    // Handle circles (for backward compatibility)
+                    const center = layer.getLatLng();
+                    const radius = layer.getRadius();
+                    const distance = center.distanceTo(latlng);
+                    if (distance <= radius) {
+                        clickedOnShape = true;
+                    }
+                }
+            });
             
-            return distance <= radius;
+            return clickedOnShape;
         }
         
         // Clear existing shape and re-enable draw mode
