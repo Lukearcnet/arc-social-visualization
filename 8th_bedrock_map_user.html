@@ -4396,14 +4396,9 @@
                 // Add to map
                 drawnItems.addLayer(polygon);
                 
-                // Enable Geoman editing (move/delete only, no vertex editing)
-                polygon.pm.enable({
-                    allowSelfIntersection: false,
-                    preventMarkerRemoval: true,
-                    preventVertexEdit: true,  // Remove vertex dots
-                    draggable: true,          // Keep ability to drag entire shape
-                    snappable: false
-                });
+                // Don't enable Geoman editing - polygon is view-only
+                // Users can delete by clicking outside to draw a new shape
+                // No vertex dots, no dragging - clean appearance
                 
                 // Get taps in shape and show results
                 const tapsInShape = getVisibleTapsInShape(polygon);
@@ -4568,46 +4563,61 @@
             currentDropdown = dropdown;
         }
         
-        // Position dropdown near circle
-        function positionDropdownNearCircle(circle) {
+        // Position dropdown near shape (circle or polygon)
+        function positionDropdownNearCircle(shape) {
             if (!currentDropdown) return;
             
-            const center = circle.getLatLng();
+            // Get shape center - handle both circles and polygons
+            let center;
+            if (shape instanceof L.Circle) {
+                center = shape.getLatLng();
+            } else if (shape instanceof L.Polygon) {
+                const bounds = shape.getBounds();
+                center = bounds.getCenter();
+            } else {
+                console.warn('Unknown shape type for positioning');
+                return;
+            }
+            
             const point = map.latLngToContainerPoint(center);
             const containerRect = map.getContainer().getBoundingClientRect();
             
             const isMobile = window.innerWidth <= 768;
+            const dropdownWidth = 200;
+            const dropdownHeight = 150; // max-height from CSS
             
-            if (isMobile) {
-                // Mobile: full width with padding
-                const padding = 16;
-                currentDropdown.style.left = `${padding}px`;
-                currentDropdown.style.right = `${padding}px`;
-                currentDropdown.style.top = `${point.y + containerRect.top + 20}px`;
-            } else {
-                // Desktop: positioned near circle center
-                let left = point.x + containerRect.left;
-                let top = point.y + containerRect.top + 20;
-                
-                // Adjust to keep in viewport
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-                const dropdownWidth = 200; // min-width from CSS
-                const dropdownHeight = Math.min(currentDropdown.scrollHeight, 300);
-                
-                if (left + dropdownWidth > viewportWidth - 10) {
-                    left = viewportWidth - dropdownWidth - 10;
-                }
-                if (left < 10) {
-                    left = 10;
-                }
-                if (top + dropdownHeight > viewportHeight - 10) {
-                    top = point.y + containerRect.top - dropdownHeight - 20;
-                }
-                
-                currentDropdown.style.left = `${left}px`;
-                currentDropdown.style.top = `${top}px`;
+            // Calculate initial position below/near the shape
+            let left = point.x + containerRect.left;
+            let top = point.y + containerRect.top + 20; // 20px below center
+            
+            // Adjust to keep in viewport (responsive for both mobile and desktop)
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Keep within horizontal bounds
+            if (left + dropdownWidth > viewportWidth - 10) {
+                left = viewportWidth - dropdownWidth - 10;
             }
+            if (left < 10) {
+                left = 10;
+            }
+            
+            // Keep within vertical bounds
+            if (top + dropdownHeight > viewportHeight - 10) {
+                // Try positioning above if there's more room
+                const topAbove = point.y + containerRect.top - dropdownHeight - 20;
+                if (topAbove > 10) {
+                    top = topAbove;
+                } else {
+                    // Not enough room above or below, just ensure it's within bounds
+                    top = Math.max(10, Math.min(top, viewportHeight - dropdownHeight - 10));
+                }
+            }
+            
+            // Apply position
+            currentDropdown.style.left = `${left}px`;
+            currentDropdown.style.top = `${top}px`;
+            currentDropdown.style.width = `${dropdownWidth}px`;
         }
         
         // Get or create portal root
