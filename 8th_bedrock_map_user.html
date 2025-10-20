@@ -4544,9 +4544,6 @@
             console.log('Creating dropdown with', tapsInCircle.length, 'taps');
             
             // Create portal dropdown
-            const portalRoot = getPortalRoot();
-            console.log('Portal root:', portalRoot);
-            
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
             
@@ -4558,8 +4555,8 @@
                 </div>
             `).join('');
             
-            console.log('Dropdown HTML created, appending to portal root');
-            portalRoot.appendChild(dropdown);
+            console.log('Dropdown HTML created, appending directly to document.body');
+            document.body.appendChild(dropdown);
             currentDropdown = dropdown;
             
             console.log('Dropdown appended, calling positionDropdownNearCircle');
@@ -4587,9 +4584,6 @@
             // Clear any existing dropdown first
             closeCircleResults();
             
-            const portalRoot = getPortalRoot();
-            console.log('Empty results portal root:', portalRoot);
-            
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
             dropdown.innerHTML = `
@@ -4599,8 +4593,8 @@
                 </div>
             `;
             
-            console.log('Empty results dropdown created, appending to portal root');
-            portalRoot.appendChild(dropdown);
+            console.log('Empty results dropdown created, appending directly to document.body');
+            document.body.appendChild(dropdown);
             currentDropdown = dropdown;
             
             // Position the empty results dropdown in the center of the screen
