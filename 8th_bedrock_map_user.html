@@ -4799,20 +4799,9 @@
             if (drawnItems && drawnItems.getLayers().length > 0) {
                 drawnItems.clearLayers();
                 closeCircleResults();
-                // Re-enable freehand drawing to maintain draw mode
-                if (isCrosshairsMode) {
-                    map.pm.enableDraw('Freehand', {
-                        pathOptions: {
-                            color: '#007bff',
-                            fillColor: '#007bff',
-                            fillOpacity: 0.1,
-                            weight: 2
-                        },
-                        continueDrawing: false,
-                        snapDistance: 20,
-                        allowSelfIntersection: false
-                    });
-                }
+                // Custom drawing mode is already active - no need to re-enable Geoman
+                // The custom pointer event listeners are already attached in toggleDrawingMode()
+                console.log('Cleared shape, ready to draw again');
             }
         }
         
