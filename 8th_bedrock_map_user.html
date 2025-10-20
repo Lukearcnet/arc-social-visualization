@@ -4451,7 +4451,11 @@
         
         // Get visible taps within a shape (polygon or circle)
         function getVisibleTapsInShape(shape) {
+            console.log('getVisibleTapsInShape called with:', shape);
+            console.log('Total markers available:', markers.length);
+            
             if (shape instanceof L.Circle) {
+                console.log('Processing circle');
                 // Handle circles (for backward compatibility)
                 const center = shape.getLatLng();
                 const radius = shape.getRadius();
@@ -4459,7 +4463,7 @@
                 // Pre-filter by bounds for performance
                 const bounds = shape.getBounds();
                 
-                return markers.filter(marker => {
+                const result = markers.filter(marker => {
                     const markerPos = marker.getLatLng();
                     
                     // Quick bounds check first
@@ -4471,9 +4475,13 @@
                     const distance = center.distanceTo(markerPos);
                     return distance <= radius;
                 }).map(marker => marker._tapData);
+                
+                console.log('Circle result:', result.length, 'taps found');
+                return result;
             } else if (shape instanceof L.Polygon) {
+                console.log('Processing polygon');
                 // Handle polygons using point-in-polygon detection
-                return markers.filter(marker => {
+                const result = markers.filter(marker => {
                     if (!marker._tapData) return false;
                     
                     const markerPos = marker.getLatLng();
@@ -4484,10 +4492,18 @@
                     }
                     
                     // Then do precise point-in-polygon check
-                    return isPointInPolygon(markerPos, shape);
+                    const inside = isPointInPolygon(markerPos, shape);
+                    if (inside) {
+                        console.log('Marker inside polygon:', marker._tapData);
+                    }
+                    return inside;
                 }).map(marker => marker._tapData);
+                
+                console.log('Polygon result:', result.length, 'taps found');
+                return result;
             }
             
+            console.log('Unknown shape type, returning empty array');
             return [];
         }
         
@@ -4514,16 +4530,23 @@
         
         // Show circle results in dropdown
         function showCircleResults(tapsInCircle, circle) {
+            console.log('showCircleResults called:', { tapsInCircle: tapsInCircle.length, circle: circle });
+            
             // Clear any existing dropdown first
             closeCircleResults();
             
             if (tapsInCircle.length === 0) {
+                console.log('No taps found, showing empty results');
                 showEmptyResults();
                 return;
             }
             
+            console.log('Creating dropdown with', tapsInCircle.length, 'taps');
+            
             // Create portal dropdown
             const portalRoot = getPortalRoot();
+            console.log('Portal root:', portalRoot);
+            
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
             
@@ -4535,22 +4558,30 @@
                 </div>
             `).join('');
             
+            console.log('Dropdown HTML created, appending to portal root');
             portalRoot.appendChild(dropdown);
             currentDropdown = dropdown;
             
+            console.log('Dropdown appended, calling positionDropdownNearCircle');
             // Position dropdown relative to circle
             positionDropdownNearCircle(circle);
             
             // Add close on outside click
             document.addEventListener('click', closeOnOutsideClick);
+            
+            console.log('showCircleResults completed');
         }
         
         // Show empty results state
         function showEmptyResults() {
+            console.log('showEmptyResults called');
+            
             // Clear any existing dropdown first
             closeCircleResults();
             
             const portalRoot = getPortalRoot();
+            console.log('Empty results portal root:', portalRoot);
+            
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
             dropdown.innerHTML = `
@@ -4559,28 +4590,43 @@
                     <div class="user-meta">(filters applied)</div>
                 </div>
             `;
+            
+            console.log('Empty results dropdown created, appending to portal root');
             portalRoot.appendChild(dropdown);
             currentDropdown = dropdown;
+            
+            console.log('Empty results dropdown appended, but NO positioning called!');
+            console.log('This is likely the issue - showEmptyResults has no positioning!');
         }
         
         // Position dropdown near shape (circle or polygon)
         function positionDropdownNearCircle(shape) {
-            if (!currentDropdown) return;
+            console.log('positionDropdownNearCircle called with:', shape);
+            
+            if (!currentDropdown) {
+                console.log('No currentDropdown, returning');
+                return;
+            }
             
             // Get shape center - handle both circles and polygons
             let center;
             if (shape instanceof L.Circle) {
+                console.log('Shape is L.Circle');
                 center = shape.getLatLng();
             } else if (shape instanceof L.Polygon) {
+                console.log('Shape is L.Polygon');
                 const bounds = shape.getBounds();
                 center = bounds.getCenter();
+                console.log('Polygon bounds:', bounds, 'Center:', center);
             } else {
-                console.warn('Unknown shape type for positioning');
+                console.warn('Unknown shape type for positioning:', shape.constructor.name);
                 return;
             }
             
             const point = map.latLngToContainerPoint(center);
             const containerRect = map.getContainer().getBoundingClientRect();
+            
+            console.log('Point calculation:', { center, point, containerRect });
             
             const isMobile = window.innerWidth <= 768;
             const dropdownWidth = 200;
@@ -4590,16 +4636,22 @@
             let left = point.x + containerRect.left;
             let top = point.y + containerRect.top + 20; // 20px below center
             
+            console.log('Initial position:', { left, top });
+            
             // Adjust to keep in viewport (responsive for both mobile and desktop)
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             
+            console.log('Viewport:', { viewportWidth, viewportHeight });
+            
             // Keep within horizontal bounds
             if (left + dropdownWidth > viewportWidth - 10) {
                 left = viewportWidth - dropdownWidth - 10;
+                console.log('Adjusted left for right edge:', left);
             }
             if (left < 10) {
                 left = 10;
+                console.log('Adjusted left for left edge:', left);
             }
             
             // Keep within vertical bounds
@@ -4608,16 +4660,27 @@
                 const topAbove = point.y + containerRect.top - dropdownHeight - 20;
                 if (topAbove > 10) {
                     top = topAbove;
+                    console.log('Positioned above:', top);
                 } else {
                     // Not enough room above or below, just ensure it's within bounds
                     top = Math.max(10, Math.min(top, viewportHeight - dropdownHeight - 10));
+                    console.log('Adjusted top to stay in bounds:', top);
                 }
             }
+            
+            console.log('Final position:', { left, top, width: dropdownWidth });
             
             // Apply position
             currentDropdown.style.left = `${left}px`;
             currentDropdown.style.top = `${top}px`;
             currentDropdown.style.width = `${dropdownWidth}px`;
+            
+            console.log('Position applied to dropdown:', {
+                left: currentDropdown.style.left,
+                top: currentDropdown.style.top,
+                width: currentDropdown.style.width,
+                visible: currentDropdown.offsetParent !== null
+            });
         }
         
         // Get or create portal root
