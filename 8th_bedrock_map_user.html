@@ -4103,6 +4103,12 @@
                 drawToggleBtn.classList.remove('active');
                 mapContainer.classList.remove('drawing-mode');
                 
+                // Re-enable map interactions
+                map.dragging.enable();
+                map.scrollWheelZoom.enable();
+                map.touchZoom.enable();
+                map.doubleClickZoom.enable();
+                
                 // Remove custom event listeners
                 map.off('pointerdown', startFreehandDrawing);
                 map.off('pointermove', continueFreehandDrawing);
@@ -4125,6 +4131,12 @@
                 isCrosshairsMode = true;
                 drawToggleBtn.classList.add('active');
                 mapContainer.classList.add('drawing-mode');
+                
+                // Disable map interactions during drawing mode
+                map.dragging.disable();
+                map.scrollWheelZoom.disable();
+                map.touchZoom.disable();
+                map.doubleClickZoom.disable();
                 
                 // Disable tap marker interactions during drawing
                 markers.forEach(marker => {
@@ -4155,10 +4167,7 @@
             drawingPoints = [e.latlng];
             previewNeedsUpdate = true;
             
-            // Disable map dragging while drawing
-            map.dragging.disable();
-            map.scrollWheelZoom.disable();
-            
+            // Map interactions are already disabled when entering drawing mode
             // Add drawing-active class for cursor feedback
             document.getElementById('map').classList.add('drawing-active');
             
@@ -4192,10 +4201,7 @@
             isDrawing = false;
             previewNeedsUpdate = false;
             
-            // Re-enable map interactions
-            map.dragging.enable();
-            map.scrollWheelZoom.enable();
-            
+            // Map interactions stay disabled in drawing mode (user can draw again)
             // Remove drawing-active class
             document.getElementById('map').classList.remove('drawing-active');
             
@@ -4224,10 +4230,7 @@
             previewNeedsUpdate = false;
             drawingPoints = [];
             
-            // Re-enable map interactions
-            map.dragging.enable();
-            map.scrollWheelZoom.enable();
-            
+            // Map interactions stay disabled in drawing mode (user can draw again)
             // Remove drawing-active class
             document.getElementById('map').classList.remove('drawing-active');
             
