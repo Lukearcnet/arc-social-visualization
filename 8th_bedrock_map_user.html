@@ -214,12 +214,13 @@
             border-radius: var(--radius);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
             z-index: 10000;
-            max-height: 300px;
+            max-height: 150px;  /* Reduced from 300px to 150px (50%) */
             overflow-y: auto;
             pointer-events: auto;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            min-width: 200px;
+            min-width: 100px;  /* Reduced from 200px to 100px (50%) */
+            width: 200px;      /* Set fixed width for consistency */
         }
 
         /* Mobile responsive dropdown */
@@ -231,12 +232,13 @@
         }
 
         .degree-user-item {
-            padding: var(--space-3);
+            padding: 6px 8px;  /* Reduced from var(--space-3) which is 16px */
             border-bottom: 1px solid var(--stroke);
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: background 0.2s ease;
+            font-size: 0.75rem;  /* Smaller text size */
         }
 
         .degree-user-item:hover {
@@ -250,10 +252,11 @@
         .user-name {
             font-weight: 500;
             color: var(--fg-primary);
+            font-size: 0.75rem;  /* Smaller text size */
         }
 
         .user-meta {
-            font-size: var(--text-xs);
+            font-size: 0.65rem;  /* Even smaller for meta text */
             color: var(--fg-muted);
         }
         
@@ -298,6 +301,16 @@
         
         .leaflet-container.drawing-mode.drawing-active {
             cursor: crosshair !important;
+        }
+        
+        /* Force hide Geoman toolbar completely */
+        .leaflet-pm-toolbar {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        .leaflet-control-layers {
+            display: none !important;
         }
         
         .search-toggle-btn svg {
@@ -4015,16 +4028,27 @@
                 removalMode: true
             });
             
-            // Hide Geoman toolbar (we'll use custom pencil button)
+            // Hide Geoman toolbar completely (we use custom pencil button)
             // Use setTimeout to ensure toolbar is rendered first
             setTimeout(() => {
                 const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
                 if (geomanToolbar) {
                     geomanToolbar.style.display = 'none';
-                    console.log('Geoman toolbar hidden');
+                    geomanToolbar.style.visibility = 'hidden';
+                    geomanToolbar.remove(); // Completely remove from DOM
+                    console.log('Geoman toolbar hidden and removed');
                 } else {
                     console.log('Geoman toolbar not found');
                 }
+                
+                // Also hide any other PM controls that might appear
+                const pmControls = document.querySelectorAll('.leaflet-pm-toolbar, .leaflet-control-layers');
+                pmControls.forEach(control => {
+                    if (control && control.classList.contains('leaflet-pm-toolbar')) {
+                        control.style.display = 'none';
+                        control.remove();
+                    }
+                });
             }, 100);
             
             // Configure Geoman global options
@@ -4372,10 +4396,13 @@
                 // Add to map
                 drawnItems.addLayer(polygon);
                 
-                // Enable Geoman editing
+                // Enable Geoman editing (move/delete only, no vertex editing)
                 polygon.pm.enable({
                     allowSelfIntersection: false,
-                    preventMarkerRemoval: true
+                    preventMarkerRemoval: true,
+                    preventVertexEdit: true,  // Remove vertex dots
+                    draggable: true,          // Keep ability to drag entire shape
+                    snappable: false
                 });
                 
                 // Get taps in shape and show results
