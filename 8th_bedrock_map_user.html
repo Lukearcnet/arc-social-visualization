@@ -4613,25 +4613,6 @@
                 visible: rect.width > 0 && rect.height > 0
             });
             
-            // Create a simple test element to verify DOM rendering works
-            const testElement = document.createElement('div');
-            testElement.style.position = 'fixed';
-            testElement.style.left = '10px';
-            testElement.style.top = '10px';
-            testElement.style.width = '100px';
-            testElement.style.height = '50px';
-            testElement.style.backgroundColor = 'red';
-            testElement.style.zIndex = '99999';
-            testElement.textContent = 'TEST';
-            document.body.appendChild(testElement);
-            console.log('Test element created - should see red box in top-left corner');
-            
-            // Remove test element after 3 seconds
-            setTimeout(() => {
-                testElement.remove();
-                console.log('Test element removed');
-            }, 3000);
-            
             console.log('showCircleResults completed');
         }
         
