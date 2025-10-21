@@ -4564,8 +4564,10 @@
             // Position dropdown relative to circle
             positionDropdownNearCircle(circle);
             
-            // Add close on outside click
-            document.addEventListener('click', closeOnOutsideClick);
+            // Add close on outside click with delay to prevent drawing-finish click from triggering it
+            setTimeout(() => {
+                document.addEventListener('click', closeOnOutsideClick);
+            }, 100); // Wait 100ms before enabling outside-click-to-close
             
             // Verify dropdown is in DOM
             console.log('Dropdown verification:', {
