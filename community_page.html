@@ -2984,9 +2984,10 @@
                 // Add popup to DOM
                 document.body.insertAdjacentHTML('beforeend', popupHTML);
                 
-                // Add event listeners for closing
-                const overlay = document.getElementById('mutual-details-overlay');
-                const closeBtn = document.getElementById('mutual-details-close');
+                // Add event listeners for closing (with small delay to ensure DOM is ready)
+                setTimeout(() => {
+                    const overlay = document.getElementById('mutual-details-overlay');
+                    const closeBtn = document.getElementById('mutual-details-close');
                 
                 const closePopup = () => {
                     if (overlay) {
@@ -2994,12 +2995,19 @@
                     }
                 };
                 
-                closeBtn.addEventListener('click', closePopup);
-                overlay.addEventListener('click', (e) => {
-                    if (e.target === overlay) {
-                        closePopup();
-                    }
-                });
+                // Close button click
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closePopup);
+                }
+                
+                // Click outside to close
+                if (overlay) {
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            closePopup();
+                        }
+                    });
+                }
                 
                 // Close on Escape key
                 const handleEscape = (e) => {
@@ -3009,6 +3017,7 @@
                     }
                 };
                 document.addEventListener('keydown', handleEscape);
+                }, 50); // Small delay to ensure DOM is ready
             }
 
             renderWarnings() {
