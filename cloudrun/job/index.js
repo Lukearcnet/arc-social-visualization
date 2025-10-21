@@ -174,8 +174,26 @@ async function getGeocodedLocation(latitude, longitude) {
     });
     
     if (response.status === 'OK' && response.results && response.results.length > 0) {
-      const result = response.results[0];
-      return result.formatted_address || 'Unknown Location';
+      const addressComponents = response.results[0].address_components;
+      let city = '';
+      let state = '';
+      let country = '';
+
+      // Parse address components to extract city, state, country only
+      for (const component of addressComponents) {
+        if (component.types.includes('locality')) {
+          city = component.long_name;
+        }
+        if (component.types.includes('administrative_area_level_1')) {
+          state = component.short_name;
+        }
+        if (component.types.includes('country')) {
+          country = component.short_name;
+        }
+      }
+      
+      // Return city-level granularity (e.g., "Nashville, TN, US")
+      return `${city}, ${state}, ${country}`;
     }
     return null;
   } catch (error) {
