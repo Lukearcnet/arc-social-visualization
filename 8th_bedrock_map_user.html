@@ -4166,11 +4166,11 @@
                 map.off('pointercancel', cancelFreehandDrawing);
                 
                 // Remove mobile-specific DOM event listeners
-                const mapContainer = map.getContainer();
-                mapContainer.removeEventListener('pointerdown', startMobileDrawing);
-                mapContainer.removeEventListener('pointermove', continueMobileDrawing);
-                mapContainer.removeEventListener('pointerup', finishMobileDrawing);
-                mapContainer.removeEventListener('pointercancel', cancelMobileDrawing);
+                const mapContainerElement = map.getContainer();
+                mapContainerElement.removeEventListener('pointerdown', startMobileDrawing);
+                mapContainerElement.removeEventListener('pointermove', continueMobileDrawing);
+                mapContainerElement.removeEventListener('pointerup', finishMobileDrawing);
+                mapContainerElement.removeEventListener('pointercancel', cancelMobileDrawing);
                 
                 // Remove fallback event listeners
                 map.off('mousedown', startFreehandDrawing);
