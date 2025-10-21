@@ -4203,6 +4203,12 @@
                 return;
             }
             
+            // Prevent default browser behavior (especially mobile scrolling)
+            if (e.originalEvent && e.originalEvent.preventDefault) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
+            
             isDrawing = true;
             drawingPoints = [e.latlng];
             previewNeedsUpdate = true;
@@ -4223,6 +4229,12 @@
         function continueFreehandDrawing(e) {
             if (!isDrawing || !e.latlng) return;
             
+            // Prevent default browser behavior (especially mobile scrolling)
+            if (e.originalEvent && e.originalEvent.preventDefault) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
+            
             const lastPoint = drawingPoints[drawingPoints.length - 1];
             
             // Adaptive point collection based on zoom and device
@@ -4238,6 +4250,12 @@
          */
         function finishFreehandDrawing(e) {
             if (!isDrawing) return;
+            
+            // Prevent default browser behavior (especially mobile scrolling)
+            if (e.originalEvent && e.originalEvent.preventDefault) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
             
             isDrawing = false;
             previewNeedsUpdate = false;
