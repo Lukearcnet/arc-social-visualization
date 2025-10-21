@@ -2442,16 +2442,13 @@
                         }
                     }
                     
-                    // For 3rd degree: Show connections between 2nd degree users (not involving selected user or 1st degree users)
+                    // For 3rd degree: Show connections where at least one user is a 2nd degree connection to selected user
                     if (degreeFilters.degree3) {
                         if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
                             // Neither user is the selected user
-                            if (!degreeConnections.degree1.has(sourceUserId) && !degreeConnections.degree1.has(targetUserId)) {
-                                // Neither user is a 1st degree connection
-                                if (degreeConnections.degree2.has(sourceUserId) && degreeConnections.degree2.has(targetUserId)) {
-                                    // Both users are 2nd degree connections to selected user
-                                    shouldShow = true;
-                                }
+                            if (degreeConnections.degree2.has(sourceUserId) || degreeConnections.degree2.has(targetUserId)) {
+                                // At least one user is a 2nd degree connection to selected user
+                                shouldShow = true;
                             }
                         }
                     }
