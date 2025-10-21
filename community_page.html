@@ -4148,8 +4148,8 @@
                     .attr('ry', 4) // Rounded corners
                     .attr('fill', d => colorScale ? colorScale(d.id) : '#3b82f6');
                 
-                // Calculate available width for labels (left margin - 16px padding for safety)
-                const availableWidthForLabels = d.margin?.left ? d.margin.left - 24 : 136; // 160px margin - 24px padding
+                // Calculate available width for labels (left margin - 32px padding for safety)
+                const availableWidthForLabels = d.margin?.left ? d.margin.left - 32 : 128; // 160px margin - 32px padding
                 
                 barsEnter.select('text.label')
                     .text(d => {
@@ -4159,7 +4159,7 @@
                     .attr('x', d => {
                         const displayText = this.truncateText(this.safeName(d.id), availableWidthForLabels);
                         const textWidth = this.measureTextWidth(displayText);
-                        return Math.max(-8, -textWidth - 8); // More conservative positioning with 8px buffer
+                        return Math.max(-8, -textWidth - 12); // Very conservative positioning with 12px buffer
                     })
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2)) // Start at final Y position
                     .attr('fill', '#fff');
@@ -4197,7 +4197,7 @@
                     .style('opacity', 1);
 
                 // Add smooth transitions for name labels
-                const availableWidthForTransitions = d.margin?.left ? d.margin.left - 24 : 136; // 160px margin - 24px padding
+                const availableWidthForTransitions = d.margin?.left ? d.margin.left - 32 : 128; // 160px margin - 32px padding
                 
                 merged.select('text.label')
                     .text(d => {
@@ -4210,7 +4210,7 @@
                     .attr('x', d => {
                         const displayText = this.truncateText(this.safeName(d.id), availableWidthForTransitions);
                         const textWidth = this.measureTextWidth(displayText);
-                        return Math.max(-8, -textWidth - 8); // More conservative positioning with 8px buffer
+                        return Math.max(-8, -textWidth - 12); // Very conservative positioning with 12px buffer
                     })
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
