@@ -1130,6 +1130,21 @@
             outline: none !important;
         }
         
+        .bar-race-tooltip {
+            position: absolute !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            color: white !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            pointer-events: none !important;
+            z-index: 1000 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            white-space: nowrap !important;
+            max-width: 300px !important;
+        }
+        
         #rbr-chart {
             border: none !important;
             outline: none !important;
@@ -3685,6 +3700,42 @@
                 return `Unknown · ${String(id).slice(-4)}`;
             }
 
+            // Measure text width for truncation
+            measureTextWidth(text, fontSize = 12, fontWeight = 600) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                context.font = `${fontWeight} ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+                return context.measureText(text).width;
+            }
+
+            // Truncate text with ellipsis if it exceeds max width
+            truncateText(text, maxWidth, fontSize = 12, fontWeight = 600) {
+                if (!text) return text;
+                
+                const fullWidth = this.measureTextWidth(text, fontSize, fontWeight);
+                if (fullWidth <= maxWidth) return text;
+                
+                // Binary search for optimal truncation point
+                let left = 0;
+                let right = text.length;
+                let bestFit = text;
+                
+                while (left <= right) {
+                    const mid = Math.floor((left + right) / 2);
+                    const truncated = text.substring(0, mid) + '...';
+                    const width = this.measureTextWidth(truncated, fontSize, fontWeight);
+                    
+                    if (width <= maxWidth) {
+                        bestFit = truncated;
+                        left = mid + 1;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
+                
+                return bestFit;
+            }
+
             buildUserIndex() {
                 if (this.userIndex) return this.userIndex;
                 
@@ -4041,7 +4092,50 @@
                 // ENTER - smooth fade in
                 const barsEnter = bars.enter().append('g').attr('class', 'bar');
                 barsEnter.append('rect');
-                barsEnter.append('text').attr('class', 'label').attr('text-anchor', 'end').attr('dy', '0.35em');
+                
+                // Create label with tooltip support
+                const labelEnter = barsEnter.append('text').attr('class', 'label').attr('text-anchor', 'end').attr('dy', '0.35em');
+                
+                // Add tooltip functionality
+                const self = this;
+                labelEnter
+                    .on('mouseenter', function(event, d) {
+                        const fullName = self.safeName(d.id);
+                        const displayName = d3.select(this).text();
+                        
+                        // Only show tooltip if name was truncated
+                        if (fullName !== displayName) {
+                            d3.select('body').append('div')
+                                .attr('class', 'bar-race-tooltip')
+                                .style('position', 'absolute')
+                                .style('background', 'rgba(0, 0, 0, 0.9)')
+                                .style('color', 'white')
+                                .style('padding', '8px 12px')
+                                .style('border-radius', '6px')
+                                .style('font-size', '12px')
+                                .style('font-weight', '500')
+                                .style('pointer-events', 'none')
+                                .style('z-index', '1000')
+                                .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.3)')
+                                .style('opacity', 0)
+                                .text(fullName)
+                                .transition()
+                                .duration(200)
+                                .style('opacity', 1);
+                        }
+                    })
+                    .on('mousemove', function(event) {
+                        const tooltip = d3.select('.bar-race-tooltip');
+                        if (!tooltip.empty()) {
+                            tooltip
+                                .style('left', (event.pageX + 10) + 'px')
+                                .style('top', (event.pageY - 10) + 'px');
+                        }
+                    })
+                    .on('mouseleave', function() {
+                        d3.select('.bar-race-tooltip').remove();
+                    });
+                
                 barsEnter.append('text').attr('class', 'value').attr('text-anchor', 'start').attr('dy', '0.35em');
                 
                 // Set initial positions for new bars (start at final position but with zero width)
@@ -4054,8 +4148,14 @@
                     .attr('ry', 4) // Rounded corners
                     .attr('fill', d => colorScale ? colorScale(d.id) : '#3b82f6');
                 
+                // Calculate available width for labels (left margin - 8px padding)
+                const availableWidthForLabels = d.margin?.left ? d.margin.left - 16 : 140; // 160px margin - 16px padding
+                
                 barsEnter.select('text.label')
-                    .text(d => this.safeName(d.id))
+                    .text(d => {
+                        const fullName = this.safeName(d.id);
+                        return this.truncateText(fullName, availableWidthForLabels);
+                    })
                     .attr('x', -8)
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2)) // Start at final Y position
                     .attr('fill', '#fff');
@@ -4093,8 +4193,13 @@
                     .style('opacity', 1);
 
                 // Add smooth transitions for name labels
+                const availableWidthForTransitions = d.margin?.left ? d.margin.left - 16 : 140; // 160px margin - 16px padding
+                
                 merged.select('text.label')
-                    .text(d => this.safeName(d.id))
+                    .text(d => {
+                        const fullName = this.safeName(d.id);
+                        return this.truncateText(fullName, availableWidthForTransitions);
+                    })
                     .transition()
                     .duration(transitionDuration)
                     .ease(d3.easeCubicInOut)
