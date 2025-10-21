@@ -1574,9 +1574,15 @@
                                     <div class="filter-group">
                                         <label for="degree-filter">Degree:</label>
                                         <select id="degree-filter" class="filter-select">
-                                            <option value="both">2nd & 3rd Degree</option>
-                                            <option value="2nd">2nd Degree Only</option>
-                                            <option value="3rd">3rd Degree Only</option>
+                                            <option value="2nd">2nd Degree</option>
+                                            <option value="3rd">3rd Degree</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="sort-filter">Sort By:</label>
+                                        <select id="sort-filter" class="filter-select">
+                                            <option value="connections">Mutual Connections</option>
+                                            <option value="taps">Mutual Taps</option>
                                         </select>
                                     </div>
                                     <button id="clear-filters" class="clear-filters-btn">Clear</button>
@@ -2188,6 +2194,15 @@
                     });
                 }
 
+                // Sort filter
+                const sortFilter = document.getElementById('sort-filter');
+                if (sortFilter) {
+                    sortFilter.addEventListener('change', () => {
+                        console.log('📊 Sort filter changed to:', sortFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
+
 
                 // Clear filters button
                 const clearFiltersBtn = document.getElementById('clear-filters');
@@ -2195,7 +2210,8 @@
                     clearFiltersBtn.addEventListener('click', () => {
                         console.log('🧹 Clearing all filters');
                         if (locationFilter) locationFilter.value = '';
-                        if (degreeFilter) degreeFilter.value = 'both';
+                        if (degreeFilter) degreeFilter.value = '2nd';
+                        if (sortFilter) sortFilter.value = 'connections';
                         this.renderRecommendations();
                     });
                 }
@@ -2667,6 +2683,7 @@
                 // Get filter values
                 const locationFilter = document.getElementById('location-filter')?.value;
                 const degreeFilter = document.getElementById('degree-filter')?.value;
+                const sortFilter = document.getElementById('sort-filter')?.value;
                 
                 // Apply filters
                 let filteredRecs = recs.filter(rec => {
@@ -2698,12 +2715,32 @@
                         const recDegree = rec.degree || 2; // Default to 2nd degree if not specified
                         if (degreeFilter === '2nd' && recDegree !== 2) return false;
                         if (degreeFilter === '3rd' && recDegree !== 3) return false;
-                        if (degreeFilter === 'both') return true; // Show both
                     }
                     
                     
                     return true;
                 });
+                
+                // Apply sorting
+                if (sortFilter === 'taps') {
+                    // Sort by mutual taps (sum of taps between candidate and mutual friends)
+                    filteredRecs.sort((a, b) => {
+                        const aTaps = a.scores?.mutual_taps || 0;
+                        const bTaps = b.scores?.mutual_taps || 0;
+                        if (aTaps !== bTaps) return bTaps - aTaps;
+                        // Tie-breaker: use composite score
+                        return (b.scores?.total || 0) - (a.scores?.total || 0);
+                    });
+                } else {
+                    // Sort by mutual connections (default)
+                    filteredRecs.sort((a, b) => {
+                        const aConnections = a.scores?.mutual_connections || 0;
+                        const bConnections = b.scores?.mutual_connections || 0;
+                        if (aConnections !== bConnections) return bConnections - aConnections;
+                        // Tie-breaker: use composite score
+                        return (b.scores?.total || 0) - (a.scores?.total || 0);
+                    });
+                }
                 
                 const container = document.getElementById('recommendations-list');
                 container.innerHTML = '';
