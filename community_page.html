@@ -458,8 +458,6 @@
         .mutual-name-clickable:hover {
             background: var(--bg-hover);
             border-radius: 4px;
-            padding: 2px 4px;
-            margin: -2px -4px;
         }
 
         .recommendations-carousel {
@@ -2881,9 +2879,19 @@
                             explainText = `Connected through ${rec.scores.mutual_taps} mutual taps`;
                         }
                     } else {
-                        // Show connection-based display (default)
+                        // Show connection-based display (default) - also make clickable
                         if (mutuals.length > 0) {
-                            const mutualNamesDisplay = mutuals.slice(0, 6).map(name => `<span class="mutual-name">${name}</span>`).join('');
+                            // For connection-based display, we need to get the mutual details from the recommendation
+                            const mutualNamesDisplay = mutuals.slice(0, 6).map(name => {
+                                // Find the mutual details for this name to get ID and tap count
+                                const mutualDetail = rec.mutualDetails?.find(m => m.name === name);
+                                if (mutualDetail) {
+                                    return `<span class="mutual-name mutual-name-clickable" data-mutual-id="${mutualDetail.id}" data-mutual-name="${mutualDetail.name}" data-tap-count="${mutualDetail.tapCount}">${name}<span class="tap-count">${mutualDetail.tapCount}</span></span>`;
+                                } else {
+                                    // Fallback if no mutual details available
+                                    return `<span class="mutual-name">${name}</span>`;
+                                }
+                            }).join('');
                             mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}</div>`;
                         }
                     }
@@ -2900,11 +2908,14 @@
                 });
                 
                 // Add click event listeners to mutual names
-                this.setupMutualClickListeners();
+                setTimeout(() => {
+                    this.setupMutualClickListeners();
+                }, 100);
             }
 
             setupMutualClickListeners() {
                 const clickableMutuals = document.querySelectorAll('.mutual-name-clickable');
+                console.log('🔗 Setting up click listeners for', clickableMutuals.length, 'mutual names');
                 clickableMutuals.forEach(mutual => {
                     mutual.addEventListener('click', (e) => {
                         e.preventDefault();
