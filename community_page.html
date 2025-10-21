@@ -367,17 +367,14 @@
         /* Mutual details popup */
         .mutual-details-popup {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             background: var(--bg-primary);
             border: 1px solid var(--stroke);
             border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 1000;
-            max-width: 400px;
-            width: 90%;
+            max-width: 280px;
+            min-width: 200px;
         }
         
         .mutual-details-header {
@@ -2929,12 +2926,12 @@
                         const recommendationCard = mutual.closest('.recommendation-card');
                         const recommendationName = recommendationCard.querySelector('h4').textContent;
                         
-                        this.showMutualDetails(mutualId, mutualName, tapCount, recommendationName);
+                        this.showMutualDetails(mutualId, mutualName, tapCount, recommendationName, e);
                     });
                 });
             }
 
-            showMutualDetails(mutualId, mutualName, totalTapCount, recommendationName) {
+            showMutualDetails(mutualId, mutualName, totalTapCount, recommendationName, event) {
                 // Get current user data
                 const data = this.data.weekly;
                 if (!data) return;
@@ -2955,27 +2952,17 @@
                 const youToMutualTaps = mutualDetail.youToMutualTaps || 0;
                 const mutualToRecommendedTaps = mutualDetail.mutualToRecommendedTaps || 0;
                 
-                // Create popup HTML
+                // Create popup HTML (smaller, no overlay)
                 const popupHTML = `
-                    <div class="mutual-details-overlay" id="mutual-details-overlay">
-                        <div class="mutual-details-popup">
-                            <div class="mutual-details-header">
-                                <div class="mutual-details-title">Connection Details</div>
-                                <button class="mutual-details-close" id="mutual-details-close">&times;</button>
+                    <div class="mutual-details-popup" id="mutual-details-popup">
+                        <div class="mutual-details-content">
+                            <div class="mutual-details-row">
+                                <div class="mutual-details-connection">You ↔ ${mutualName}</div>
+                                <div class="mutual-details-tap-count">${youToMutualTaps} taps</div>
                             </div>
-                            <div class="mutual-details-content">
-                                <div class="mutual-details-row">
-                                    <div class="mutual-details-connection">You ↔ ${mutualName}</div>
-                                    <div class="mutual-details-tap-count">${youToMutualTaps} taps</div>
-                                </div>
-                                <div class="mutual-details-row">
-                                    <div class="mutual-details-connection">${mutualName} ↔ ${recommendationName}</div>
-                                    <div class="mutual-details-tap-count">${mutualToRecommendedTaps} taps</div>
-                                </div>
-                                <div class="mutual-details-row" style="border-top: 2px solid var(--stroke); margin-top: 0.5rem; padding-top: 0.5rem;">
-                                    <div class="mutual-details-connection" style="font-weight: 600;">Total</div>
-                                    <div class="mutual-details-tap-count" style="font-size: 1rem;">${totalTapCount} taps</div>
-                                </div>
+                            <div class="mutual-details-row">
+                                <div class="mutual-details-connection">${mutualName} ↔ ${recommendationName}</div>
+                                <div class="mutual-details-tap-count">${mutualToRecommendedTaps} taps</div>
                             </div>
                         </div>
                     </div>
@@ -2984,40 +2971,60 @@
                 // Add popup to DOM
                 document.body.insertAdjacentHTML('beforeend', popupHTML);
                 
-                // Add event listeners for closing (with small delay to ensure DOM is ready)
+                // Position popup near the clicked element
+                const popup = document.getElementById('mutual-details-popup');
+                if (popup) {
+                    const rect = event.target.getBoundingClientRect();
+                    const popupRect = popup.getBoundingClientRect();
+                    
+                    // Position to the right of the clicked element, or left if not enough space
+                    let left = rect.right + 10;
+                    if (left + popupRect.width > window.innerWidth) {
+                        left = rect.left - popupRect.width - 10;
+                    }
+                    
+                    // Position vertically centered with the clicked element
+                    let top = rect.top + (rect.height / 2) - (popupRect.height / 2);
+                    if (top < 10) top = 10;
+                    if (top + popupRect.height > window.innerHeight - 10) {
+                        top = window.innerHeight - popupRect.height - 10;
+                    }
+                    
+                    popup.style.left = `${left}px`;
+                    popup.style.top = `${top}px`;
+                }
+                
+                // Add event listeners for closing
                 setTimeout(() => {
-                    const overlay = document.getElementById('mutual-details-overlay');
-                    const closeBtn = document.getElementById('mutual-details-close');
+                    const popup = document.getElementById('mutual-details-popup');
                 
-                const closePopup = () => {
-                    if (overlay) {
-                        overlay.remove();
-                    }
-                };
-                
-                // Close button click
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', closePopup);
-                }
-                
-                // Click outside to close
-                if (overlay) {
-                    overlay.addEventListener('click', (e) => {
-                        if (e.target === overlay) {
-                            closePopup();
+                    const closePopup = () => {
+                        if (popup) {
+                            popup.remove();
                         }
-                    });
-                }
-                
-                // Close on Escape key
-                const handleEscape = (e) => {
-                    if (e.key === 'Escape') {
-                        closePopup();
-                        document.removeEventListener('keydown', handleEscape);
-                    }
-                };
-                document.addEventListener('keydown', handleEscape);
-                }, 50); // Small delay to ensure DOM is ready
+                    };
+                    
+                    // Click outside to close
+                    const handleClickOutside = (e) => {
+                        if (popup && !popup.contains(e.target)) {
+                            closePopup();
+                            document.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    
+                    // Close on Escape key
+                    const handleEscape = (e) => {
+                        if (e.key === 'Escape') {
+                            closePopup();
+                            document.removeEventListener('keydown', handleEscape);
+                            document.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    
+                    // Add event listeners
+                    document.addEventListener('click', handleClickOutside);
+                    document.addEventListener('keydown', handleEscape);
+                }, 50);
             }
 
             renderWarnings() {
