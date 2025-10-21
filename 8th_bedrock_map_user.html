@@ -2589,8 +2589,12 @@
             if (!formattedLocation) return 'Unknown Location';
             
             // Parse location: "city, state, country" or ", state, country"
-            const parts = formattedLocation.split(',').map(p => p.trim());
+            const parts = formattedLocation.split(',').map(p => p.trim()).filter(p => p.length > 0);
             
+            // If all parts are empty (e.g., ", , "), return Unknown Location
+            if (parts.length === 0) return 'Unknown Location';
+            
+            // If we have exactly 3 parts, apply formatting rules
             if (parts.length === 3) {
                 const [city, state, country] = parts;
                 
@@ -2602,18 +2606,23 @@
                     return `${city}, ${state}`;
                 }
                 
-                // Handle non-US locations with missing city
-                if (!city) {
-                    // Show "state, country" (e.g., "England, GB")
-                    return `${state}, ${country}`;
-                }
-                
                 // Normal case: show all three parts
-                return formattedLocation;
+                return parts.join(', ');
             }
             
-            // Fallback: return as-is
-            return formattedLocation;
+            // If we have 2 parts (e.g., "state, country" or "city, state")
+            if (parts.length === 2) {
+                const [part1, part2] = parts;
+                // If second part is US, remove it
+                if (part2 === 'US') return part1;
+                return parts.join(', ');
+            }
+            
+            // If we have 1 part, just return it
+            if (parts.length === 1) return parts[0];
+            
+            // Fallback: join whatever parts we have
+            return parts.join(', ');
         }
         
         // Clear all markers

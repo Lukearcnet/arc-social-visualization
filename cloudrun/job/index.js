@@ -192,8 +192,16 @@ async function getGeocodedLocation(latitude, longitude) {
         }
       }
       
-      // Return city-level granularity (e.g., "Nashville, TN, US")
-      return `${city}, ${state}, ${country}`;
+      // Build location string, filtering out empty parts
+      const parts = [city, state, country].filter(part => part && part.trim());
+      
+      // If we have any parts, join them; otherwise return null
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+      
+      // Fallback: return null if all parts are empty
+      return null;
     }
     return null;
   } catch (error) {
