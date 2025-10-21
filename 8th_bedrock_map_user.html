@@ -4136,6 +4136,20 @@
                 isCrosshairsMode = false;
                 drawToggleBtn.classList.remove('active');
                 mapContainer.classList.remove('drawing-mode');
+                mapContainer.classList.remove('drawing-active');
+                
+                // Cancel any in-progress drawing
+                isDrawing = false;
+                drawingPoints = [];
+                previewNeedsUpdate = false;
+                cleanupTemporaryPath();
+                
+                // Clear all drawn shapes and close results
+                if (drawnItems) {
+                    drawnItems.clearLayers();
+                    console.log('Cleared all drawn shapes');
+                }
+                closeCircleResults();
                 
                 // Re-enable map dragging (zoom was never disabled)
                 console.log('Re-enabling map dragging...');
@@ -4176,6 +4190,9 @@
                         marker.options.interactive = true;
                     }
                 });
+                
+                // Force a complete state reset to ensure clean exit
+                console.log('Draw mode completely disabled - map restored to initial state');
             } else {
                 // Enable freehand drawing mode
                 console.log('Enabling custom freehand draw mode');
