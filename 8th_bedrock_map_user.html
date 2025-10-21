@@ -4146,11 +4146,12 @@
                 map.off('pointerup', finishFreehandDrawing);
                 map.off('pointercancel', cancelFreehandDrawing);
                 
-                // Remove mobile-specific event listeners
-                map.off('pointerdown', startMobileDrawing);
-                map.off('pointermove', continueMobileDrawing);
-                map.off('pointerup', finishMobileDrawing);
-                map.off('pointercancel', cancelMobileDrawing);
+                // Remove mobile-specific DOM event listeners
+                const mapContainer = map.getContainer();
+                mapContainer.removeEventListener('pointerdown', startMobileDrawing);
+                mapContainer.removeEventListener('pointermove', continueMobileDrawing);
+                mapContainer.removeEventListener('pointerup', finishMobileDrawing);
+                mapContainer.removeEventListener('pointercancel', cancelMobileDrawing);
                 
                 // Remove fallback event listeners
                 map.off('mousedown', startFreehandDrawing);
@@ -4189,12 +4190,13 @@
                 
                 // Add custom event listeners for freehand drawing
                 if (isMobileDevice()) {
-                    // Mobile: Use pointer events with setPointerCapture
-                    console.log('Enabling mobile drawing mode with pointer capture');
-                    map.on('pointerdown', startMobileDrawing);
-                    map.on('pointermove', continueMobileDrawing);
-                    map.on('pointerup', finishMobileDrawing);
-                    map.on('pointercancel', cancelMobileDrawing);
+                    // Mobile: Use DOM-level pointer events with setPointerCapture
+                    console.log('Enabling mobile drawing mode with DOM-level pointer capture');
+                    const mapContainer = map.getContainer();
+                    mapContainer.addEventListener('pointerdown', startMobileDrawing, { passive: false });
+                    mapContainer.addEventListener('pointermove', continueMobileDrawing, { passive: false });
+                    mapContainer.addEventListener('pointerup', finishMobileDrawing, { passive: false });
+                    mapContainer.addEventListener('pointercancel', cancelMobileDrawing, { passive: false });
                 } else {
                     // Desktop: Use standard pointer events and fallbacks
                     console.log('Enabling desktop drawing mode');
@@ -4326,25 +4328,33 @@
             console.log('Drawing cancelled');
         }
         
-        // Mobile-specific pointer event handlers with setPointerCapture
+        // Mobile-specific DOM-level pointer event handlers with setPointerCapture
         function startMobileDrawing(e) {
-            if (!isCrosshairsMode || !e.latlng) {
+            if (!isCrosshairsMode) {
                 console.log('Mobile drawing not started - conditions not met');
                 return;
             }
             
+            // Convert DOM event coordinates to lat/lng manually
+            const mapContainer = map.getContainer();
+            const rect = mapContainer.getBoundingClientRect();
+            const containerPoint = [
+                e.clientX - rect.left,
+                e.clientY - rect.top
+            ];
+            const latlng = map.containerPointToLatLng(containerPoint);
+            
             isDrawing = true;
-            drawingPoints = [e.latlng];
+            drawingPoints = [latlng];
             previewNeedsUpdate = true;
             
             // Use setPointerCapture to ensure we get pointerup/pointercancel
-            const pe = e.originalEvent;
-            if (pe && pe.pointerId && map.getContainer().setPointerCapture) {
+            if (e.pointerId && mapContainer.setPointerCapture) {
                 try {
-                    map.getContainer().setPointerCapture(pe.pointerId);
-                    console.log('Pointer capture set for pointerId:', pe.pointerId);
+                    mapContainer.setPointerCapture(e.pointerId);
+                    console.log('Mobile pointer capture set for pointerId:', e.pointerId);
                 } catch (err) {
-                    console.log('setPointerCapture failed:', err);
+                    console.log('Mobile setPointerCapture failed:', err);
                 }
             }
             
@@ -4354,17 +4364,26 @@
             // Update ARIA live region for accessibility
             updateAriaLiveRegion('Mobile freehand drawing started');
             
-            console.log('Started mobile drawing at:', e.latlng);
+            console.log('Started mobile drawing at:', latlng);
         }
         
         function continueMobileDrawing(e) {
-            if (!isDrawing || !e.latlng) return;
+            if (!isDrawing) return;
+            
+            // Convert DOM event coordinates to lat/lng manually
+            const mapContainer = map.getContainer();
+            const rect = mapContainer.getBoundingClientRect();
+            const containerPoint = [
+                e.clientX - rect.left,
+                e.clientY - rect.top
+            ];
+            const latlng = map.containerPointToLatLng(containerPoint);
             
             const lastPoint = drawingPoints[drawingPoints.length - 1];
             
             // Adaptive point collection based on zoom and device
-            if (shouldAddPoint(e.latlng, lastPoint)) {
-                drawingPoints.push(e.latlng);
+            if (shouldAddPoint(latlng, lastPoint)) {
+                drawingPoints.push(latlng);
                 previewNeedsUpdate = true; // Set flag for rAF render
                 console.log('Added mobile point, total points:', drawingPoints.length);
             }
@@ -4377,13 +4396,12 @@
             previewNeedsUpdate = false;
             
             // Release pointer capture
-            const pe = e?.originalEvent;
-            if (pe && pe.pointerId && map.getContainer().releasePointerCapture) {
+            if (e && e.pointerId && map.getContainer().releasePointerCapture) {
                 try {
-                    map.getContainer().releasePointerCapture(pe.pointerId);
-                    console.log('Pointer capture released for pointerId:', pe.pointerId);
+                    map.getContainer().releasePointerCapture(e.pointerId);
+                    console.log('Mobile pointer capture released for pointerId:', e.pointerId);
                 } catch (err) {
-                    console.log('releasePointerCapture failed:', err);
+                    console.log('Mobile releasePointerCapture failed:', err);
                 }
             }
             
@@ -4413,13 +4431,12 @@
             drawingPoints = [];
             
             // Release pointer capture
-            const pe = e?.originalEvent;
-            if (pe && pe.pointerId && map.getContainer().releasePointerCapture) {
+            if (e && e.pointerId && map.getContainer().releasePointerCapture) {
                 try {
-                    map.getContainer().releasePointerCapture(pe.pointerId);
-                    console.log('Pointer capture released on cancel for pointerId:', pe.pointerId);
+                    map.getContainer().releasePointerCapture(e.pointerId);
+                    console.log('Mobile pointer capture released on cancel for pointerId:', e.pointerId);
                 } catch (err) {
-                    console.log('releasePointerCapture failed on cancel:', err);
+                    console.log('Mobile releasePointerCapture failed on cancel:', err);
                 }
             }
             
