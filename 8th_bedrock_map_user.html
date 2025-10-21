@@ -4138,7 +4138,12 @@
                 mapContainer.classList.remove('drawing-mode');
                 
                 // Re-enable map dragging (zoom was never disabled)
+                console.log('Re-enabling map dragging...');
                 map.dragging.enable();
+                
+                // Ensure touch-action CSS is removed by forcing a style update
+                mapContainer.style.touchAction = '';
+                console.log('Map dragging re-enabled, touch-action cleared');
                 
                 // Remove custom event listeners (both mobile and desktop)
                 map.off('pointerdown', startFreehandDrawing);
@@ -4335,6 +4340,12 @@
                 return;
             }
             
+            // Don't start drawing if this is a multi-touch gesture
+            if (e.pointerType === 'touch' && e.isPrimary === false) {
+                console.log('Ignoring secondary pointer for multi-touch gesture');
+                return;
+            }
+            
             // Convert DOM event coordinates to lat/lng manually
             const mapContainer = map.getContainer();
             const rect = mapContainer.getBoundingClientRect();
@@ -4369,6 +4380,13 @@
         
         function continueMobileDrawing(e) {
             if (!isDrawing) return;
+            
+            // Cancel drawing if this is a secondary pointer (multi-touch detected)
+            if (e.pointerType === 'touch' && e.isPrimary === false) {
+                console.log('Multi-touch detected during drawing - cancelling');
+                cancelMobileDrawing(e);
+                return;
+            }
             
             // Convert DOM event coordinates to lat/lng manually
             const mapContainer = map.getContainer();
