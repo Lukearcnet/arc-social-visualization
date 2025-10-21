@@ -1579,15 +1579,6 @@
                                             <option value="3rd">3rd Degree Only</option>
                                         </select>
                                     </div>
-                                    <div class="filter-group">
-                                        <label for="activity-filter">Activity:</label>
-                                        <select id="activity-filter" class="filter-select">
-                                            <option value="">All Activity Levels</option>
-                                            <option value="high">Highly Active (50+ taps)</option>
-                                            <option value="growing">Growing Network</option>
-                                            <option value="similar">Similar to Me</option>
-                                        </select>
-                                    </div>
                                     <button id="clear-filters" class="clear-filters-btn">Clear</button>
                                 </div>
                             </div>
@@ -2197,14 +2188,6 @@
                     });
                 }
 
-                // Activity filter
-                const activityFilter = document.getElementById('activity-filter');
-                if (activityFilter) {
-                    activityFilter.addEventListener('change', () => {
-                        console.log('⚡ Activity filter changed to:', activityFilter.value);
-                        this.renderRecommendations();
-                    });
-                }
 
                 // Clear filters button
                 const clearFiltersBtn = document.getElementById('clear-filters');
@@ -2213,7 +2196,6 @@
                         console.log('🧹 Clearing all filters');
                         if (locationFilter) locationFilter.value = '';
                         if (degreeFilter) degreeFilter.value = 'both';
-                        if (activityFilter) activityFilter.value = '';
                         this.renderRecommendations();
                     });
                 }
@@ -2685,7 +2667,6 @@
                 // Get filter values
                 const locationFilter = document.getElementById('location-filter')?.value;
                 const degreeFilter = document.getElementById('degree-filter')?.value;
-                const activityFilter = document.getElementById('activity-filter')?.value;
                 
                 // Apply filters
                 let filteredRecs = recs.filter(rec => {
@@ -2720,23 +2701,6 @@
                         if (degreeFilter === 'both') return true; // Show both
                     }
                     
-                    // Activity filter
-                    if (activityFilter) {
-                        const scores = rec.scores || {};
-                        const activityLevel = scores.activity_level || 0;
-                        
-                        if (activityFilter === 'high' && activityLevel < 50) return false;
-                        if (activityFilter === 'growing') {
-                            // Check if user has recent connections (simplified)
-                            const recentActivity = rec.scores?.total || 0;
-                            if (recentActivity < 0.3) return false;
-                        }
-                        if (activityFilter === 'similar') {
-                            // Check if activity level is similar to user's
-                            // This would need user's activity data - for now, show all
-                            return true;
-                        }
-                    }
                     
                     return true;
                 });
