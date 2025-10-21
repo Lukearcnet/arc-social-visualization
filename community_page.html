@@ -4156,7 +4156,11 @@
                         const fullName = this.safeName(d.id);
                         return this.truncateText(fullName, availableWidthForLabels);
                     })
-                    .attr('x', -8)
+                    .attr('x', d => {
+                        const displayText = this.truncateText(this.safeName(d.id), availableWidthForLabels);
+                        const textWidth = this.measureTextWidth(displayText);
+                        return Math.max(-8, -textWidth - 4); // Ensure text doesn't go beyond left edge
+                    })
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2)) // Start at final Y position
                     .attr('fill', '#fff');
                 
@@ -4203,7 +4207,11 @@
                     .transition()
                     .duration(transitionDuration)
                     .ease(d3.easeCubicInOut)
-                    .attr('x', -8)
+                    .attr('x', d => {
+                        const displayText = this.truncateText(this.safeName(d.id), availableWidthForTransitions);
+                        const textWidth = this.measureTextWidth(displayText);
+                        return Math.max(-8, -textWidth - 4); // Ensure text doesn't go beyond left edge
+                    })
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
 
