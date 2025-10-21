@@ -2932,6 +2932,12 @@
             }
 
             showMutualDetails(mutualId, mutualName, totalTapCount, recommendationName, event) {
+                // Remove any existing popup first
+                const existingPopup = document.getElementById('mutual-details-popup');
+                if (existingPopup) {
+                    existingPopup.remove();
+                }
+                
                 // Get current user data
                 const data = this.data.weekly;
                 if (!data) return;
@@ -2951,6 +2957,14 @@
                 // Use the breakdown data from the backend
                 const youToMutualTaps = mutualDetail.youToMutualTaps || 0;
                 const mutualToRecommendedTaps = mutualDetail.mutualToRecommendedTaps || 0;
+                
+                console.log('🔍 Popup data:', {
+                    mutualName,
+                    recommendationName,
+                    youToMutualTaps,
+                    mutualToRecommendedTaps,
+                    mutualDetail
+                });
                 
                 // Create popup HTML (smaller, no overlay)
                 const popupHTML = `
