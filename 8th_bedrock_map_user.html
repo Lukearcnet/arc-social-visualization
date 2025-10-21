@@ -4746,18 +4746,42 @@
             
             console.log('Creating dropdown with', tapsInCircle.length, 'taps');
             
+            // Sort taps by timestamp (most recent first)
+            const sortedTaps = [...tapsInCircle].sort((a, b) => {
+                const timeA = a.timestamp || new Date(a.time).getTime();
+                const timeB = b.timestamp || new Date(b.time).getTime();
+                return timeB - timeA; // Descending order (newest first)
+            });
+            
             // Create portal dropdown using the working approach from develop branch
             const portalRoot = getPortalRoot();
             const dropdown = document.createElement('div');
             dropdown.className = 'portal-dropdown';
             
             // Build content from tap data using proper CSS classes
-            dropdown.innerHTML = tapsInCircle.map(tap => `
-                <div class="degree-user-item">
-                    <div class="user-name">${tap.source_name} ↔ ${tap.target_name}</div>
-                    <div class="user-meta">${tap.formatted_location || 'Unknown location'}</div>
-                </div>
-            `).join('');
+            dropdown.innerHTML = sortedTaps.map(tap => {
+                // Extract city name (first part before comma)
+                const cityName = tap.formatted_location 
+                    ? tap.formatted_location.split(',')[0].trim() 
+                    : 'N/A';
+                
+                // Format date as M/D/YYYY
+                let formattedDate = 'N/A';
+                if (tap.timestamp || tap.time) {
+                    const tapDate = new Date(tap.timestamp || tap.time);
+                    formattedDate = `${tapDate.getMonth() + 1}/${tapDate.getDate()}/${tapDate.getFullYear()}`;
+                }
+                
+                return `
+                    <div class="degree-user-item">
+                        <div class="user-name">${tap.source_name || 'Unknown'} <> ${tap.target_name || 'Unknown'}</div>
+                        <div class="user-meta" style="display: flex; justify-content: space-between;">
+                            <span>${formattedDate}</span>
+                            <span>${cityName}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
             
             console.log('Dropdown HTML created, appending to portal-root');
             portalRoot.appendChild(dropdown);
