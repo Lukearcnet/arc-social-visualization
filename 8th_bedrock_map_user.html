@@ -2261,8 +2261,10 @@
                             return true;
                         }
                         
-                        // 3rd degree: at least one user is 2nd degree connection
-                        if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                        // 3rd degree: at least one user is 2nd degree connection AND neither is 1st degree
+                        if (degreeFilters.degree3 && 
+                            (sourceInDegree2 || targetInDegree2) && 
+                            !(sourceInDegree1 || targetInDegree1)) {
                             return true;
                         }
                         
@@ -2442,12 +2444,17 @@
                         }
                     }
                     
-                    // For 3rd degree: Show connections where at least one user is a 2nd degree connection to selected user
+                    // For 3rd degree: Show connections where at least one user is a 2nd degree connection AND neither is 1st degree
                     if (degreeFilters.degree3) {
                         if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
                             // Neither user is the selected user
-                            if (degreeConnections.degree2.has(sourceUserId) || degreeConnections.degree2.has(targetUserId)) {
-                                // At least one user is a 2nd degree connection to selected user
+                            const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                            const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                            const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                            const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                            
+                            if ((sourceInDegree2 || targetInDegree2) && !(sourceInDegree1 || targetInDegree1)) {
+                                // At least one user is a 2nd degree connection AND neither is 1st degree
                                 shouldShow = true;
                             }
                         }
