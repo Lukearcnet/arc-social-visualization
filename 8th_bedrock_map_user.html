@@ -196,6 +196,11 @@
             border-color: rgba(0, 123, 255, 0.6);
         }
         
+        /* Mobile drawing mode - disable touch gestures */
+        #map.drawing-mode {
+            touch-action: none;
+        }
+        
         /* Portal Dropdown Styles (reused from community page) */
         .portal-root {
             position: fixed;
@@ -1501,6 +1506,11 @@
         let drawingPoints = [];
         let temporaryPolyline = null;
         let previewNeedsUpdate = false;
+        
+        // Mobile detection
+        function isMobileDevice() {
+            return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
         let animationFrameId = null;
         const POINT_SIMPLIFICATION_TOLERANCE = 10; // meters
         const MIN_POINTS_FOR_POLYGON = 3;
@@ -4130,11 +4140,17 @@
                 // Re-enable map dragging (zoom was never disabled)
                 map.dragging.enable();
                 
-                // Remove custom event listeners
+                // Remove custom event listeners (both mobile and desktop)
                 map.off('pointerdown', startFreehandDrawing);
                 map.off('pointermove', continueFreehandDrawing);
                 map.off('pointerup', finishFreehandDrawing);
                 map.off('pointercancel', cancelFreehandDrawing);
+                
+                // Remove mobile-specific event listeners
+                map.off('pointerdown', startMobileDrawing);
+                map.off('pointermove', continueMobileDrawing);
+                map.off('pointerup', finishMobileDrawing);
+                map.off('pointercancel', cancelMobileDrawing);
                 
                 // Remove fallback event listeners
                 map.off('mousedown', startFreehandDrawing);
@@ -4172,19 +4188,29 @@
                 });
                 
                 // Add custom event listeners for freehand drawing
-                // Try both pointer events and mouse/touch events for compatibility
-                map.on('pointerdown', startFreehandDrawing);
-                map.on('pointermove', continueFreehandDrawing);
-                map.on('pointerup', finishFreehandDrawing);
-                map.on('pointercancel', cancelFreehandDrawing);
-                
-                // Fallback to mouse/touch events if pointer events don't work
-                map.on('mousedown', startFreehandDrawing);
-                map.on('mousemove', continueFreehandDrawing);
-                map.on('mouseup', finishFreehandDrawing);
-                map.on('touchstart', startFreehandDrawing);
-                map.on('touchmove', continueFreehandDrawing);
-                map.on('touchend', finishFreehandDrawing);
+                if (isMobileDevice()) {
+                    // Mobile: Use pointer events with setPointerCapture
+                    console.log('Enabling mobile drawing mode with pointer capture');
+                    map.on('pointerdown', startMobileDrawing);
+                    map.on('pointermove', continueMobileDrawing);
+                    map.on('pointerup', finishMobileDrawing);
+                    map.on('pointercancel', cancelMobileDrawing);
+                } else {
+                    // Desktop: Use standard pointer events and fallbacks
+                    console.log('Enabling desktop drawing mode');
+                    map.on('pointerdown', startFreehandDrawing);
+                    map.on('pointermove', continueFreehandDrawing);
+                    map.on('pointerup', finishFreehandDrawing);
+                    map.on('pointercancel', cancelFreehandDrawing);
+                    
+                    // Fallback to mouse/touch events if pointer events don't work
+                    map.on('mousedown', startFreehandDrawing);
+                    map.on('mousemove', continueFreehandDrawing);
+                    map.on('mouseup', finishFreehandDrawing);
+                    map.on('touchstart', startFreehandDrawing);
+                    map.on('touchmove', continueFreehandDrawing);
+                    map.on('touchend', finishFreehandDrawing);
+                }
                 
                 console.log('Custom freehand drawing enabled with pointer events');
             }
@@ -4298,6 +4324,113 @@
             
             updateAriaLiveRegion('Drawing cancelled');
             console.log('Drawing cancelled');
+        }
+        
+        // Mobile-specific pointer event handlers with setPointerCapture
+        function startMobileDrawing(e) {
+            if (!isCrosshairsMode || !e.latlng) {
+                console.log('Mobile drawing not started - conditions not met');
+                return;
+            }
+            
+            isDrawing = true;
+            drawingPoints = [e.latlng];
+            previewNeedsUpdate = true;
+            
+            // Use setPointerCapture to ensure we get pointerup/pointercancel
+            const pe = e.originalEvent;
+            if (pe && pe.pointerId && map.getContainer().setPointerCapture) {
+                try {
+                    map.getContainer().setPointerCapture(pe.pointerId);
+                    console.log('Pointer capture set for pointerId:', pe.pointerId);
+                } catch (err) {
+                    console.log('setPointerCapture failed:', err);
+                }
+            }
+            
+            // Add drawing-active class for cursor feedback
+            document.getElementById('map').classList.add('drawing-active');
+            
+            // Update ARIA live region for accessibility
+            updateAriaLiveRegion('Mobile freehand drawing started');
+            
+            console.log('Started mobile drawing at:', e.latlng);
+        }
+        
+        function continueMobileDrawing(e) {
+            if (!isDrawing || !e.latlng) return;
+            
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            
+            // Adaptive point collection based on zoom and device
+            if (shouldAddPoint(e.latlng, lastPoint)) {
+                drawingPoints.push(e.latlng);
+                previewNeedsUpdate = true; // Set flag for rAF render
+                console.log('Added mobile point, total points:', drawingPoints.length);
+            }
+        }
+        
+        function finishMobileDrawing(e) {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            
+            // Release pointer capture
+            const pe = e?.originalEvent;
+            if (pe && pe.pointerId && map.getContainer().releasePointerCapture) {
+                try {
+                    map.getContainer().releasePointerCapture(pe.pointerId);
+                    console.log('Pointer capture released for pointerId:', pe.pointerId);
+                } catch (err) {
+                    console.log('releasePointerCapture failed:', err);
+                }
+            }
+            
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            // Create polygon from points if valid
+            if (drawingPoints.length >= MIN_POINTS_FOR_POLYGON) {
+                createPolygonFromPoints(drawingPoints);
+                updateAriaLiveRegion(`Mobile polygon created with ${drawingPoints.length} points`);
+            } else {
+                updateAriaLiveRegion('Mobile drawing cancelled - not enough points');
+            }
+            
+            drawingPoints = [];
+            console.log('Finished mobile drawing');
+        }
+        
+        function cancelMobileDrawing(e) {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            drawingPoints = [];
+            
+            // Release pointer capture
+            const pe = e?.originalEvent;
+            if (pe && pe.pointerId && map.getContainer().releasePointerCapture) {
+                try {
+                    map.getContainer().releasePointerCapture(pe.pointerId);
+                    console.log('Pointer capture released on cancel for pointerId:', pe.pointerId);
+                } catch (err) {
+                    console.log('releasePointerCapture failed on cancel:', err);
+                }
+            }
+            
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            updateAriaLiveRegion('Mobile drawing cancelled');
+            console.log('Mobile drawing cancelled');
         }
 
         /**
