@@ -363,6 +363,104 @@
             font-size: 0.85em;
             font-weight: 500;
         }
+        
+        /* Mutual details popup */
+        .mutual-details-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--stroke);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .mutual-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--stroke);
+        }
+        
+        .mutual-details-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+        
+        .mutual-details-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--fg-muted);
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mutual-details-close:hover {
+            color: var(--fg-primary);
+        }
+        
+        .mutual-details-content {
+            margin-top: 1rem;
+        }
+        
+        .mutual-details-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--stroke-subtle);
+        }
+        
+        .mutual-details-row:last-child {
+            border-bottom: none;
+        }
+        
+        .mutual-details-connection {
+            color: var(--fg-primary);
+            font-size: 0.9rem;
+        }
+        
+        .mutual-details-tap-count {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .mutual-details-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .mutual-name-clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .mutual-name-clickable:hover {
+            background: var(--bg-hover);
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
 
         .recommendations-carousel {
             display: grid;
@@ -2773,7 +2871,7 @@
                                 .slice(0, 6);
                             
                             const mutualNamesDisplay = sortedMutuals.map(mutual => 
-                                `<span class="mutual-name">${mutual.name}<span class="tap-count">${mutual.tapCount}</span></span>`
+                                `<span class="mutual-name mutual-name-clickable" data-mutual-id="${mutual.id}" data-mutual-name="${mutual.name}" data-tap-count="${mutual.tapCount}">${mutual.name}<span class="tap-count">${mutual.tapCount}</span></span>`
                             ).join('');
                             
                             const hasMore = rec.mutualDetails.length > 6;
@@ -2800,6 +2898,111 @@
                     
                     container.appendChild(div);
                 });
+                
+                // Add click event listeners to mutual names
+                this.setupMutualClickListeners();
+            }
+
+            setupMutualClickListeners() {
+                const clickableMutuals = document.querySelectorAll('.mutual-name-clickable');
+                clickableMutuals.forEach(mutual => {
+                    mutual.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const mutualId = mutual.dataset.mutualId;
+                        const mutualName = mutual.dataset.mutualName;
+                        const tapCount = parseInt(mutual.dataset.tapCount);
+                        
+                        // Find the recommendation card this mutual belongs to
+                        const recommendationCard = mutual.closest('.recommendation-card');
+                        const recommendationName = recommendationCard.querySelector('h4').textContent;
+                        
+                        this.showMutualDetails(mutualId, mutualName, tapCount, recommendationName);
+                    });
+                });
+            }
+
+            showMutualDetails(mutualId, mutualName, totalTapCount, recommendationName) {
+                // Get current user data to calculate individual tap counts
+                const data = this.data.weekly;
+                if (!data || !data.taps) return;
+                
+                const userId = data.user_id;
+                const normalizedTaps = data.taps;
+                
+                // Find the recommended user ID
+                const recs = this.safeArr(data.recommendations);
+                const recommendation = recs.find(rec => rec.name === recommendationName);
+                if (!recommendation) return;
+                
+                const recommendedUserId = recommendation.id;
+                
+                // Calculate individual tap counts
+                const youToMutualTaps = normalizedTaps.filter(tap => 
+                    (tap.a === userId && tap.b === mutualId) || 
+                    (tap.b === userId && tap.a === mutualId)
+                ).length;
+                
+                const mutualToRecommendedTaps = normalizedTaps.filter(tap => 
+                    (tap.a === mutualId && tap.b === recommendedUserId) || 
+                    (tap.b === mutualId && tap.a === recommendedUserId)
+                ).length;
+                
+                // Create popup HTML
+                const popupHTML = `
+                    <div class="mutual-details-overlay" id="mutual-details-overlay">
+                        <div class="mutual-details-popup">
+                            <div class="mutual-details-header">
+                                <div class="mutual-details-title">Connection Details</div>
+                                <button class="mutual-details-close" id="mutual-details-close">&times;</button>
+                            </div>
+                            <div class="mutual-details-content">
+                                <div class="mutual-details-row">
+                                    <div class="mutual-details-connection">You ↔ ${mutualName}</div>
+                                    <div class="mutual-details-tap-count">${youToMutualTaps} taps</div>
+                                </div>
+                                <div class="mutual-details-row">
+                                    <div class="mutual-details-connection">${mutualName} ↔ ${recommendationName}</div>
+                                    <div class="mutual-details-tap-count">${mutualToRecommendedTaps} taps</div>
+                                </div>
+                                <div class="mutual-details-row" style="border-top: 2px solid var(--stroke); margin-top: 0.5rem; padding-top: 0.5rem;">
+                                    <div class="mutual-details-connection" style="font-weight: 600;">Total</div>
+                                    <div class="mutual-details-tap-count" style="font-size: 1rem;">${totalTapCount} taps</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add popup to DOM
+                document.body.insertAdjacentHTML('beforeend', popupHTML);
+                
+                // Add event listeners for closing
+                const overlay = document.getElementById('mutual-details-overlay');
+                const closeBtn = document.getElementById('mutual-details-close');
+                
+                const closePopup = () => {
+                    if (overlay) {
+                        overlay.remove();
+                    }
+                };
+                
+                closeBtn.addEventListener('click', closePopup);
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        closePopup();
+                    }
+                });
+                
+                // Close on Escape key
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        closePopup();
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
             }
 
             renderWarnings() {
