@@ -381,36 +381,48 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0;
+            gap: 4px;
         }
         
         .mutual-details-node {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 4px 12px;
             color: var(--fg-primary);
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 500;
-            text-align: center;
-            padding: 0.25rem 0;
+            min-width: 60px;
         }
         
         .mutual-details-connector {
-            width: 2px;
-            height: 8px;
-            background: var(--stroke);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
             margin: 2px 0;
+        }
+        
+        .mutual-details-arrow {
+            color: var(--fg-muted);
+            font-size: 0.7rem;
+            line-height: 1;
         }
         
         .mutual-details-badge {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: var(--accent-primary);
             color: white;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            margin: 2px 0;
         }
         
         .mutual-name-clickable {
@@ -2932,18 +2944,26 @@
                     mutualDetail
                 });
                 
-                // Create popup HTML (vertical stacked design)
+                // Create popup HTML (vertical stacked design with arrows)
                 const popupHTML = `
                     <div class="mutual-details-popup" id="mutual-details-popup">
                         <div class="mutual-details-stack">
                             <div class="mutual-details-node">You</div>
-                            <div class="mutual-details-connector"></div>
+                            <div class="mutual-details-connector">
+                                <div class="mutual-details-arrow">↓</div>
+                            </div>
                             <div class="mutual-details-badge">${youToMutualTaps}</div>
-                            <div class="mutual-details-connector"></div>
+                            <div class="mutual-details-connector">
+                                <div class="mutual-details-arrow">↓</div>
+                            </div>
                             <div class="mutual-details-node">${mutualName}</div>
-                            <div class="mutual-details-connector"></div>
+                            <div class="mutual-details-connector">
+                                <div class="mutual-details-arrow">↓</div>
+                            </div>
                             <div class="mutual-details-badge">${mutualToRecommendedTaps}</div>
-                            <div class="mutual-details-connector"></div>
+                            <div class="mutual-details-connector">
+                                <div class="mutual-details-arrow">↓</div>
+                            </div>
                             <div class="mutual-details-node">${recommendationName}</div>
                         </div>
                     </div>
