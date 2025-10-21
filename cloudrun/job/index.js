@@ -113,10 +113,8 @@ async function readPreviousSnapshot() {
     metrics.prevSnapshotFound = true;
     console.log(`✅ Previous snapshot loaded: ${prevSnapshot.taps.length} taps, ${prevSnapshot.users.length} users`);
     
-    // TEMPORARILY DISABLED: Build caches from previous snapshot
-    // buildCaches();
-    console.log('⚠️ Cache building DISABLED for one-time re-geocoding of all taps');
-    console.log('🔄 All taps will be re-geocoded with fixed function to correct Sept 17+ addresses');
+    // Build caches from previous snapshot
+    buildCaches();
     
   } catch (error) {
     console.log(`⚠️ Could not read previous snapshot: ${error.message}`);
