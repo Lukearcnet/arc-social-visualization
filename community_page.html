@@ -272,29 +272,89 @@
         }
 
         .recommendations-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 1rem;
         }
 
         .recommendations-header h3 {
-            margin: 0;
-            flex: 1;
+            margin: 0 0 1rem 0;
         }
 
-        .city-filter {
+        .recommendations-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+            font-weight: 500;
+        }
+
+        .filter-select {
             padding: 0.5rem;
             border-radius: 6px;
             border: 1px solid var(--stroke);
             background: var(--bg-secondary);
             color: var(--fg-primary);
-            font-size: 0.9rem;
+            font-size: 0.875rem;
+            min-width: 120px;
         }
 
-        .city-filter:focus {
+        .filter-select:focus {
             outline: none;
             border-color: var(--accent-primary);
+        }
+
+        .clear-filters-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--stroke);
+            background: var(--bg-secondary);
+            color: var(--fg-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            align-self: flex-end;
+        }
+
+        .clear-filters-btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-primary);
+        }
+
+        .clear-filters-btn:active {
+            transform: translateY(1px);
+        }
+
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .degree-badge {
+            background: var(--accent-primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .bridge-paths {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--fg-muted);
+            font-style: italic;
         }
 
         .recommendations-carousel {
@@ -1494,18 +1554,42 @@
                         <div class="recommendations-section">
                             <div class="recommendations-header">
                                 <h3>People You Should Meet</h3>
-                                <select id="city-filter" class="city-filter">
-                                    <option value="">All Cities</option>
-                                    <option value="NY">New York</option>
-                                    <option value="London">London</option>
-                                    <option value="LA">Los Angeles</option>
-                                    <option value="SF">San Francisco</option>
-                                    <option value="Dallas">Dallas</option>
-                                    <option value="Chicago">Chicago</option>
-                                    <option value="Jackson Hole">Jackson Hole</option>
-                                    <option value="Austin">Austin</option>
-                                    <option value="Nashville">Nashville</option>
-                                </select>
+                                <div class="recommendations-filters">
+                                    <div class="filter-group">
+                                        <label for="location-filter">Location:</label>
+                                        <select id="location-filter" class="filter-select">
+                                            <option value="">All Locations</option>
+                                            <option value="near-home">Near My Home</option>
+                                            <option value="NY">New York</option>
+                                            <option value="London">London</option>
+                                            <option value="LA">Los Angeles</option>
+                                            <option value="SF">San Francisco</option>
+                                            <option value="Dallas">Dallas</option>
+                                            <option value="Chicago">Chicago</option>
+                                            <option value="Jackson Hole">Jackson Hole</option>
+                                            <option value="Austin">Austin</option>
+                                            <option value="Nashville">Nashville</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="degree-filter">Degree:</label>
+                                        <select id="degree-filter" class="filter-select">
+                                            <option value="both">2nd & 3rd Degree</option>
+                                            <option value="2nd">2nd Degree Only</option>
+                                            <option value="3rd">3rd Degree Only</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="activity-filter">Activity:</label>
+                                        <select id="activity-filter" class="filter-select">
+                                            <option value="">All Activity Levels</option>
+                                            <option value="high">Highly Active (50+ taps)</option>
+                                            <option value="growing">Growing Network</option>
+                                            <option value="similar">Similar to Me</option>
+                                        </select>
+                                    </div>
+                                    <button id="clear-filters" class="clear-filters-btn">Clear</button>
+                                </div>
                             </div>
                             <div class="recommendations-carousel" id="recommendations-list"></div>
                         </div>
@@ -2079,14 +2163,8 @@
                 window.addEventListener('scroll', () => this.updateDropdownPosition());
                 window.addEventListener('resize', () => this.updateDropdownPosition());
 
-                // City filter for recommendations
-                const cityFilter = document.getElementById('city-filter');
-                if (cityFilter) {
-                    cityFilter.addEventListener('change', () => {
-                        console.log('🏙️ City filter changed to:', cityFilter.value);
-                        this.renderRecommendations();
-                    });
-                }
+                // Setup recommendation filters
+                this.setupRecommendationFilters();
             }
 
             // Portal utility
@@ -2098,6 +2176,47 @@
                     document.body.appendChild(portalRoot);
                 }
                 return portalRoot;
+            }
+
+            setupRecommendationFilters() {
+                // Location filter
+                const locationFilter = document.getElementById('location-filter');
+                if (locationFilter) {
+                    locationFilter.addEventListener('change', () => {
+                        console.log('🏙️ Location filter changed to:', locationFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
+
+                // Degree filter
+                const degreeFilter = document.getElementById('degree-filter');
+                if (degreeFilter) {
+                    degreeFilter.addEventListener('change', () => {
+                        console.log('🔗 Degree filter changed to:', degreeFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
+
+                // Activity filter
+                const activityFilter = document.getElementById('activity-filter');
+                if (activityFilter) {
+                    activityFilter.addEventListener('change', () => {
+                        console.log('⚡ Activity filter changed to:', activityFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
+
+                // Clear filters button
+                const clearFiltersBtn = document.getElementById('clear-filters');
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', () => {
+                        console.log('🧹 Clearing all filters');
+                        if (locationFilter) locationFilter.value = '';
+                        if (degreeFilter) degreeFilter.value = 'both';
+                        if (activityFilter) activityFilter.value = '';
+                        this.renderRecommendations();
+                    });
+                }
             }
 
             updateDropdownPosition() {
@@ -2563,25 +2682,63 @@
                 // Use safe array access
                 const recs = this.safeArr(data.recommendations);
                 
-                // Get city filter value
-                const cityFilter = document.getElementById('city-filter')?.value;
+                // Get filter values
+                const locationFilter = document.getElementById('location-filter')?.value;
+                const degreeFilter = document.getElementById('degree-filter')?.value;
+                const activityFilter = document.getElementById('activity-filter')?.value;
                 
-                // Filter recommendations by city if selected
-                const filteredRecs = recs.filter(rec => {
-                    if (!cityFilter) return true;
-                    if (!rec.last_tap_coordinates) return false;
+                // Apply filters
+                let filteredRecs = recs.filter(rec => {
+                    // Location filter
+                    if (locationFilter) {
+                        if (locationFilter === 'near-home') {
+                            // Filter by proximity to user's home location
+                            // This would need user's home location data - for now, show all
+                            return true;
+                        } else if (locationFilter && !rec.last_tap_coordinates) {
+                            return false;
+                        } else if (locationFilter) {
+                            const cities = this.getMajorCities();
+                            const city = cities[locationFilter];
+                            if (city) {
+                                const distance = this.getDistanceFromLatLonInMiles(
+                                    rec.last_tap_coordinates.lat,
+                                    rec.last_tap_coordinates.lng,
+                                    city.lat,
+                                    city.lng
+                                );
+                                return distance <= 50; // 50 mile radius
+                            }
+                        }
+                    }
                     
-                    const cities = this.getMajorCities();
-                    const city = cities[cityFilter];
-                    if (!city) return true;
+                    // Degree filter
+                    if (degreeFilter) {
+                        const recDegree = rec.degree || 2; // Default to 2nd degree if not specified
+                        if (degreeFilter === '2nd' && recDegree !== 2) return false;
+                        if (degreeFilter === '3rd' && recDegree !== 3) return false;
+                        if (degreeFilter === 'both') return true; // Show both
+                    }
                     
-                    const distance = this.getDistanceFromLatLonInMiles(
-                        rec.last_tap_coordinates.lat,
-                        rec.last_tap_coordinates.lng,
-                        city.lat,
-                        city.lng
-                    );
-                    return distance <= 50; // 50 mile radius
+                    // Activity filter
+                    if (activityFilter) {
+                        const scores = rec.scores || {};
+                        const activityLevel = scores.activity_level || 0;
+                        
+                        if (activityFilter === 'high' && activityLevel < 50) return false;
+                        if (activityFilter === 'growing') {
+                            // Check if user has recent connections (simplified)
+                            const recentActivity = rec.scores?.total || 0;
+                            if (recentActivity < 0.3) return false;
+                        }
+                        if (activityFilter === 'similar') {
+                            // Check if activity level is similar to user's
+                            // This would need user's activity data - for now, show all
+                            return true;
+                        }
+                    }
+                    
+                    return true;
                 });
                 
                 const container = document.getElementById('recommendations-list');
@@ -2592,8 +2749,8 @@
                     const emptyDiv = document.createElement('div');
                     emptyDiv.className = 'empty-state';
                     emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
-                    const message = cityFilter 
-                        ? `No recommendations found near ${this.getMajorCities()[cityFilter]?.name || cityFilter}.`
+                    const message = locationFilter 
+                        ? `No recommendations found for the selected filters.`
                         : 'No recommendations yet. Check back soon as your network grows.';
                     emptyDiv.innerHTML = `
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤝</div>
@@ -2613,38 +2770,35 @@
                     const total = Number.isFinite(scores.total) ? scores.total : 0;
                     const mutuals = this.safeArr(rec.mutuals);
                     const explain = rec.explain || 'No explanation available.';
+                    const degree = rec.degree || 2;
                     
-                    // Format mutuals display
-                    const mutualsDisplay = mutuals.length > 0 
-                        ? mutuals.slice(0, 3).join(', ') + (mutuals.length > 3 ? ` +${mutuals.length - 3} more` : '')
-                        : 'No mutuals';
+                    // Create degree badge for 3rd degree
+                    const degreeBadge = degree === 3 ? '<span class="degree-badge">3rd degree</span>' : '';
                     
-                    // Extract the actual mutual count from the explain text
-                    // The explain text contains the real count: "Connected through 5 mutual friends"
-                    const explainText = rec.explain || '';
-                    const mutualCountMatch = explainText.match(/Connected through (\d+) mutual friends/);
-                    const actualMutualCount = mutualCountMatch ? parseInt(mutualCountMatch[1]) : mutuals.length;
+                    // Format mutuals display for 2nd degree
+                    let mutualsDisplay = '';
+                    if (degree === 2 && mutuals.length > 0) {
+                        const mutualNamesDisplay = mutuals.slice(0, 6).map(name => `<span class="mutual-name">${name}</span>`).join('');
+                        mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}</div>`;
+                    }
                     
-                    // Debug: Log the actual recommendation data
-                    console.log(`[Recommendations] ${name}:`, {
-                        mutuals: mutuals,
-                        mutualCount: mutuals.length,
-                        actualMutualCount: actualMutualCount,
-                        explainText: explainText,
-                        rec: rec
-                    });
-                    
-                    // Format mutual names display - show up to 6 mutual friends
-                    const mutualNamesDisplay = mutuals.length > 0 
-                        ? mutuals.slice(0, 6).map(name => `<span class="mutual-name">${name}</span>`).join('')
-                        : '';
+                    // Format bridge paths for 3rd degree
+                    let bridgePathsDisplay = '';
+                    if (degree === 3 && rec.bridge_paths && rec.bridge_paths.length > 0) {
+                        const bridgePaths = rec.bridge_paths.slice(0, 2).map(path => 
+                            `${path.direct_name} → ${path.second_name}`
+                        ).join(', ');
+                        bridgePathsDisplay = `<div class="bridge-paths">${bridgePaths}</div>`;
+                    }
                     
                     div.innerHTML = `
-                        <h4>${name}</h4>
-                        <div class="connected-through">Connected through ${actualMutualCount} mutual friends</div>
-                        <div class="mutual-names">
-                            ${mutualNamesDisplay}
+                        <div class="recommendation-header">
+                            <h4>${name}</h4>
+                            ${degreeBadge}
                         </div>
+                        <div class="connected-through">${explain}</div>
+                        ${mutualsDisplay}
+                        ${bridgePathsDisplay}
                     `;
                     
                     container.appendChild(div);
