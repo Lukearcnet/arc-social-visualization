@@ -1579,13 +1579,6 @@
                                         </select>
                                     </div>
                                     <div class="filter-group">
-                                        <label for="degree-filter">Degree:</label>
-                                        <select id="degree-filter" class="filter-select">
-                                            <option value="2nd">2nd Degree</option>
-                                            <option value="3rd">3rd Degree</option>
-                                        </select>
-                                    </div>
-                                    <div class="filter-group">
                                         <label for="sort-filter">Sort By:</label>
                                         <select id="sort-filter" class="filter-select">
                                             <option value="connections">Mutual Connections</option>
@@ -2192,14 +2185,6 @@
                     });
                 }
 
-                // Degree filter
-                const degreeFilter = document.getElementById('degree-filter');
-                if (degreeFilter) {
-                    degreeFilter.addEventListener('change', () => {
-                        console.log('🔗 Degree filter changed to:', degreeFilter.value);
-                        this.renderRecommendations();
-                    });
-                }
 
                 // Sort filter
                 const sortFilter = document.getElementById('sort-filter');
@@ -2217,7 +2202,6 @@
                     clearFiltersBtn.addEventListener('click', () => {
                         console.log('🧹 Clearing all filters');
                         if (locationFilter) locationFilter.value = '';
-                        if (degreeFilter) degreeFilter.value = '2nd';
                         if (sortFilter) sortFilter.value = 'connections';
                         this.renderRecommendations();
                     });
@@ -2689,7 +2673,6 @@
                 
                 // Get filter values
                 const locationFilter = document.getElementById('location-filter')?.value;
-                const degreeFilter = document.getElementById('degree-filter')?.value;
                 const sortFilter = document.getElementById('sort-filter')?.value;
                 
                 // Apply filters
@@ -2717,12 +2700,9 @@
                         }
                     }
                     
-                    // Degree filter
-                    if (degreeFilter) {
-                        const recDegree = rec.degree || 2; // Default to 2nd degree if not specified
-                        if (degreeFilter === '2nd' && recDegree !== 2) return false;
-                        if (degreeFilter === '3rd' && recDegree !== 3) return false;
-                    }
+                    // Only show 2nd degree recommendations (filter out 3rd degree)
+                    const recDegree = rec.degree || 2;
+                    if (recDegree !== 2) return false;
                     
                     
                     return true;
@@ -2780,16 +2760,13 @@
                     const explain = rec.explain || 'No explanation available.';
                     const degree = rec.degree || 2;
                     
-                    // Create degree badge for 3rd degree
-                    const degreeBadge = degree === 3 ? '<span class="degree-badge">3rd degree</span>' : '';
-                    
-                    // Format mutuals display based on sort filter
+                    // Format mutuals display based on sort filter (2nd degree only)
                     let mutualsDisplay = '';
                     let explainText = explain;
                     
                     if (sortFilter === 'taps') {
-                        // Show tap-based display
-                        if (degree === 2 && rec.mutualDetails && rec.mutualDetails.length > 0) {
+                        // Show tap-based display for 2nd degree
+                        if (rec.mutualDetails && rec.mutualDetails.length > 0) {
                             // Sort mutuals by tap count (descending) and take top 6
                             const sortedMutuals = rec.mutualDetails
                                 .sort((a, b) => b.tapCount - a.tapCount)
@@ -2804,39 +2781,18 @@
                             
                             mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}${moreDisplay}</div>`;
                             explainText = `Connected through ${rec.scores.mutual_taps} mutual taps`;
-                        } else if (degree === 3 && rec.bridgePathDetails && rec.bridgePathDetails.length > 0) {
-                            // Sort bridge paths by tap count (descending) and take top 6
-                            const sortedPaths = rec.bridgePathDetails
-                                .sort((a, b) => b.tapCount - a.tapCount)
-                                .slice(0, 6);
-                            
-                            const bridgePathsDisplay = sortedPaths.map(path => 
-                                `<span class="mutual-name">${path.direct_name} → ${path.second_name}<span class="tap-count">${path.tapCount}</span></span>`
-                            ).join('');
-                            
-                            const hasMore = rec.bridgePathDetails.length > 6;
-                            const moreDisplay = hasMore ? '<span class="mutual-name">...</span>' : '';
-                            
-                            mutualsDisplay = `<div class="mutual-names">${bridgePathsDisplay}${moreDisplay}</div>`;
-                            explainText = `Connected through ${rec.scores.mutual_taps} mutual taps`;
                         }
                     } else {
                         // Show connection-based display (default)
-                        if (degree === 2 && mutuals.length > 0) {
+                        if (mutuals.length > 0) {
                             const mutualNamesDisplay = mutuals.slice(0, 6).map(name => `<span class="mutual-name">${name}</span>`).join('');
                             mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}</div>`;
-                        } else if (degree === 3 && rec.bridge_paths && rec.bridge_paths.length > 0) {
-                            const bridgePaths = rec.bridge_paths.slice(0, 2).map(path => 
-                                `${path.direct_name} → ${path.second_name}`
-                            ).join(', ');
-                            mutualsDisplay = `<div class="bridge-paths">${bridgePaths}</div>`;
                         }
                     }
                     
                     div.innerHTML = `
                         <div class="recommendation-header">
                             <h4>${name}</h4>
-                            ${degreeBadge}
                         </div>
                         <div class="connected-through">${explainText}</div>
                         ${mutualsDisplay}
