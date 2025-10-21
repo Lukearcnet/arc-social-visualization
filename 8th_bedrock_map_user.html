@@ -2569,10 +2569,11 @@
             
             // Only create popup content and bind it if not in global view
             if (!globalViewEnabled) {
+                const displayLocation = formatLocationForDisplay(event.formatted_location || location.location);
                 const popupContent = `
                     <div class="custom-popup">
                         <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
-                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Location: ${displayLocation}</div>
                         <div class="popup-info">Venue: ${venueDisplay}</div>
                         <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
                     </div>
@@ -2581,6 +2582,38 @@
                 marker.bindPopup(popupContent);
             }
             markers.push(marker);
+        }
+        
+        // Format location for display in tap cards
+        function formatLocationForDisplay(formattedLocation) {
+            if (!formattedLocation) return 'Unknown Location';
+            
+            // Parse location: "city, state, country" or ", state, country"
+            const parts = formattedLocation.split(',').map(p => p.trim());
+            
+            if (parts.length === 3) {
+                const [city, state, country] = parts;
+                
+                // Handle US locations: remove ", US" suffix
+                if (country === 'US') {
+                    // If city is empty, just show state
+                    if (!city) return state;
+                    // Otherwise show "city, state" without US
+                    return `${city}, ${state}`;
+                }
+                
+                // Handle non-US locations with missing city
+                if (!city) {
+                    // Show "state, country" (e.g., "England, GB")
+                    return `${state}, ${country}`;
+                }
+                
+                // Normal case: show all three parts
+                return formattedLocation;
+            }
+            
+            // Fallback: return as-is
+            return formattedLocation;
         }
         
         // Clear all markers
@@ -3205,10 +3238,11 @@
                 });
                 
                 // Add popup
+                const displayLocation = formatLocationForDisplay(event.formatted_location || location.location);
                 const popupContent = `
                     <div class="custom-popup">
                         <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
-                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Location: ${displayLocation}</div>
                         <div class="popup-info">Time: ${event.formatted_time}</div>
                     </div>
                 `;
