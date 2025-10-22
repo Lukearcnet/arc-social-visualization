@@ -2266,6 +2266,9 @@
                 // Sort filter
                 const sortFilter = document.getElementById('sort-filter');
                 if (sortFilter) {
+                    // Set default to "Mutual Taps"
+                    sortFilter.value = 'taps';
+                    
                     sortFilter.addEventListener('change', () => {
                         console.log('📊 Sort filter changed to:', sortFilter.value);
                         this.renderRecommendations();
