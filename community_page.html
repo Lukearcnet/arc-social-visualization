@@ -2189,6 +2189,10 @@
                     
                     // Update data and re-render
                     this.data.weekly = responseData;
+                    
+                    // Store current time window for recommendation text
+                    this.currentTimeWindow = timeWindow;
+                    
                     this.renderWeeklyPulse();
                     
                 } catch (error) {
@@ -2250,6 +2254,17 @@
                     document.body.appendChild(portalRoot);
                 }
                 return portalRoot;
+            }
+            
+            // Helper function to convert time window to readable label
+            getTimeWindowLabel(timeWindow) {
+                const labels = {
+                    '1day': '24 hours',
+                    '1week': '7 days', 
+                    '1month': '30 days',
+                    '6months': '6 months'
+                };
+                return labels[timeWindow] || '7 days';
             }
 
             setupRecommendationFilters() {
@@ -2844,6 +2859,12 @@
                     let mutualsDisplay = '';
                     let explainText = explain;
                     
+                    // Add time period to default explain text
+                    const timeLabel = this.getTimeWindowLabel(this.currentTimeWindow || '1week');
+                    if (explainText.includes('mutual friends')) {
+                        explainText = explainText.replace('mutual friends', `mutual friends in the last ${timeLabel}`);
+                    }
+                    
                     if (sortFilter === 'taps') {
                         // Show tap-based display for 2nd degree
                         if (rec.mutualDetails && rec.mutualDetails.length > 0) {
@@ -2860,7 +2881,8 @@
                             const moreDisplay = hasMore ? '<span class="mutual-name">...</span>' : '';
                             
                             mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}${moreDisplay}</div>`;
-                            explainText = `Connected through ${rec.scores.mutual_taps} mutual taps`;
+                            const timeLabel = this.getTimeWindowLabel(this.currentTimeWindow || '1week');
+                            explainText = `Connected through ${rec.scores.mutual_taps} mutual taps in the last ${timeLabel}`;
                         }
                     } else {
                         // Show connection-based display (default) - also make clickable
