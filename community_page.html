@@ -977,6 +977,13 @@
             gap: 8px;
         }
         
+        .recommendations-title-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
         .info-icon {
             cursor: pointer;
             font-size: 1rem;
@@ -1637,7 +1644,10 @@
                         <!-- Recommendations -->
                         <div class="recommendations-section">
                             <div class="recommendations-header">
-                                <h3>People You Should Meet</h3>
+                                <div class="recommendations-title-container">
+                                    <h3>People You Should Meet</h3>
+                                    <div class="info-icon" id="recommendations-info-icon" title="Click for more information">ℹ️</div>
+                                </div>
                                 <div class="recommendations-filters">
                                     <div class="filter-group">
                                         <label for="location-filter">Location:</label>
@@ -1993,6 +2003,14 @@
                 if (healthInfoIcon) {
                     healthInfoIcon.addEventListener('click', (e) => {
                         this.showHealthInfoPopup(e.target);
+                    });
+                }
+                
+                // Recommendations info icon
+                const recommendationsInfoIcon = document.getElementById('recommendations-info-icon');
+                if (recommendationsInfoIcon) {
+                    recommendationsInfoIcon.addEventListener('click', (e) => {
+                        this.showRecommendationsInfoPopup(e.target);
                     });
                 }
             }
@@ -2629,6 +2647,50 @@
                         <li>Recent activity matters most (50%)</li>
                         <li>Consistency over 90 days (30%)</li>
                         <li>Don't let 30+ days pass between taps</li>
+                    </ul>
+                `;
+                
+                // Position popup
+                const rect = icon.getBoundingClientRect();
+                popup.style.left = `${rect.left}px`;
+                popup.style.top = `${rect.bottom + 8}px`;
+                
+                // Add to page
+                document.body.appendChild(popup);
+                
+                // Close on click outside
+                const closePopup = (e) => {
+                    if (!popup.contains(e.target) && e.target !== icon) {
+                        popup.remove();
+                        document.removeEventListener('click', closePopup);
+                    }
+                };
+                
+                setTimeout(() => {
+                    document.addEventListener('click', closePopup);
+                }, 100);
+            }
+            
+            showRecommendationsInfoPopup(icon) {
+                // Remove any existing popup
+                const existingPopup = document.querySelector('.info-popup');
+                if (existingPopup) {
+                    existingPopup.remove();
+                    return;
+                }
+                
+                // Create popup content
+                const popup = document.createElement('div');
+                popup.className = 'info-popup';
+                popup.innerHTML = `
+                    <h4>Understanding Mutual Connections</h4>
+                    <p><strong># next to mutual connections represents tap activity in time window.</strong></p>
+                    <p>If you see 0 anywhere, it means there is still a connection but not within the selected time window.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Mutual connections are found from all-time data</li>
+                        <li>Tap counts show activity only within your selected time period</li>
+                        <li>0 means the connection exists historically but had no recent activity</li>
                     </ul>
                 `;
                 
