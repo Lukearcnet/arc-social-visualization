@@ -2974,24 +2974,34 @@
                 // Add popup to DOM
                 document.body.insertAdjacentHTML('beforeend', popupHTML);
                 
-                // Position popup near the clicked element
+                // Position popup near the clicked element (mobile-friendly)
                 const popup = document.getElementById('mutual-details-popup');
                 if (popup) {
                     const rect = event.target.getBoundingClientRect();
                     const popupRect = popup.getBoundingClientRect();
+                    const padding = 10;
                     
-                    // Position to the right of the clicked element, or left if not enough space
-                    let left = rect.right + 10;
-                    if (left + popupRect.width > window.innerWidth) {
-                        left = rect.left - popupRect.width - 10;
+                    // Try to position to the right of the clicked element
+                    let left = rect.right + padding;
+                    
+                    // If not enough space on right, try left
+                    if (left + popupRect.width > window.innerWidth - padding) {
+                        left = rect.left - popupRect.width - padding;
                     }
+                    
+                    // If still not enough space (mobile), center horizontally
+                    if (left < padding || left + popupRect.width > window.innerWidth - padding) {
+                        left = (window.innerWidth - popupRect.width) / 2;
+                    }
+                    
+                    // Ensure left is within bounds
+                    left = Math.max(padding, Math.min(left, window.innerWidth - popupRect.width - padding));
                     
                     // Position vertically centered with the clicked element
                     let top = rect.top + (rect.height / 2) - (popupRect.height / 2);
-                    if (top < 10) top = 10;
-                    if (top + popupRect.height > window.innerHeight - 10) {
-                        top = window.innerHeight - popupRect.height - 10;
-                    }
+                    
+                    // Ensure top is within bounds
+                    top = Math.max(padding, Math.min(top, window.innerHeight - popupRect.height - padding));
                     
                     popup.style.left = `${left}px`;
                     popup.style.top = `${top}px`;
