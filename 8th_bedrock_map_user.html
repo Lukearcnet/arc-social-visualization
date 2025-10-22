@@ -4807,10 +4807,8 @@
             
             // Build content from tap data using proper CSS classes
             dropdown.innerHTML = sortedTaps.map(tap => {
-                // Extract city name (first part before comma)
-            const cityName = tap.formatted_location 
-                ? tap.formatted_location.split(',').slice(0, 2).join(',').trim() 
-                : 'N/A';
+                // Format location using the same logic as tap cards
+                const cityName = formatLocationForDisplay(tap.formatted_location);
                 
                 // Format date as M/D/YYYY
                 let formattedDate = 'N/A';
