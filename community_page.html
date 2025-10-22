@@ -2700,27 +2700,35 @@
                 const popupRect = popup.getBoundingClientRect();
                 const padding = 10;
                 
-                // Try to position to the right of the clicked element
-                let left = rect.right + padding;
+                // Check if we're on mobile (screen width < 768px)
+                const isMobile = window.innerWidth < 768;
                 
-                // If not enough space on right, try left
-                if (left + popupRect.width > window.innerWidth - padding) {
-                    left = rect.left - popupRect.width - padding;
-                }
+                let left, top;
                 
-                // If still not enough space (mobile), center horizontally
-                if (left < padding || left + popupRect.width > window.innerWidth - padding) {
+                if (isMobile) {
+                    // On mobile, always center horizontally
                     left = (window.innerWidth - popupRect.width) / 2;
+                    left = Math.max(padding, Math.min(left, window.innerWidth - popupRect.width - padding));
+                    
+                    // Position below the icon
+                    top = rect.bottom + 8;
+                    top = Math.max(padding, Math.min(top, window.innerHeight - popupRect.height - padding));
+                } else {
+                    // On desktop, try right side first
+                    left = rect.right + padding;
+                    
+                    // If not enough space on right, try left
+                    if (left + popupRect.width > window.innerWidth - padding) {
+                        left = rect.left - popupRect.width - padding;
+                    }
+                    
+                    // Ensure left is within bounds
+                    left = Math.max(padding, Math.min(left, window.innerWidth - popupRect.width - padding));
+                    
+                    // Position vertically below the icon
+                    top = rect.bottom + 8;
+                    top = Math.max(padding, Math.min(top, window.innerHeight - popupRect.height - padding));
                 }
-                
-                // Ensure left is within bounds
-                left = Math.max(padding, Math.min(left, window.innerWidth - popupRect.width - padding));
-                
-                // Position vertically below the icon
-                let top = rect.bottom + 8;
-                
-                // Ensure top is within bounds
-                top = Math.max(padding, Math.min(top, window.innerHeight - popupRect.height - padding));
                 
                 popup.style.left = `${left}px`;
                 popup.style.top = `${top}px`;
