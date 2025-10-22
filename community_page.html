@@ -984,6 +984,10 @@
             flex-wrap: wrap;
         }
         
+        .recommendations-title-container h3 {
+            margin: 0;
+        }
+        
         .info-icon {
             cursor: pointer;
             font-size: 1rem;
@@ -2684,20 +2688,42 @@
                 popup.className = 'info-popup';
                 popup.innerHTML = `
                     <h4>Understanding Mutual Connections</h4>
-                    <p><strong># next to mutual connections represents tap activity in time window.</strong></p>
-                    <p>If you see 0 anywhere, it means there is still a connection but not within the selected time window.</p>
-                    <p><strong>How it works:</strong></p>
                     <ul>
-                        <li>Mutual connections are found from all-time data</li>
-                        <li>Tap counts show activity only within your selected time period</li>
-                        <li>0 means the connection exists historically but had no recent activity</li>
+                        <li>Only mutuals that were active on Arc in the selected time window are displayed.</li>
+                        <li>The underlined # next to the shared connections in the grey bubbles represent the tap activity tying you to the mutual within the period (click to see details)</li>
+                        <li>If an underlined # is 0 or it says "0 mutual taps in the last x days" it means the suggested user is a 2nd degree, is active in this period, but hasn't tapped with anyone you know in the last 7 days, and you haven't tapped with anyone they know in the last 7 days.</li>
                     </ul>
                 `;
                 
-                // Position popup
+                // Position popup (mobile-friendly)
                 const rect = icon.getBoundingClientRect();
-                popup.style.left = `${rect.left}px`;
-                popup.style.top = `${rect.bottom + 8}px`;
+                const popupRect = popup.getBoundingClientRect();
+                const padding = 10;
+                
+                // Try to position to the right of the clicked element
+                let left = rect.right + padding;
+                
+                // If not enough space on right, try left
+                if (left + popupRect.width > window.innerWidth - padding) {
+                    left = rect.left - popupRect.width - padding;
+                }
+                
+                // If still not enough space (mobile), center horizontally
+                if (left < padding || left + popupRect.width > window.innerWidth - padding) {
+                    left = (window.innerWidth - popupRect.width) / 2;
+                }
+                
+                // Ensure left is within bounds
+                left = Math.max(padding, Math.min(left, window.innerWidth - popupRect.width - padding));
+                
+                // Position vertically below the icon
+                let top = rect.bottom + 8;
+                
+                // Ensure top is within bounds
+                top = Math.max(padding, Math.min(top, window.innerHeight - popupRect.height - padding));
+                
+                popup.style.left = `${left}px`;
+                popup.style.top = `${top}px`;
                 
                 // Add to page
                 document.body.appendChild(popup);
