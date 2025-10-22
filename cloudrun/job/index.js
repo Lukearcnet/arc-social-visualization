@@ -174,8 +174,34 @@ async function getGeocodedLocation(latitude, longitude) {
     });
     
     if (response.status === 'OK' && response.results && response.results.length > 0) {
-      const result = response.results[0];
-      return result.formatted_address || 'Unknown Location';
+      const addressComponents = response.results[0].address_components;
+      let city = '';
+      let state = '';
+      let country = '';
+
+      // Parse address components to extract city, state, country only
+      for (const component of addressComponents) {
+        if (component.types.includes('locality')) {
+          city = component.long_name;
+        }
+        if (component.types.includes('administrative_area_level_1')) {
+          state = component.short_name;
+        }
+        if (component.types.includes('country')) {
+          country = component.short_name;
+        }
+      }
+      
+      // Build location string, filtering out empty parts
+      const parts = [city, state, country].filter(part => part && part.trim());
+      
+      // If we have any parts, join them; otherwise return null
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+      
+      // Fallback: return null if all parts are empty
+      return null;
     }
     return null;
   } catch (error) {

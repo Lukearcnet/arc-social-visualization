@@ -9,6 +9,14 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
+    <!-- Leaflet.draw CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js" crossorigin=""></script>
+    
+    <!-- Leaflet-Geoman CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" crossorigin=""/>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js" crossorigin=""></script>
+    
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
@@ -131,6 +139,16 @@
             flex-direction: column;
         }
         
+        /* Drawing Control - Below Search */
+        .drawing-control-floating {
+            position: absolute;
+            top: 156px; /* Below search button with 8px gap (108px + 40px button height + 8px gap) */
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
         .search-control-floating .search-toggle-btn {
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -150,6 +168,154 @@
         .search-control-floating .search-toggle-btn:hover {
             background: rgba(40, 40, 40, 0.9);
             border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Drawing button in its own container */
+        .drawing-control-floating .drawing-toggle-btn {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--fg);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            padding: 8px;
+            min-width: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drawing-control-floating .drawing-toggle-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .drawing-toggle-btn.active {
+            background: rgba(0, 123, 255, 0.9);
+            border-color: rgba(0, 123, 255, 0.6);
+        }
+        
+        /* Mobile drawing mode - disable touch gestures */
+        #map.drawing-mode {
+            touch-action: none;
+        }
+        
+        /* Portal Dropdown Styles (reused from community page) */
+        .portal-root {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .portal-dropdown {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 9px;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            max-height: 150px;  /* Reduced from 300px to 150px (50%) */
+            overflow-y: auto;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            min-width: 100px;  /* Reduced from 200px to 100px (50%) */
+            width: 200px;      /* Set fixed width for consistency */
+        }
+
+        /* Mobile responsive dropdown */
+        @media (max-width: 768px) {
+            .portal-dropdown {
+                left: var(--space-4) !important;
+                right: var(--space-4) !important;
+            }
+        }
+
+        .degree-user-item {
+            padding: 6px 8px;  /* Reduced from var(--space-3) which is 16px */
+            border-bottom: 1px solid var(--stroke);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+            font-size: 0.75rem;  /* Smaller text size */
+        }
+
+        .degree-user-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .degree-user-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--fg-primary);
+            font-size: 0.75rem;  /* Smaller text size */
+        }
+
+        .user-meta {
+            font-size: 0.65rem;  /* Even smaller for meta text */
+            color: var(--fg-muted);
+        }
+        
+        /* Custom styling for Leaflet.draw edit handles */
+        /* Center move handle - transparent circle matching original circle size */
+        .leaflet-editing-icon.leaflet-edit-move {
+            background-color: transparent !important;
+            border: 1px dashed rgba(0, 123, 255, 0.1) !important;
+            border-radius: 50% !important;
+            /* Size will be set dynamically by JavaScript */
+            pointer-events: all !important;
+        }
+        
+        /* Resize handle - accent blue circle */
+        .leaflet-editing-icon.leaflet-edit-resize {
+            background-color: rgba(0, 123, 255, 0.9) !important;
+            border: 2px solid rgba(0, 123, 255, 0.6) !important;
+            border-radius: 50% !important;
+            width: 12px !important;
+            height: 12px !important;
+            margin-left: -6px !important;
+            margin-top: -6px !important;
+        }
+        
+        /* Hover states for better UX */
+        .leaflet-editing-icon.leaflet-edit-resize:hover {
+            background-color: rgba(0, 123, 255, 1) !important;
+            border-color: rgba(0, 123, 255, 0.8) !important;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        
+        .leaflet-editing-icon.leaflet-edit-move:hover {
+            border-color: rgba(0, 123, 255, 0.6) !important;
+            cursor: move;
+        }
+        
+        /* Custom freehand drawing cursor styles */
+        .leaflet-container.drawing-mode {
+            cursor: crosshair !important;
+        }
+        
+        .leaflet-container.drawing-mode.drawing-active {
+            cursor: crosshair !important;
+        }
+        
+        /* Force hide Geoman toolbar completely */
+        .leaflet-pm-toolbar {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        .leaflet-control-layers {
+            display: none !important;
         }
         
         .search-toggle-btn svg {
@@ -896,6 +1062,11 @@
                 z-index: 10000 !important;
             }
             
+            body.iframe-context .drawing-control-floating {
+                top: 146px !important; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+                z-index: 10000 !important;
+            }
+            
         }
 
         /* ========================================
@@ -1067,6 +1238,11 @@
             .search-control-floating {
                 top: 98px; /* Move up 10px to follow control buttons (108px - 10px) */
             }
+            
+            /* Drawing control positioning on mobile - below search button */
+            .drawing-control-floating {
+                top: 146px; /* Below search button with 8px gap (98px + 40px button height + 8px gap) */
+            }
         }
 
         @media (min-width: 901px) {
@@ -1077,6 +1253,15 @@
             /* Hide resize handle completely on desktop */
             .resize-handle {
                 display: none !important;
+            }
+            
+            /* Desktop z-index fixes - ensure search appears above drawing */
+            .search-control-floating {
+                z-index: 10001 !important;
+            }
+            
+            .drawing-control-floating {
+                z-index: 10000 !important;
             }
         }
         
@@ -1258,6 +1443,16 @@
                     <div id="expandableSearchResults" class="search-results"></div>
                 </button>
             </div>
+            
+            <!-- Drawing Tool Button - Below Search -->
+            <div class="drawing-control-floating">
+                <button class="control-btn drawing-toggle-btn" id="drawToggleBtn" title="Draw Circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 18l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
     
@@ -1294,6 +1489,31 @@
             degree2: false,
             degree3: false
         };
+        
+        // Drawing tool variables
+        let drawnItems = null;
+        let drawControl = null;
+        let isDrawingMode = false;
+        let currentDropdown = null;
+        let isCrosshairsMode = false;
+        let clickStartPos = null;
+        let dragThreshold = 5; // pixels
+        let drawUpdateTimeout = null;
+        let isDragging = false;
+        
+        // Custom freehand drawing state
+        let isDrawing = false;
+        let drawingPoints = [];
+        let temporaryPolyline = null;
+        let previewNeedsUpdate = false;
+        
+        // Mobile detection
+        function isMobileDevice() {
+            return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        let animationFrameId = null;
+        const POINT_SIMPLIFICATION_TOLERANCE = 10; // meters
+        const MIN_POINTS_FOR_POLYGON = 3;
         
         // Search state management
         let originalUserId = null;        // The logged-in user
@@ -1575,6 +1795,9 @@
             
             // Prevent zoom events on UI elements
             preventZoomOnUIElements();
+            
+            // Initialize drawing tools
+            initDrawingTools();
         }
         
         // Function to prevent zoom events on UI elements
@@ -1939,6 +2162,9 @@
             // Update view options numbers
             updateViewOptionsNumbers(filteredEvents, startTime, endTime);
             
+            // Refresh circle results if drawing is active
+            refreshCircleResultsOnFilterChange();
+            
             isUpdating = false;
         }
         
@@ -2035,8 +2261,10 @@
                             return true;
                         }
                         
-                        // 3rd degree: at least one user is 2nd degree connection
-                        if (degreeFilters.degree3 && (sourceInDegree2 || targetInDegree2)) {
+                        // 3rd degree: at least one user is 2nd degree connection AND neither is 1st degree
+                        if (degreeFilters.degree3 && 
+                            (sourceInDegree2 || targetInDegree2) && 
+                            !(sourceInDegree1 || targetInDegree1)) {
                             return true;
                         }
                         
@@ -2216,16 +2444,18 @@
                         }
                     }
                     
-                    // For 3rd degree: Show connections between 2nd degree users (not involving selected user or 1st degree users)
+                    // For 3rd degree: Show connections where at least one user is a 2nd degree connection AND neither is 1st degree
                     if (degreeFilters.degree3) {
                         if (sourceUserId !== selectedUserId && targetUserId !== selectedUserId) {
                             // Neither user is the selected user
-                            if (!degreeConnections.degree1.has(sourceUserId) && !degreeConnections.degree1.has(targetUserId)) {
-                                // Neither user is a 1st degree connection
-                                if (degreeConnections.degree2.has(sourceUserId) && degreeConnections.degree2.has(targetUserId)) {
-                                    // Both users are 2nd degree connections to selected user
-                                    shouldShow = true;
-                                }
+                            const sourceInDegree1 = degreeConnections.degree1.has(sourceUserId);
+                            const targetInDegree1 = degreeConnections.degree1.has(targetUserId);
+                            const sourceInDegree2 = degreeConnections.degree2.has(sourceUserId);
+                            const targetInDegree2 = degreeConnections.degree2.has(targetUserId);
+                            
+                            if ((sourceInDegree2 || targetInDegree2) && !(sourceInDegree1 || targetInDegree1)) {
+                                // At least one user is a 2nd degree connection AND neither is 1st degree
+                                shouldShow = true;
                             }
                         }
                     }
@@ -2325,6 +2555,9 @@
                 fillOpacity: 0.7
             }).addTo(map);
             
+            // Store tap data reference for circle detection
+            marker._tapData = event;
+            
             
             // Debug: Log event data to see what fields are available
             
@@ -2336,10 +2569,11 @@
             
             // Only create popup content and bind it if not in global view
             if (!globalViewEnabled) {
+                const displayLocation = formatLocationForDisplay(event.formatted_location || location.location);
                 const popupContent = `
                     <div class="custom-popup">
                         <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
-                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Location: ${displayLocation}</div>
                         <div class="popup-info">Venue: ${venueDisplay}</div>
                         <div class="popup-info">Time: ${event.formatted_time || 'Unknown'}</div>
                     </div>
@@ -2348,6 +2582,47 @@
                 marker.bindPopup(popupContent);
             }
             markers.push(marker);
+        }
+        
+        // Format location for display in tap cards
+        function formatLocationForDisplay(formattedLocation) {
+            if (!formattedLocation) return 'Unknown Location';
+            
+            // Parse location: "city, state, country" or ", state, country"
+            const parts = formattedLocation.split(',').map(p => p.trim()).filter(p => p.length > 0);
+            
+            // If all parts are empty (e.g., ", , "), return Unknown Location
+            if (parts.length === 0) return 'Unknown Location';
+            
+            // If we have exactly 3 parts, apply formatting rules
+            if (parts.length === 3) {
+                const [city, state, country] = parts;
+                
+                // Handle US locations: remove ", US" suffix
+                if (country === 'US') {
+                    // If city is empty, just show state
+                    if (!city) return state;
+                    // Otherwise show "city, state" without US
+                    return `${city}, ${state}`;
+                }
+                
+                // Normal case: show all three parts
+                return parts.join(', ');
+            }
+            
+            // If we have 2 parts (e.g., "state, country" or "city, state")
+            if (parts.length === 2) {
+                const [part1, part2] = parts;
+                // If second part is US, remove it
+                if (part2 === 'US') return part1;
+                return parts.join(', ');
+            }
+            
+            // If we have 1 part, just return it
+            if (parts.length === 1) return parts[0];
+            
+            // Fallback: join whatever parts we have
+            return parts.join(', ');
         }
         
         // Clear all markers
@@ -2731,6 +3006,14 @@
                     this.value = '';
                     searchResults.classList.remove('show');
                     searchResults.innerHTML = '';
+                    
+                    // Also close drawing results if open
+                    closeCircleResults();
+                    
+                    // Cancel any active drawing
+                    if (isDrawing) {
+                        cancelFreehandDrawing();
+                    }
                 }
             });
             
@@ -2964,10 +3247,11 @@
                 });
                 
                 // Add popup
+                const displayLocation = formatLocationForDisplay(event.formatted_location || location.location);
                 const popupContent = `
                     <div class="custom-popup">
                         <div class="popup-title">${event.source_name} ↔ ${event.target_name}</div>
-                        <div class="popup-info">Location: ${event.formatted_location || location.location}</div>
+                        <div class="popup-info">Location: ${displayLocation}</div>
                         <div class="popup-info">Time: ${event.formatted_time}</div>
                     </div>
                 `;
@@ -3776,6 +4060,1136 @@
             m.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover');
         })();
 
+        // ========================================
+        // DRAWING TOOL FUNCTIONS
+        // ========================================
+        
+        // Initialize drawing tools with Geoman
+        function initDrawingTools() {
+            // Create feature group for drawn items
+            drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+            
+            // Initialize Geoman on the map
+            map.pm.addControls({
+                position: 'topleft',
+                drawCircle: false,
+                drawMarker: false,
+                drawCircleMarker: false,
+                drawPolyline: false,
+                drawRectangle: false,
+                drawPolygon: false,
+                editMode: true,
+                dragMode: true,
+                cutPolygon: false,
+                removalMode: true
+            });
+            
+            // Hide Geoman toolbar completely (we use custom pencil button)
+            // Use setTimeout to ensure toolbar is rendered first
+            setTimeout(() => {
+                const geomanToolbar = document.querySelector('.leaflet-pm-toolbar');
+                if (geomanToolbar) {
+                    geomanToolbar.style.display = 'none';
+                    geomanToolbar.style.visibility = 'hidden';
+                    geomanToolbar.remove(); // Completely remove from DOM
+                    console.log('Geoman toolbar hidden and removed');
+                } else {
+                    console.log('Geoman toolbar not found');
+                }
+                
+                // Also hide any other PM controls that might appear
+                const pmControls = document.querySelectorAll('.leaflet-pm-toolbar, .leaflet-control-layers');
+                pmControls.forEach(control => {
+                    if (control && control.classList.contains('leaflet-pm-toolbar')) {
+                        control.style.display = 'none';
+                        control.remove();
+                    }
+                });
+            }, 100);
+            
+            // Configure Geoman global options
+            map.pm.setGlobalOptions({
+                pmIgnore: false,
+                allowSelfIntersection: false,
+                allowSelfIntersectionEdit: false
+            });
+            
+            // Add Geoman event listeners (for editing only, not creation)
+            // Note: pm:create is removed since we create polygons manually with custom drawing
+            
+            // Handle edits to keep results in sync
+            map.on('pm:edit', function(e) {
+                console.log('Geoman edit event:', e);
+                const layer = e.layer;
+                const tapsInShape = getVisibleTapsInShape(layer);
+                showCircleResults(tapsInShape, layer);
+            });
+            
+            // Handle shape removal
+            map.on('pm:remove', function(e) {
+                console.log('Geoman remove event:', e);
+                closeCircleResults();
+            });
+            
+            // Listen for drag events during repositioning
+            map.on('pm:dragstart', function(e) {
+                isDragging = true;
+            });
+            
+            map.on('pm:drag', function(e) {
+                debouncedUpdateResults();
+            });
+            
+            map.on('pm:dragend', function(e) {
+                isDragging = false;
+                const layer = e.layer;
+                const tapsInShape = getVisibleTapsInShape(layer);
+                showCircleResults(tapsInShape, layer);
+            });
+            
+            // Add custom map event handlers for click/drag detection
+            addCustomMapEventHandlers();
+            
+            // Initialize drawing button
+            initDrawingButton();
+        }
+        
+        // Initialize drawing button
+        function initDrawingButton() {
+            const drawToggleBtn = document.getElementById('drawToggleBtn');
+            
+            drawToggleBtn.addEventListener('click', function() {
+                toggleDrawingMode();
+            });
+        }
+        
+        // Check if device is mobile/touch
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   ('ontouchstart' in window) || 
+                   (navigator.maxTouchPoints > 0);
+        }
+        
+        // Toggle drawing mode
+        function toggleDrawingMode() {
+            const drawToggleBtn = document.getElementById('drawToggleBtn');
+            const mapContainer = document.getElementById('map');
+            console.log('Toggle drawing mode, current state:', isCrosshairsMode);
+            
+            if (isCrosshairsMode) {
+                // Disable drawing mode
+                console.log('Disabling draw mode');
+                isCrosshairsMode = false;
+                drawToggleBtn.classList.remove('active');
+                mapContainer.classList.remove('drawing-mode');
+                mapContainer.classList.remove('drawing-active');
+                
+                // Cancel any in-progress drawing
+                isDrawing = false;
+                drawingPoints = [];
+                previewNeedsUpdate = false;
+                cleanupTemporaryPath();
+                
+                // Clear all drawn shapes and close results
+                if (drawnItems) {
+                    drawnItems.clearLayers();
+                    console.log('Cleared all drawn shapes');
+                }
+                closeCircleResults();
+                
+                // Re-enable map dragging (zoom was never disabled)
+                console.log('Re-enabling map dragging...');
+                map.dragging.enable();
+                
+                // Ensure touch-action CSS is removed by forcing a style update
+                mapContainer.style.touchAction = '';
+                console.log('Map dragging re-enabled, touch-action cleared');
+                
+                // Remove custom event listeners (both mobile and desktop)
+                map.off('pointerdown', startFreehandDrawing);
+                map.off('pointermove', continueFreehandDrawing);
+                map.off('pointerup', finishFreehandDrawing);
+                map.off('pointercancel', cancelFreehandDrawing);
+                
+                // Remove mobile-specific DOM event listeners
+                const mapContainerElement = map.getContainer();
+                mapContainerElement.removeEventListener('pointerdown', startMobileDrawing);
+                mapContainerElement.removeEventListener('pointermove', continueMobileDrawing);
+                mapContainerElement.removeEventListener('pointerup', finishMobileDrawing);
+                mapContainerElement.removeEventListener('pointercancel', cancelMobileDrawing);
+                
+                // Remove fallback event listeners
+                map.off('mousedown', startFreehandDrawing);
+                map.off('mousemove', continueFreehandDrawing);
+                map.off('mouseup', finishFreehandDrawing);
+                map.off('touchstart', startFreehandDrawing);
+                map.off('touchmove', continueFreehandDrawing);
+                map.off('touchend', finishFreehandDrawing);
+                
+                // Disable Geoman draw mode (in case it was active)
+                map.pm.disableDraw();
+                closeCircleResults();
+                
+                // Re-enable tap marker interactions
+                markers.forEach(marker => {
+                    if (marker._tapData) {
+                        marker.options.interactive = true;
+                    }
+                });
+                
+                // Force a complete state reset to ensure clean exit
+                console.log('Draw mode completely disabled - map restored to initial state');
+            } else {
+                // Enable freehand drawing mode
+                console.log('Enabling custom freehand draw mode');
+                isCrosshairsMode = true;
+                drawToggleBtn.classList.add('active');
+                mapContainer.classList.add('drawing-mode');
+                
+                // Disable map dragging during drawing mode (keep zoom functionality)
+                map.dragging.disable();
+                
+                // Disable tap marker interactions during drawing
+                markers.forEach(marker => {
+                    if (marker._tapData) {
+                        marker.options.interactive = false;
+                    }
+                });
+                
+                // Add custom event listeners for freehand drawing
+                if (isMobileDevice()) {
+                    // Mobile: Use DOM-level pointer events with setPointerCapture
+                    console.log('Enabling mobile drawing mode with DOM-level pointer capture');
+                    const mapContainer = map.getContainer();
+                    mapContainer.addEventListener('pointerdown', startMobileDrawing, { passive: false });
+                    mapContainer.addEventListener('pointermove', continueMobileDrawing, { passive: false });
+                    mapContainer.addEventListener('pointerup', finishMobileDrawing, { passive: false });
+                    mapContainer.addEventListener('pointercancel', cancelMobileDrawing, { passive: false });
+                } else {
+                    // Desktop: Use standard pointer events and fallbacks
+                    console.log('Enabling desktop drawing mode');
+                    map.on('pointerdown', startFreehandDrawing);
+                    map.on('pointermove', continueFreehandDrawing);
+                    map.on('pointerup', finishFreehandDrawing);
+                    map.on('pointercancel', cancelFreehandDrawing);
+                    
+                    // Fallback to mouse/touch events if pointer events don't work
+                    map.on('mousedown', startFreehandDrawing);
+                    map.on('mousemove', continueFreehandDrawing);
+                    map.on('mouseup', finishFreehandDrawing);
+                    map.on('touchstart', startFreehandDrawing);
+                    map.on('touchmove', continueFreehandDrawing);
+                    map.on('touchend', finishFreehandDrawing);
+                }
+                
+                console.log('Custom freehand drawing enabled with pointer events');
+            }
+        }
+        
+        // Custom freehand drawing functions
+        /**
+         * Start freehand drawing on pointer down
+         * Uses Pointer Events API for unified desktop/mobile/stylus support
+         */
+        function startFreehandDrawing(e) {
+            console.log('startFreehandDrawing called:', { isCrosshairsMode, latlng: e.latlng, event: e });
+            
+            if (!isCrosshairsMode || !e.latlng) {
+                console.log('Drawing not started - conditions not met');
+                return;
+            }
+            
+            // Prevent default browser behavior (especially mobile scrolling)
+            if (e.originalEvent && e.originalEvent.preventDefault) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
+            
+            isDrawing = true;
+            drawingPoints = [e.latlng];
+            previewNeedsUpdate = true;
+            
+            // Map interactions are already disabled when entering drawing mode
+            // Add drawing-active class for cursor feedback
+            document.getElementById('map').classList.add('drawing-active');
+            
+            // Update ARIA live region for accessibility
+            updateAriaLiveRegion('Freehand drawing started');
+            
+            console.log('Started drawing at:', e.latlng);
+        }
+
+        /**
+         * Continue drawing as pointer moves
+         */
+        function continueFreehandDrawing(e) {
+            if (!isDrawing || !e.latlng) return;
+            
+            // Prevent default browser behavior (especially mobile scrolling)
+            if (e.originalEvent && e.originalEvent.preventDefault) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
+            
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            
+            // Adaptive point collection based on zoom and device
+            if (shouldAddPoint(e.latlng, lastPoint)) {
+                drawingPoints.push(e.latlng);
+                previewNeedsUpdate = true; // Set flag for rAF render
+                console.log('Added point, total points:', drawingPoints.length);
+            }
+        }
+
+        /**
+         * Finish drawing on pointer up
+         */
+        function finishFreehandDrawing(e) {
+            if (!isDrawing) return;
+            
+            // Prevent default browser behavior (especially mobile scrolling)
+            if (e.originalEvent && e.originalEvent.preventDefault) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            
+            // Map interactions stay disabled in drawing mode (user can draw again)
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            // Create polygon from points if valid
+            if (drawingPoints.length >= MIN_POINTS_FOR_POLYGON) {
+                createPolygonFromPoints(drawingPoints);
+                updateAriaLiveRegion(`Polygon created with ${drawingPoints.length} points`);
+            } else {
+                updateAriaLiveRegion('Drawing cancelled - not enough points');
+            }
+            
+            drawingPoints = [];
+            console.log('Finished drawing');
+        }
+
+        /**
+         * Cancel drawing (ESC key or pointer cancel event)
+         */
+        function cancelFreehandDrawing() {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            drawingPoints = [];
+            
+            // Map interactions stay disabled in drawing mode (user can draw again)
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            updateAriaLiveRegion('Drawing cancelled');
+            console.log('Drawing cancelled');
+        }
+        
+        // Mobile-specific DOM-level pointer event handlers with setPointerCapture
+        function startMobileDrawing(e) {
+            if (!isCrosshairsMode) {
+                console.log('Mobile drawing not started - conditions not met');
+                return;
+            }
+            
+            // Don't start drawing if this is a multi-touch gesture
+            if (e.pointerType === 'touch' && e.isPrimary === false) {
+                console.log('Ignoring secondary pointer for multi-touch gesture');
+                return;
+            }
+            
+            // Convert DOM event coordinates to lat/lng manually
+            const mapContainer = map.getContainer();
+            const rect = mapContainer.getBoundingClientRect();
+            const containerPoint = [
+                e.clientX - rect.left,
+                e.clientY - rect.top
+            ];
+            const latlng = map.containerPointToLatLng(containerPoint);
+            
+            isDrawing = true;
+            drawingPoints = [latlng];
+            previewNeedsUpdate = true;
+            
+            // Use setPointerCapture to ensure we get pointerup/pointercancel
+            if (e.pointerId && mapContainer.setPointerCapture) {
+                try {
+                    mapContainer.setPointerCapture(e.pointerId);
+                    console.log('Mobile pointer capture set for pointerId:', e.pointerId);
+                } catch (err) {
+                    console.log('Mobile setPointerCapture failed:', err);
+                }
+            }
+            
+            // Add drawing-active class for cursor feedback
+            document.getElementById('map').classList.add('drawing-active');
+            
+            // Update ARIA live region for accessibility
+            updateAriaLiveRegion('Mobile freehand drawing started');
+            
+            console.log('Started mobile drawing at:', latlng);
+        }
+        
+        function continueMobileDrawing(e) {
+            if (!isDrawing) return;
+            
+            // Cancel drawing if this is a secondary pointer (multi-touch detected)
+            if (e.pointerType === 'touch' && e.isPrimary === false) {
+                console.log('Multi-touch detected during drawing - cancelling');
+                cancelMobileDrawing(e);
+                return;
+            }
+            
+            // Convert DOM event coordinates to lat/lng manually
+            const mapContainer = map.getContainer();
+            const rect = mapContainer.getBoundingClientRect();
+            const containerPoint = [
+                e.clientX - rect.left,
+                e.clientY - rect.top
+            ];
+            const latlng = map.containerPointToLatLng(containerPoint);
+            
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            
+            // Adaptive point collection based on zoom and device
+            if (shouldAddPoint(latlng, lastPoint)) {
+                drawingPoints.push(latlng);
+                previewNeedsUpdate = true; // Set flag for rAF render
+                console.log('Added mobile point, total points:', drawingPoints.length);
+            }
+        }
+        
+        function finishMobileDrawing(e) {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            
+            // Release pointer capture
+            if (e && e.pointerId && map.getContainer().releasePointerCapture) {
+                try {
+                    map.getContainer().releasePointerCapture(e.pointerId);
+                    console.log('Mobile pointer capture released for pointerId:', e.pointerId);
+                } catch (err) {
+                    console.log('Mobile releasePointerCapture failed:', err);
+                }
+            }
+            
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            // Create polygon from points if valid
+            if (drawingPoints.length >= MIN_POINTS_FOR_POLYGON) {
+                createPolygonFromPoints(drawingPoints);
+                updateAriaLiveRegion(`Mobile polygon created with ${drawingPoints.length} points`);
+            } else {
+                updateAriaLiveRegion('Mobile drawing cancelled - not enough points');
+            }
+            
+            drawingPoints = [];
+            console.log('Finished mobile drawing');
+        }
+        
+        function cancelMobileDrawing(e) {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            previewNeedsUpdate = false;
+            drawingPoints = [];
+            
+            // Release pointer capture
+            if (e && e.pointerId && map.getContainer().releasePointerCapture) {
+                try {
+                    map.getContainer().releasePointerCapture(e.pointerId);
+                    console.log('Mobile pointer capture released on cancel for pointerId:', e.pointerId);
+                } catch (err) {
+                    console.log('Mobile releasePointerCapture failed on cancel:', err);
+                }
+            }
+            
+            // Remove drawing-active class
+            document.getElementById('map').classList.remove('drawing-active');
+            
+            // Clean up temporary preview
+            cleanupTemporaryPath();
+            
+            updateAriaLiveRegion('Mobile drawing cancelled');
+            console.log('Mobile drawing cancelled');
+        }
+
+        /**
+         * Show real-time preview of drawing path using requestAnimationFrame
+         */
+        function updateTemporaryPath() {
+            if (!previewNeedsUpdate || drawingPoints.length < 2) return;
+            
+            // Cancel previous animation frame
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
+            animationFrameId = requestAnimationFrame(() => {
+                // Remove existing preview
+                if (temporaryPolyline) {
+                    map.removeLayer(temporaryPolyline);
+                }
+                
+                // Create new preview polyline
+                temporaryPolyline = L.polyline(drawingPoints, {
+                    color: '#007bff',
+                    weight: 2,
+                    opacity: 0.7,
+                    interactive: false
+                }).addTo(map);
+                
+                previewNeedsUpdate = false;
+            });
+        }
+
+        /**
+         * Clean up temporary preview path
+         */
+        function cleanupTemporaryPath() {
+            if (temporaryPolyline) {
+                map.removeLayer(temporaryPolyline);
+                temporaryPolyline = null;
+            }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        /**
+         * Simplify points using distance-based algorithm with adaptive tolerance
+         */
+        function simplifyPoints(points, tolerance = null) {
+            if (points.length <= MIN_POINTS_FOR_POLYGON) return points;
+            
+            // Adaptive tolerance based on zoom level (2-3 pixels converted to meters)
+            if (!tolerance) {
+                const zoom = map.getZoom();
+                const pixelToMeterRatio = 40075016.686 / (256 * Math.pow(2, zoom)); // meters per pixel
+                tolerance = Math.max(2 * pixelToMeterRatio, POINT_SIMPLIFICATION_TOLERANCE);
+            }
+            
+            const simplified = [points[0]]; // Always keep first point
+            
+            for (let i = 1; i < points.length - 1; i++) {
+                const prevPoint = simplified[simplified.length - 1];
+                const distance = map.distance(prevPoint, points[i]);
+                
+                if (distance > tolerance) {
+                    simplified.push(points[i]);
+                }
+            }
+            
+            // Always keep last point
+            simplified.push(points[points.length - 1]);
+            
+            console.log(`Simplified ${points.length} points to ${simplified.length} points`);
+            return simplified;
+        }
+
+        /**
+         * Create polygon from drawn points and enable editing
+         */
+        function createPolygonFromPoints(points) {
+            try {
+                // Simplify points for smoother shape
+                const simplified = simplifyPoints(points);
+                
+                if (simplified.length < MIN_POINTS_FOR_POLYGON) {
+                    console.warn('Not enough points for polygon:', simplified.length);
+                    return;
+                }
+                
+                // Ensure polygon is properly closed
+                const closedPoints = [...simplified];
+                if (closedPoints.length > 2) {
+                    // Check if already closed (first and last points are the same)
+                    const first = closedPoints[0];
+                    const last = closedPoints[closedPoints.length - 1];
+                    const distance = map.distance(first, last);
+                    if (distance > 1) { // More than 1 meter apart
+                        closedPoints.push(closedPoints[0]); // Close the polygon
+                    }
+                }
+                
+                // Clear any existing shapes
+                drawnItems.clearLayers();
+                closeCircleResults();
+                
+                // Create polygon with styling
+                const polygon = L.polygon(closedPoints, {
+                    color: '#007bff',
+                    fillColor: '#007bff',
+                    fillOpacity: 0.1,
+                    weight: 2
+                });
+                
+                // Add to map
+                drawnItems.addLayer(polygon);
+                
+                // Don't enable Geoman editing - polygon is view-only
+                // Users can delete by clicking outside to draw a new shape
+                // No vertex dots, no dragging - clean appearance
+                
+                // Get taps in shape and show results
+                const tapsInShape = getVisibleTapsInShape(polygon);
+                showCircleResults(tapsInShape, polygon);
+                
+                console.log('Created polygon with', closedPoints.length, 'points');
+                
+            } catch (error) {
+                console.error('Error creating polygon:', error);
+                // Clean up on error
+                cleanupTemporaryPath();
+            }
+        }
+
+        /**
+         * Determine if a new point should be added based on distance and device
+         */
+        function shouldAddPoint(newPoint, lastPoint) {
+            if (!lastPoint) return true;
+            
+            // Adaptive distance based on device and zoom
+            const zoom = map.getZoom();
+            const baseDistance = isMobileDevice() ? 15 : 5; // meters
+            const zoomFactor = Math.max(0.5, 1 / Math.pow(2, zoom - 10)); // Scale with zoom
+            const minDistance = baseDistance * zoomFactor;
+            
+            const distance = map.distance(lastPoint, newPoint);
+            return distance > minDistance;
+        }
+
+        /**
+         * Update ARIA live region for accessibility
+         */
+        function updateAriaLiveRegion(message) {
+            let liveRegion = document.getElementById('drawing-live-region');
+            if (!liveRegion) {
+                liveRegion = document.createElement('div');
+                liveRegion.id = 'drawing-live-region';
+                liveRegion.setAttribute('aria-live', 'polite');
+                liveRegion.setAttribute('aria-atomic', 'true');
+                liveRegion.style.position = 'absolute';
+                liveRegion.style.left = '-10000px';
+                liveRegion.style.width = '1px';
+                liveRegion.style.height = '1px';
+                liveRegion.style.overflow = 'hidden';
+                document.body.appendChild(liveRegion);
+            }
+            liveRegion.textContent = message;
+        }
+        
+        // Get visible taps within a shape (polygon or circle)
+        function getVisibleTapsInShape(shape) {
+            console.log('getVisibleTapsInShape called with:', shape);
+            console.log('Total markers available:', markers.length);
+            
+            if (shape instanceof L.Circle) {
+                console.log('Processing circle');
+                // Handle circles (for backward compatibility)
+                const center = shape.getLatLng();
+                const radius = shape.getRadius();
+                
+                // Pre-filter by bounds for performance
+                const bounds = shape.getBounds();
+                
+                const result = markers.filter(marker => {
+                    const markerPos = marker.getLatLng();
+                    
+                    // Quick bounds check first
+                    if (!bounds.contains(markerPos)) {
+                        return false;
+                    }
+                    
+                    // Then distance check
+                    const distance = center.distanceTo(markerPos);
+                    return distance <= radius;
+                }).map(marker => marker._tapData);
+                
+                console.log('Circle result:', result.length, 'taps found');
+                return result;
+            } else if (shape instanceof L.Polygon) {
+                console.log('Processing polygon');
+                // Handle polygons using point-in-polygon detection
+                const result = markers.filter(marker => {
+                    if (!marker._tapData) return false;
+                    
+                    const markerPos = marker.getLatLng();
+                    
+                    // First do a quick bounds check
+                    if (!shape.getBounds().contains(markerPos)) {
+                        return false;
+                    }
+                    
+                    // Then do precise point-in-polygon check
+                    const inside = isPointInPolygon(markerPos, shape);
+                    if (inside) {
+                        console.log('Marker inside polygon:', marker._tapData);
+                    }
+                    return inside;
+                }).map(marker => marker._tapData);
+                
+                console.log('Polygon result:', result.length, 'taps found');
+                return result;
+            }
+            
+            console.log('Unknown shape type, returning empty array');
+            return [];
+        }
+        
+        // Point-in-polygon detection using ray casting algorithm
+        function isPointInPolygon(point, polygon) {
+            const lat = point.lat;
+            const lng = point.lng;
+            const latlngs = polygon.getLatLngs()[0]; // Get outer ring
+            
+            let inside = false;
+            for (let i = 0, j = latlngs.length - 1; i < latlngs.length; j = i++) {
+                const xi = latlngs[i].lng;
+                const yi = latlngs[i].lat;
+                const xj = latlngs[j].lng;
+                const yj = latlngs[j].lat;
+                
+                if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            
+            return inside;
+        }
+        
+        // Show circle results in dropdown
+        function showCircleResults(tapsInCircle, circle) {
+            console.log('showCircleResults called:', { tapsInCircle: tapsInCircle.length, circle: circle });
+            
+            // Clear any existing dropdown first
+            closeCircleResults();
+            
+            if (tapsInCircle.length === 0) {
+                console.log('No taps found, showing empty results');
+                showEmptyResults();
+                return;
+            }
+            
+            console.log('Creating dropdown with', tapsInCircle.length, 'taps');
+            
+            // Sort taps by timestamp (most recent first)
+            const sortedTaps = [...tapsInCircle].sort((a, b) => {
+                const timeA = a.timestamp || new Date(a.time).getTime();
+                const timeB = b.timestamp || new Date(b.time).getTime();
+                return timeB - timeA; // Descending order (newest first)
+            });
+            
+            // Create portal dropdown using the working approach from develop branch
+            const portalRoot = getPortalRoot();
+            const dropdown = document.createElement('div');
+            dropdown.className = 'portal-dropdown';
+            
+            // Build content from tap data using proper CSS classes
+            dropdown.innerHTML = sortedTaps.map(tap => {
+                // Format location using the same logic as tap cards
+                const cityName = formatLocationForDisplay(tap.formatted_location);
+                
+                // Format date as M/D/YYYY
+                let formattedDate = 'N/A';
+                if (tap.timestamp || tap.time) {
+                    const tapDate = new Date(tap.timestamp || tap.time);
+                    formattedDate = `${tapDate.getMonth() + 1}/${tapDate.getDate()}/${tapDate.getFullYear()}`;
+                }
+                
+                return `
+                    <div class="degree-user-item" style="display: flex; flex-direction: column; align-items: stretch;">
+                        <div class="user-name" style="text-align: center;">${tap.source_name || 'Unknown'} ↔ ${tap.target_name || 'Unknown'}</div>
+                        <div class="user-meta" style="display: flex; justify-content: space-between; width: 100%;">
+                            <span>${formattedDate}</span>
+                            <span>${cityName}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            console.log('Dropdown HTML created, appending to portal-root');
+            portalRoot.appendChild(dropdown);
+            currentDropdown = dropdown;
+            
+            console.log('Dropdown appended, calling positionDropdownNearCircle');
+            // Position dropdown relative to circle
+            positionDropdownNearCircle(circle);
+            
+            // Add close on outside click with delay to prevent drawing-finish click from triggering it
+            setTimeout(() => {
+                document.addEventListener('click', closeOnOutsideClick);
+            }, 100); // Wait 100ms before enabling outside-click-to-close
+            
+            // Verify dropdown is in DOM
+            console.log('Dropdown verification:', {
+                inDOM: document.body.contains(currentDropdown),
+                parentElement: currentDropdown.parentElement,
+                offsetParent: currentDropdown.offsetParent,
+                computedStyle: window.getComputedStyle(currentDropdown).display
+            });
+            
+            // Additional debugging for visibility
+            const computedStyle = window.getComputedStyle(currentDropdown);
+            console.log('Dropdown computed styles:', {
+                display: computedStyle.display,
+                visibility: computedStyle.visibility,
+                opacity: computedStyle.opacity,
+                position: computedStyle.position,
+                left: computedStyle.left,
+                top: computedStyle.top,
+                width: computedStyle.width,
+                height: computedStyle.height,
+                zIndex: computedStyle.zIndex,
+                backgroundColor: computedStyle.backgroundColor,
+                border: computedStyle.border
+            });
+            
+            // Check if dropdown is actually visible
+            const rect = currentDropdown.getBoundingClientRect();
+            console.log('Dropdown bounding rect:', {
+                width: rect.width,
+                height: rect.height,
+                top: rect.top,
+                left: rect.left,
+                bottom: rect.bottom,
+                right: rect.right,
+                visible: rect.width > 0 && rect.height > 0
+            });
+            
+            console.log('showCircleResults completed');
+        }
+        
+        // Show empty results state
+        function showEmptyResults() {
+            console.log('showEmptyResults called');
+            
+            // Clear any existing dropdown first
+            closeCircleResults();
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'portal-dropdown';
+            dropdown.innerHTML = `
+                <div class="degree-user-item">
+                    <div class="user-name">No visible taps in this area</div>
+                    <div class="user-meta">(filters applied)</div>
+                </div>
+            `;
+            
+            console.log('Empty results dropdown created, appending to portal-root');
+            // Use portal-root approach like the working develop branch
+            const portalRoot = getPortalRoot();
+            portalRoot.appendChild(dropdown);
+            currentDropdown = dropdown;
+            
+            // Position the empty results dropdown in the center of the screen
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const dropdownWidth = 200;
+            const dropdownHeight = 150;
+            
+            const left = Math.max(10, (viewportWidth - dropdownWidth) / 2);
+            const top = Math.max(10, (viewportHeight - dropdownHeight) / 2);
+            
+            currentDropdown.style.position = 'fixed';
+            currentDropdown.style.left = `${left}px`;
+            currentDropdown.style.top = `${top}px`;
+            currentDropdown.style.width = `${dropdownWidth}px`;
+            currentDropdown.style.zIndex = '10000';
+            currentDropdown.style.display = 'block';
+            currentDropdown.style.visibility = 'visible';
+            
+            console.log('Empty results positioned at center:', { left, top });
+        }
+        
+        // Position dropdown near shape (circle or polygon) - using working approach from develop
+        function positionDropdownNearCircle(shape) {
+            if (!currentDropdown) return;
+            
+            // Get shape center - handle both circles and polygons
+            let center;
+            if (shape instanceof L.Circle) {
+                center = shape.getLatLng();
+            } else if (shape instanceof L.Polygon) {
+                const bounds = shape.getBounds();
+                center = bounds.getCenter();
+            } else {
+                return;
+            }
+            
+            const point = map.latLngToContainerPoint(center);
+            const containerRect = map.getContainer().getBoundingClientRect();
+            
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                // Mobile: full width with padding
+                const padding = 16;
+                currentDropdown.style.left = `${padding}px`;
+                currentDropdown.style.right = `${padding}px`;
+                currentDropdown.style.top = `${point.y + containerRect.top + 20}px`;
+            } else {
+                // Desktop: positioned near circle center
+                let left = point.x + containerRect.left;
+                let top = point.y + containerRect.top + 20;
+                
+                // Adjust to keep in viewport
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const dropdownWidth = 200; // min-width from CSS
+                const dropdownHeight = Math.min(currentDropdown.scrollHeight, 300);
+                
+                if (left + dropdownWidth > viewportWidth - 10) {
+                    left = viewportWidth - dropdownWidth - 10;
+                }
+                if (left < 10) {
+                    left = 10;
+                }
+                
+                if (top + dropdownHeight > viewportHeight - 10) {
+                    top = viewportHeight - dropdownHeight - 10;
+                }
+                if (top < 10) {
+                    top = 10;
+                }
+                
+                currentDropdown.style.left = `${left}px`;
+                currentDropdown.style.top = `${top}px`;
+            }
+        }
+        
+        // Get or create portal root
+        function getPortalRoot() {
+            let portalRoot = document.querySelector('.portal-root');
+            if (!portalRoot) {
+                portalRoot = document.createElement('div');
+                portalRoot.className = 'portal-root';
+                document.body.appendChild(portalRoot);
+            }
+            return portalRoot;
+        }
+        
+        // Close circle results
+        function closeCircleResults() {
+            if (currentDropdown) {
+                currentDropdown.remove();
+                currentDropdown = null;
+            }
+            document.removeEventListener('click', closeOnOutsideClick);
+        }
+        
+        // Close on outside click
+        function closeOnOutsideClick(e) {
+            const inDropdown = e.target.closest('.portal-dropdown');
+            const inDrawButton = e.target.closest('#drawToggleBtn');
+            
+            if (!inDropdown && !inDrawButton) {
+                closeCircleResults();
+            }
+        }
+        
+        // Handle filter changes - refresh results if circle exists
+        function refreshCircleResultsOnFilterChange() {
+            if (drawnItems && drawnItems.getLayers().length > 0) {
+                const circle = drawnItems.getLayers()[0];
+                if (circle instanceof L.Circle) {
+                    const tapsInCircle = getVisibleTapsInCircle(circle);
+                    showCircleResults(tapsInCircle, circle);
+                }
+            }
+        }
+        
+        // Hide the Leaflet.draw control panel
+        function hideControlPanel() {
+            const controlPanel = document.querySelector('.leaflet-draw-toolbar');
+            if (controlPanel) {
+                controlPanel.style.display = 'none';
+            }
+        }
+        
+        // Programmatically trigger circle drawing tool
+        function triggerCircleDrawing() {
+            // Find and click the circle drawing button
+            const circleButton = document.querySelector('.leaflet-draw-toolbar a[title*="circle" i], .leaflet-draw-toolbar a[title*="Circle"]');
+            if (circleButton) {
+                circleButton.click();
+            }
+        }
+        
+        // Add custom map event handlers for click/drag detection
+        function addCustomMapEventHandlers() {
+            // Mouse events
+            map.on('mousedown', function(e) {
+                if (isCrosshairsMode) {
+                    clickStartPos = e.containerPoint;
+                }
+            });
+            
+            map.on('mousemove', function(e) {
+                if (isCrosshairsMode && clickStartPos) {
+                    const distance = clickStartPos.distanceTo(e.containerPoint);
+                    if (distance > dragThreshold) {
+                        // This is a drag, not a click
+                        clickStartPos = null;
+                    }
+                }
+            });
+            
+            map.on('mouseup', function(e) {
+                if (isCrosshairsMode && clickStartPos) {
+                    const distance = clickStartPos.distanceTo(e.containerPoint);
+                    if (distance <= dragThreshold) {
+                        // This is a click, not a drag
+                        // Check if we clicked on a shape or empty space
+                        if (!isClickOnShape(e.latlng)) {
+                            // Clicked on empty space - clear existing shape and stay in draw mode
+                            clearExistingShapeAndResetDrawMode();
+                        }
+                    }
+                    clickStartPos = null;
+                }
+            });
+            
+            // Note: Touch events are now handled by unified pointer events in toggleDrawingMode()
+            // This provides better cross-platform support for desktop/mobile/stylus
+        }
+        
+        // Note: createShapeAtLocation function removed - now using unified pointer events
+        // for both desktop and mobile freehand drawing
+        
+        // Update center handle size to match circle
+        function updateCenterHandleSize(circle) {
+            if (!circle || !map) return;
+            
+            try {
+                // Get circle center and radius
+                const center = circle.getLatLng();
+                const radius = circle.getRadius();
+                
+                // Convert radius to pixels by calculating two points
+                const centerPoint = map.latLngToLayerPoint(center);
+                const edgePoint = map.latLngToLayerPoint(center.destinationPoint(0, radius));
+                
+                // Calculate diameter in pixels
+                const diameterPx = Math.abs(edgePoint.x - centerPoint.x) * 2;
+                
+                // Find the center handle element
+                const centerHandle = document.querySelector('.leaflet-editing-icon.leaflet-edit-move');
+                if (centerHandle) {
+                    // Set dynamic size
+                    centerHandle.style.width = diameterPx + 'px';
+                    centerHandle.style.height = diameterPx + 'px';
+                    centerHandle.style.marginLeft = -(diameterPx / 2) + 'px';
+                    centerHandle.style.marginTop = -(diameterPx / 2) + 'px';
+                }
+            } catch (error) {
+                console.warn('Could not update center handle size:', error);
+            }
+        }
+        
+        // Enable edit mode on a circle (shows resize/move handles on hover)
+        function enableCircleEditMode(layer) {
+            // Make the circle editable by enabling Leaflet.draw edit handlers
+            layer.editing.enable();
+            
+            // Update center handle size to match circle
+            updateCenterHandleSize(layer);
+            
+            // Add event listeners for debounced updates during drag/resize
+            if (layer._mRadius) {
+                // Listen to the drag events on the circle itself
+                layer.on('drag', function() {
+                    debouncedUpdateResults();
+                });
+            }
+        }
+        
+        // Check if click is on an existing circle
+        function isClickOnShape(latlng) {
+            if (!drawnItems || drawnItems.getLayers().length === 0) {
+                return false;
+            }
+            
+            let clickedOnShape = false;
+            
+            drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Polygon) {
+                    // Use point-in-polygon detection for polygons
+                    if (isPointInPolygon(latlng, layer)) {
+                        clickedOnShape = true;
+                    }
+                } else if (layer instanceof L.Circle) {
+                    // Handle circles (for backward compatibility)
+                    const center = layer.getLatLng();
+                    const radius = layer.getRadius();
+                    const distance = center.distanceTo(latlng);
+                    if (distance <= radius) {
+                        clickedOnShape = true;
+                    }
+                }
+            });
+            
+            return clickedOnShape;
+        }
+        
+        // Clear existing shape and re-enable draw mode
+        function clearExistingShapeAndResetDrawMode() {
+            if (drawnItems && drawnItems.getLayers().length > 0) {
+                drawnItems.clearLayers();
+                closeCircleResults();
+                // Custom drawing mode is already active - no need to re-enable Geoman
+                // The custom pointer event listeners are already attached in toggleDrawingMode()
+                console.log('Cleared shape, ready to draw again');
+            }
+        }
+        
+        // Debounced update results to prevent spazzy updates during drag
+        function debouncedUpdateResults() {
+            // Clear any existing timeout
+            if (drawUpdateTimeout) {
+                clearTimeout(drawUpdateTimeout);
+            }
+            
+            // Set a new timeout to update after drag stops
+            drawUpdateTimeout = setTimeout(() => {
+                if (drawnItems && drawnItems.getLayers().length > 0) {
+                    const circle = drawnItems.getLayers()[0];
+                    if (circle instanceof L.Circle) {
+                        const tapsInCircle = getVisibleTapsInCircle(circle);
+                        showCircleResults(tapsInCircle, circle);
+                    }
+                }
+            }, 150); // 150ms delay to wait for drag to settle
+        }
+        
+        // Clear existing circle but stay in crosshairs mode (deprecated - kept for compatibility)
+        function clearExistingCircle() {
+            if (drawnItems && drawnItems.getLayers().length > 0) {
+                drawnItems.clearLayers();
+                closeCircleResults();
+            }
+        }
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             detectIframeContext();
@@ -3977,3 +5391,4 @@
     <script src="/js/console-mute.js"></script>
 </body>
 </html>
+<!-- Deployment trigger -->

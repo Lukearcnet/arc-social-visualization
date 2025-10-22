@@ -1,4 +1,5 @@
 # 🌐 ARC Social Visualization
+<!-- Force Vercel deployment -->
 
 A unified social graph visualization platform that combines map and network views with user authentication.
 
@@ -150,3 +151,4 @@ Private project - All rights reserved
 
 **🎯 Built for ARC Social - Authentic. Real. Connections.**# Trigger redeploy
 # Deployment trigger Fri Oct 10 11:37:57 CDT 2025
+# Force redeploy Sun Oct 19 23:57:35 CDT 2025

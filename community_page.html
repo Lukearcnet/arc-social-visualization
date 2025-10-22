@@ -272,29 +272,173 @@
         }
 
         .recommendations-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 1rem;
         }
 
         .recommendations-header h3 {
-            margin: 0;
-            flex: 1;
+            margin: 0 0 1rem 0;
         }
 
-        .city-filter {
+        .recommendations-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+            font-weight: 500;
+        }
+
+        .filter-select {
             padding: 0.5rem;
             border-radius: 6px;
             border: 1px solid var(--stroke);
             background: var(--bg-secondary);
             color: var(--fg-primary);
-            font-size: 0.9rem;
+            font-size: 0.875rem;
+            min-width: 120px;
         }
 
-        .city-filter:focus {
+        .filter-select:focus {
             outline: none;
             border-color: var(--accent-primary);
+        }
+
+        .clear-filters-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--stroke);
+            background: var(--bg-secondary);
+            color: var(--fg-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            align-self: flex-end;
+        }
+
+        .clear-filters-btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-primary);
+        }
+
+        .clear-filters-btn:active {
+            transform: translateY(1px);
+        }
+
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .degree-badge {
+            background: var(--accent-primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .bridge-paths {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--fg-muted);
+            font-style: italic;
+        }
+
+        .tap-count {
+            text-decoration: underline;
+            margin-left: 2px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        /* Mutual details popup */
+        .mutual-details-popup {
+            position: fixed;
+            background: var(--bg-primary);
+            border: 1px solid var(--stroke);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 200px;
+            min-width: 160px;
+        }
+        
+        .mutual-details-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            position: relative;
+        }
+        
+        .mutual-details-node {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 4px 12px;
+            color: var(--fg-primary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            min-width: 60px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .mutual-details-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .mutual-details-arrows {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .arrow-up, .arrow-down {
+            color: var(--stroke);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .mutual-name-clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .mutual-name-clickable:hover {
+            background: var(--bg-hover);
+            border-radius: 4px;
         }
 
         .recommendations-carousel {
@@ -1130,6 +1274,21 @@
             outline: none !important;
         }
         
+        .bar-race-tooltip {
+            position: absolute !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            color: white !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            pointer-events: none !important;
+            z-index: 1000 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            white-space: nowrap !important;
+            max-width: 300px !important;
+        }
+        
         #rbr-chart {
             border: none !important;
             outline: none !important;
@@ -1479,18 +1638,32 @@
                         <div class="recommendations-section">
                             <div class="recommendations-header">
                                 <h3>People You Should Meet</h3>
-                                <select id="city-filter" class="city-filter">
-                                    <option value="">All Cities</option>
-                                    <option value="NY">New York</option>
-                                    <option value="London">London</option>
-                                    <option value="LA">Los Angeles</option>
-                                    <option value="SF">San Francisco</option>
-                                    <option value="Dallas">Dallas</option>
-                                    <option value="Chicago">Chicago</option>
-                                    <option value="Jackson Hole">Jackson Hole</option>
-                                    <option value="Austin">Austin</option>
-                                    <option value="Nashville">Nashville</option>
-                                </select>
+                                <div class="recommendations-filters">
+                                    <div class="filter-group">
+                                        <label for="location-filter">Location:</label>
+                                        <select id="location-filter" class="filter-select">
+                                            <option value="">All Locations</option>
+                                            <option value="near-home">Near My Home</option>
+                                            <option value="NY">New York</option>
+                                            <option value="London">London</option>
+                                            <option value="LA">Los Angeles</option>
+                                            <option value="SF">San Francisco</option>
+                                            <option value="Dallas">Dallas</option>
+                                            <option value="Chicago">Chicago</option>
+                                            <option value="Jackson Hole">Jackson Hole</option>
+                                            <option value="Austin">Austin</option>
+                                            <option value="Nashville">Nashville</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="sort-filter">Sort By:</label>
+                                        <select id="sort-filter" class="filter-select">
+                                            <option value="connections">Mutual Connections</option>
+                                            <option value="taps">Mutual Taps</option>
+                                        </select>
+                                    </div>
+                                    <button id="clear-filters" class="clear-filters-btn">Clear</button>
+                                </div>
                             </div>
                             <div class="recommendations-carousel" id="recommendations-list"></div>
                         </div>
@@ -2064,14 +2237,8 @@
                 window.addEventListener('scroll', () => this.updateDropdownPosition());
                 window.addEventListener('resize', () => this.updateDropdownPosition());
 
-                // City filter for recommendations
-                const cityFilter = document.getElementById('city-filter');
-                if (cityFilter) {
-                    cityFilter.addEventListener('change', () => {
-                        console.log('🏙️ City filter changed to:', cityFilter.value);
-                        this.renderRecommendations();
-                    });
-                }
+                // Setup recommendation filters
+                this.setupRecommendationFilters();
             }
 
             // Portal utility
@@ -2083,6 +2250,42 @@
                     document.body.appendChild(portalRoot);
                 }
                 return portalRoot;
+            }
+
+            setupRecommendationFilters() {
+                // Location filter
+                const locationFilter = document.getElementById('location-filter');
+                if (locationFilter) {
+                    locationFilter.addEventListener('change', () => {
+                        console.log('🏙️ Location filter changed to:', locationFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
+
+
+                // Sort filter
+                const sortFilter = document.getElementById('sort-filter');
+                if (sortFilter) {
+                    // Set default to "Mutual Taps"
+                    sortFilter.value = 'taps';
+                    
+                    sortFilter.addEventListener('change', () => {
+                        console.log('📊 Sort filter changed to:', sortFilter.value);
+                        this.renderRecommendations();
+                    });
+                }
+
+
+                // Clear filters button
+                const clearFiltersBtn = document.getElementById('clear-filters');
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', () => {
+                        console.log('🧹 Clearing all filters');
+                        if (locationFilter) locationFilter.value = '';
+                        if (sortFilter) sortFilter.value = 'connections';
+                        this.renderRecommendations();
+                    });
+                }
             }
 
             updateDropdownPosition() {
@@ -2548,26 +2751,63 @@
                 // Use safe array access
                 const recs = this.safeArr(data.recommendations);
                 
-                // Get city filter value
-                const cityFilter = document.getElementById('city-filter')?.value;
+                // Get filter values
+                const locationFilter = document.getElementById('location-filter')?.value;
+                const sortFilter = document.getElementById('sort-filter')?.value;
                 
-                // Filter recommendations by city if selected
-                const filteredRecs = recs.filter(rec => {
-                    if (!cityFilter) return true;
-                    if (!rec.last_tap_coordinates) return false;
+                // Apply filters
+                let filteredRecs = recs.filter(rec => {
+                    // Location filter
+                    if (locationFilter) {
+                        if (locationFilter === 'near-home') {
+                            // Filter by proximity to user's home location
+                            // This would need user's home location data - for now, show all
+                            return true;
+                        } else if (locationFilter && !rec.last_tap_coordinates) {
+                            return false;
+                        } else if (locationFilter) {
+                            const cities = this.getMajorCities();
+                            const city = cities[locationFilter];
+                            if (city) {
+                                const distance = this.getDistanceFromLatLonInMiles(
+                                    rec.last_tap_coordinates.lat,
+                                    rec.last_tap_coordinates.lng,
+                                    city.lat,
+                                    city.lng
+                                );
+                                return distance <= 50; // 50 mile radius
+                            }
+                        }
+                    }
                     
-                    const cities = this.getMajorCities();
-                    const city = cities[cityFilter];
-                    if (!city) return true;
+                    // Only show 2nd degree recommendations (filter out 3rd degree)
+                    const recDegree = rec.degree || 2;
+                    if (recDegree !== 2) return false;
                     
-                    const distance = this.getDistanceFromLatLonInMiles(
-                        rec.last_tap_coordinates.lat,
-                        rec.last_tap_coordinates.lng,
-                        city.lat,
-                        city.lng
-                    );
-                    return distance <= 50; // 50 mile radius
+                    
+                    return true;
                 });
+                
+                // Apply sorting
+                if (sortFilter === 'taps') {
+                    // Sort by mutual taps (sum of taps between candidate and mutual friends)
+                    filteredRecs.sort((a, b) => {
+                        const aTaps = a.scores?.mutual_taps || 0;
+                        const bTaps = b.scores?.mutual_taps || 0;
+                        if (aTaps !== bTaps) return bTaps - aTaps;
+                        // Tie-breaker: use composite score
+                        return (b.scores?.total || 0) - (a.scores?.total || 0);
+                    });
+                } else {
+                    // Sort by mutual connections (default)
+                    filteredRecs.sort((a, b) => {
+                        const aConnections = a.scores?.mutual_connections || 0;
+                        const bConnections = b.scores?.mutual_connections || 0;
+                        if (aConnections !== bConnections) return bConnections - aConnections;
+                        // Tie-breaker: use composite score
+                        return (b.scores?.total || 0) - (a.scores?.total || 0);
+                    });
+                }
                 
                 const container = document.getElementById('recommendations-list');
                 container.innerHTML = '';
@@ -2577,8 +2817,8 @@
                     const emptyDiv = document.createElement('div');
                     emptyDiv.className = 'empty-state';
                     emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--fg-muted); font-style: italic;';
-                    const message = cityFilter 
-                        ? `No recommendations found near ${this.getMajorCities()[cityFilter]?.name || cityFilter}.`
+                    const message = locationFilter 
+                        ? `No recommendations found for the selected filters.`
                         : 'No recommendations yet. Check back soon as your network grows.';
                     emptyDiv.innerHTML = `
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤝</div>
@@ -2598,42 +2838,209 @@
                     const total = Number.isFinite(scores.total) ? scores.total : 0;
                     const mutuals = this.safeArr(rec.mutuals);
                     const explain = rec.explain || 'No explanation available.';
+                    const degree = rec.degree || 2;
                     
-                    // Format mutuals display
-                    const mutualsDisplay = mutuals.length > 0 
-                        ? mutuals.slice(0, 3).join(', ') + (mutuals.length > 3 ? ` +${mutuals.length - 3} more` : '')
-                        : 'No mutuals';
+                    // Format mutuals display based on sort filter (2nd degree only)
+                    let mutualsDisplay = '';
+                    let explainText = explain;
                     
-                    // Extract the actual mutual count from the explain text
-                    // The explain text contains the real count: "Connected through 5 mutual friends"
-                    const explainText = rec.explain || '';
-                    const mutualCountMatch = explainText.match(/Connected through (\d+) mutual friends/);
-                    const actualMutualCount = mutualCountMatch ? parseInt(mutualCountMatch[1]) : mutuals.length;
-                    
-                    // Debug: Log the actual recommendation data
-                    console.log(`[Recommendations] ${name}:`, {
-                        mutuals: mutuals,
-                        mutualCount: mutuals.length,
-                        actualMutualCount: actualMutualCount,
-                        explainText: explainText,
-                        rec: rec
-                    });
-                    
-                    // Format mutual names display - show up to 6 mutual friends
-                    const mutualNamesDisplay = mutuals.length > 0 
-                        ? mutuals.slice(0, 6).map(name => `<span class="mutual-name">${name}</span>`).join('')
-                        : '';
+                    if (sortFilter === 'taps') {
+                        // Show tap-based display for 2nd degree
+                        if (rec.mutualDetails && rec.mutualDetails.length > 0) {
+                            // Sort mutuals by tap count (descending) and take top 6
+                            const sortedMutuals = rec.mutualDetails
+                                .sort((a, b) => b.tapCount - a.tapCount)
+                                .slice(0, 6);
+                            
+                            const mutualNamesDisplay = sortedMutuals.map(mutual => 
+                                `<span class="mutual-name mutual-name-clickable" data-mutual-id="${mutual.id}" data-mutual-name="${mutual.name}" data-tap-count="${mutual.tapCount}">${mutual.name}<span class="tap-count">${mutual.tapCount}</span></span>`
+                            ).join('');
+                            
+                            const hasMore = rec.mutualDetails.length > 6;
+                            const moreDisplay = hasMore ? '<span class="mutual-name">...</span>' : '';
+                            
+                            mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}${moreDisplay}</div>`;
+                            explainText = `Connected through ${rec.scores.mutual_taps} mutual taps`;
+                        }
+                    } else {
+                        // Show connection-based display (default) - also make clickable
+                        if (mutuals.length > 0) {
+                            // For connection-based display, we need to get the mutual details from the recommendation
+                            const mutualNamesDisplay = mutuals.slice(0, 6).map(name => {
+                                // Find the mutual details for this name to get ID and tap count
+                                const mutualDetail = rec.mutualDetails?.find(m => m.name === name);
+                                if (mutualDetail) {
+                                    return `<span class="mutual-name mutual-name-clickable" data-mutual-id="${mutualDetail.id}" data-mutual-name="${mutualDetail.name}" data-tap-count="${mutualDetail.tapCount}">${name}<span class="tap-count">${mutualDetail.tapCount}</span></span>`;
+                                } else {
+                                    // Fallback if no mutual details available
+                                    return `<span class="mutual-name">${name}</span>`;
+                                }
+                            }).join('');
+                            mutualsDisplay = `<div class="mutual-names">${mutualNamesDisplay}</div>`;
+                        }
+                    }
                     
                     div.innerHTML = `
-                        <h4>${name}</h4>
-                        <div class="connected-through">Connected through ${actualMutualCount} mutual friends</div>
-                        <div class="mutual-names">
-                            ${mutualNamesDisplay}
+                        <div class="recommendation-header">
+                            <h4>${name}</h4>
                         </div>
+                        <div class="connected-through">${explainText}</div>
+                        ${mutualsDisplay}
                     `;
                     
                     container.appendChild(div);
                 });
+                
+                // Add click event listeners to mutual names
+                setTimeout(() => {
+                    this.setupMutualClickListeners();
+                }, 100);
+            }
+
+            setupMutualClickListeners() {
+                const clickableMutuals = document.querySelectorAll('.mutual-name-clickable');
+                console.log('🔗 Setting up click listeners for', clickableMutuals.length, 'mutual names');
+                clickableMutuals.forEach(mutual => {
+                    mutual.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const mutualId = mutual.dataset.mutualId;
+                        const mutualName = mutual.dataset.mutualName;
+                        const tapCount = parseInt(mutual.dataset.tapCount);
+                        
+                        // Find the recommendation card this mutual belongs to
+                        const recommendationCard = mutual.closest('.recommendation-card');
+                        const recommendationName = recommendationCard.querySelector('h4').textContent;
+                        
+                        this.showMutualDetails(mutualId, mutualName, tapCount, recommendationName, e);
+                    });
+                });
+            }
+
+            showMutualDetails(mutualId, mutualName, totalTapCount, recommendationName, event) {
+                // Remove any existing popup first
+                const existingPopup = document.getElementById('mutual-details-popup');
+                if (existingPopup) {
+                    existingPopup.remove();
+                }
+                
+                // Get current user data
+                const data = this.data.weekly;
+                if (!data) return;
+                
+                const userId = data.meta?.user_id;
+                if (!userId) return;
+                
+                // Find the recommended user and their mutual details
+                const recs = this.safeArr(data.recommendations);
+                const recommendation = recs.find(rec => rec.name === recommendationName);
+                if (!recommendation) return;
+                
+                // Find the mutual details for this specific mutual
+                const mutualDetail = recommendation.mutualDetails?.find(m => m.id === mutualId);
+                if (!mutualDetail) return;
+                
+                // Use the breakdown data from the backend
+                const youToMutualTaps = mutualDetail.youToMutualTaps || 0;
+                const mutualToRecommendedTaps = mutualDetail.mutualToRecommendedTaps || 0;
+                
+                console.log('🔍 Popup data:', {
+                    mutualName,
+                    recommendationName,
+                    youToMutualTaps,
+                    mutualToRecommendedTaps,
+                    mutualDetail
+                });
+                
+                // Create popup HTML (vertical stacked design with simple arrows)
+                const popupHTML = `
+                    <div class="mutual-details-popup" id="mutual-details-popup">
+                        <div class="mutual-details-stack">
+                            <div class="mutual-details-node">You</div>
+                            <div class="mutual-details-arrows">
+                                <span class="arrow-up">↑</span>
+                                <div class="mutual-details-badge">${youToMutualTaps}</div>
+                                <span class="arrow-down">↓</span>
+                            </div>
+                            <div class="mutual-details-node">${mutualName}</div>
+                            <div class="mutual-details-arrows">
+                                <span class="arrow-up">↑</span>
+                                <div class="mutual-details-badge">${mutualToRecommendedTaps}</div>
+                                <span class="arrow-down">↓</span>
+                            </div>
+                            <div class="mutual-details-node">${recommendationName}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add popup to DOM
+                document.body.insertAdjacentHTML('beforeend', popupHTML);
+                
+                // Position popup near the clicked element (mobile-friendly)
+                const popup = document.getElementById('mutual-details-popup');
+                if (popup) {
+                    const rect = event.target.getBoundingClientRect();
+                    const popupRect = popup.getBoundingClientRect();
+                    const padding = 10;
+                    
+                    // Try to position to the right of the clicked element
+                    let left = rect.right + padding;
+                    
+                    // If not enough space on right, try left
+                    if (left + popupRect.width > window.innerWidth - padding) {
+                        left = rect.left - popupRect.width - padding;
+                    }
+                    
+                    // If still not enough space (mobile), center horizontally
+                    if (left < padding || left + popupRect.width > window.innerWidth - padding) {
+                        left = (window.innerWidth - popupRect.width) / 2;
+                    }
+                    
+                    // Ensure left is within bounds
+                    left = Math.max(padding, Math.min(left, window.innerWidth - popupRect.width - padding));
+                    
+                    // Position vertically centered with the clicked element
+                    let top = rect.top + (rect.height / 2) - (popupRect.height / 2);
+                    
+                    // Ensure top is within bounds
+                    top = Math.max(padding, Math.min(top, window.innerHeight - popupRect.height - padding));
+                    
+                    popup.style.left = `${left}px`;
+                    popup.style.top = `${top}px`;
+                }
+                
+                // Add event listeners for closing
+                setTimeout(() => {
+                    const popup = document.getElementById('mutual-details-popup');
+                
+                    const closePopup = () => {
+                        if (popup) {
+                            popup.remove();
+                        }
+                    };
+                    
+                    // Click outside to close
+                    const handleClickOutside = (e) => {
+                        if (popup && !popup.contains(e.target)) {
+                            closePopup();
+                            document.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    
+                    // Close on Escape key
+                    const handleEscape = (e) => {
+                        if (e.key === 'Escape') {
+                            closePopup();
+                            document.removeEventListener('keydown', handleEscape);
+                            document.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    
+                    // Add event listeners
+                    document.addEventListener('click', handleClickOutside);
+                    document.addEventListener('keydown', handleEscape);
+                }, 50);
             }
 
             renderWarnings() {
@@ -3685,6 +4092,42 @@
                 return `Unknown · ${String(id).slice(-4)}`;
             }
 
+            // Measure text width for truncation
+            measureTextWidth(text, fontSize = 12, fontWeight = 600) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                context.font = `${fontWeight} ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+                return context.measureText(text).width;
+            }
+
+            // Truncate text with ellipsis if it exceeds max width
+            truncateText(text, maxWidth, fontSize = 12, fontWeight = 600) {
+                if (!text) return text;
+                
+                const fullWidth = this.measureTextWidth(text, fontSize, fontWeight);
+                if (fullWidth <= maxWidth) return text;
+                
+                // Binary search for optimal truncation point
+                let left = 0;
+                let right = text.length;
+                let bestFit = text;
+                
+                while (left <= right) {
+                    const mid = Math.floor((left + right) / 2);
+                    const truncated = text.substring(0, mid) + '...';
+                    const width = this.measureTextWidth(truncated, fontSize, fontWeight);
+                    
+                    if (width <= maxWidth) {
+                        bestFit = truncated;
+                        left = mid + 1;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
+                
+                return bestFit;
+            }
+
             buildUserIndex() {
                 if (this.userIndex) return this.userIndex;
                 
@@ -4041,7 +4484,50 @@
                 // ENTER - smooth fade in
                 const barsEnter = bars.enter().append('g').attr('class', 'bar');
                 barsEnter.append('rect');
-                barsEnter.append('text').attr('class', 'label').attr('text-anchor', 'end').attr('dy', '0.35em');
+                
+                // Create label with tooltip support
+                const labelEnter = barsEnter.append('text').attr('class', 'label').attr('text-anchor', 'end').attr('dy', '0.35em');
+                
+                // Add tooltip functionality
+                const self = this;
+                labelEnter
+                    .on('mouseenter', function(event, d) {
+                        const fullName = self.safeName(d.id);
+                        const displayName = d3.select(this).text();
+                        
+                        // Only show tooltip if name was truncated
+                        if (fullName !== displayName) {
+                            d3.select('body').append('div')
+                                .attr('class', 'bar-race-tooltip')
+                                .style('position', 'absolute')
+                                .style('background', 'rgba(0, 0, 0, 0.9)')
+                                .style('color', 'white')
+                                .style('padding', '8px 12px')
+                                .style('border-radius', '6px')
+                                .style('font-size', '12px')
+                                .style('font-weight', '500')
+                                .style('pointer-events', 'none')
+                                .style('z-index', '1000')
+                                .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.3)')
+                                .style('opacity', 0)
+                                .text(fullName)
+                                .transition()
+                                .duration(200)
+                                .style('opacity', 1);
+                        }
+                    })
+                    .on('mousemove', function(event) {
+                        const tooltip = d3.select('.bar-race-tooltip');
+                        if (!tooltip.empty()) {
+                            tooltip
+                                .style('left', (event.pageX + 10) + 'px')
+                                .style('top', (event.pageY - 10) + 'px');
+                        }
+                    })
+                    .on('mouseleave', function() {
+                        d3.select('.bar-race-tooltip').remove();
+                    });
+                
                 barsEnter.append('text').attr('class', 'value').attr('text-anchor', 'start').attr('dy', '0.35em');
                 
                 // Set initial positions for new bars (start at final position but with zero width)
@@ -4054,9 +4540,19 @@
                     .attr('ry', 4) // Rounded corners
                     .attr('fill', d => colorScale ? colorScale(d.id) : '#3b82f6');
                 
+                // Calculate available width for labels (left margin - 40px padding for safety)
+                const availableWidthForLabels = d.margin?.left ? d.margin.left - 40 : 120; // 160px margin - 40px padding
+                
                 barsEnter.select('text.label')
-                    .text(d => this.safeName(d.id))
-                    .attr('x', -8)
+                    .text(d => {
+                        const fullName = this.safeName(d.id);
+                        return this.truncateText(fullName, availableWidthForLabels);
+                    })
+                    .attr('x', d => {
+                        const displayText = this.truncateText(this.safeName(d.id), availableWidthForLabels);
+                        const textWidth = this.measureTextWidth(displayText);
+                        return Math.max(-8, -textWidth - 16); // Ultra-conservative positioning with 16px buffer
+                    })
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2)) // Start at final Y position
                     .attr('fill', '#fff');
                 
@@ -4093,12 +4589,21 @@
                     .style('opacity', 1);
 
                 // Add smooth transitions for name labels
+                const availableWidthForTransitions = d.margin?.left ? d.margin.left - 40 : 120; // 160px margin - 40px padding
+                
                 merged.select('text.label')
-                    .text(d => this.safeName(d.id))
+                    .text(d => {
+                        const fullName = this.safeName(d.id);
+                        return this.truncateText(fullName, availableWidthForTransitions);
+                    })
                     .transition()
                     .duration(transitionDuration)
                     .ease(d3.easeCubicInOut)
-                    .attr('x', -8)
+                    .attr('x', d => {
+                        const displayText = this.truncateText(this.safeName(d.id), availableWidthForTransitions);
+                        const textWidth = this.measureTextWidth(displayText);
+                        return Math.max(-8, -textWidth - 16); // Ultra-conservative positioning with 16px buffer
+                    })
                     .attr('y', d => (yScale(d.id) + yScale.bandwidth() / 2))
                     .attr('fill', '#fff');
 
